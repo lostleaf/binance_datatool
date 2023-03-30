@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractclassmethod
 from datetime import timedelta
 from decimal import Decimal
 from typing import Tuple
@@ -16,21 +16,6 @@ def get_from_filters(filters, filter_type, field_name):
             return f[field_name]
 
 
-def get_syminfo(info):
-    filters = info['filters']
-    return {
-        'symbol': info['symbol'],
-        'contract_type': info['contractType'],
-        'status': info['status'],
-        'base_asset': info['baseAsset'],
-        'quote_asset': info['quoteAsset'],
-        'margin_asset': info['marginAsset'],
-        'price_tick': Decimal(get_from_filters(filters, 'PRICE_FILTER', 'tickSize')),
-        'face_value': Decimal(get_from_filters(filters, 'LOT_SIZE', 'stepSize')),
-        'min_notional_value': Decimal(get_from_filters(filters, 'MIN_NOTIONAL', 'notional'))
-    }
-
-
 class BinanceMarketApi(ABC):
     MAX_ONCE_CANDLES = 1500
     MAX_MINUTE_WEIGHT = 2400
@@ -38,6 +23,10 @@ class BinanceMarketApi(ABC):
     def __init__(self, aiohttp_session, cande_close_timeout_sec):
         self.session = aiohttp_session
         self.candle_close_timeout_sec = cande_close_timeout_sec
+
+    @abstractclassmethod
+    def parse_syminfo(cls, info):
+        pass
 
     @abstractmethod
     async def aioreq_timestamp_and_weight(self) -> Tuple[int, int]:
@@ -99,7 +88,7 @@ class BinanceMarketApi(ABC):
         exg_info = await async_retry_getter(self.aioreq_exchange_info)
         results = dict()
         for info in exg_info['symbols']:
-            results[info['symbol']] = get_syminfo(info)
+            results[info['symbol']] = self.parse_syminfo(info)
         return results
 
 
@@ -129,3 +118,60 @@ class BinanceUsdtFutureMarketApi(BinanceMarketApi):
         async with self.session.get(url) as resp:
             results = await resp.json()
         return results
+
+    @classmethod
+    def parse_syminfo(cls, info):
+        filters = info['filters']
+        return {
+            'symbol': info['symbol'],
+            'contract_type': info['contractType'],
+            'status': info['status'],
+            'base_asset': info['baseAsset'],
+            'quote_asset': info['quoteAsset'],
+            'margin_asset': info['marginAsset'],
+            'price_tick': Decimal(get_from_filters(filters, 'PRICE_FILTER', 'tickSize')),
+            'face_value': Decimal(get_from_filters(filters, 'LOT_SIZE', 'stepSize')),
+            'min_notional_value': Decimal(get_from_filters(filters, 'MIN_NOTIONAL', 'notional'))
+        }
+
+
+class BinanceCoinFutureMarketApi(BinanceMarketApi):
+
+    async def aioreq_timestamp_and_weight(self):
+        url = 'https://dapi.binance.com/dapi/v1/time'
+        async with self.session.get(url) as resp:
+            weight = int(resp.headers['X-MBX-USED-WEIGHT-1M'])
+            timestamp = (await resp.json())['serverTime']
+        return timestamp, weight
+
+    async def aioreq_candle(self, symbol, interval, **kwargs):
+        params = {
+            'symbol': symbol,
+            'interval': interval,
+        }
+        params.update(kwargs)
+        url = 'https://dapi.binance.com/dapi/v1/klines'
+
+        async with self.session.get(url, params=params) as resp:
+            results = await resp.json()
+        return results
+
+    async def aioreq_exchange_info(self):
+        url = 'https://dapi.binance.com/dapi/v1/exchangeInfo'
+        async with self.session.get(url) as resp:
+            results = await resp.json()
+        return results
+
+    @classmethod
+    def parse_syminfo(cls, info):
+        filters = info['filters']
+        return {
+            'symbol': info['symbol'],
+            'contract_type': info['contractType'],
+            'status': info['contractStatus'],
+            'base_asset': info['baseAsset'],
+            'quote_asset': info['quoteAsset'],
+            'margin_asset': info['marginAsset'],
+            'price_tick': Decimal(get_from_filters(filters, 'PRICE_FILTER', 'tickSize')),
+            'face_value': Decimal(get_from_filters(filters, 'LOT_SIZE', 'stepSize'))
+        }
