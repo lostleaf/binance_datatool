@@ -59,7 +59,6 @@ class Crawler:
     async def init_history(self):
         syminfo = await self.market_api.get_syminfo()
         symbols_trading = self.symbol_filter(syminfo)
-        print(syminfo['BTCUSDT'])
         limit = self.market_api.MAX_ONCE_CANDLES
         cnt = 0
 
