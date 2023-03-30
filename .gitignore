@@ -1,0 +1,5 @@
+sync.sh
+run.sh
+usdt_5m_example/usdt_swap_*
+usdt_5m_example/exginfo_*
+*.pyc
