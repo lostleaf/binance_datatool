@@ -30,7 +30,20 @@ class TradingUsdtSwapFilter:
         if self.keep_symbols is not None:
             symbols = [sym for sym in symbols if sym in self.keep_symbols]
         return symbols
+    
+class TradingCoinSwapFilter:
+    def __init__(self, keep_symbols=None):
+        self.keep_symbols = set(keep_symbols) if keep_symbols else None
+    
+    @classmethod
+    def is_trading_usdt_swap(cls, x):
+        return x['quote_asset'] == 'USD' and x['status'] == 'TRADING' and x['contract_type'] == 'PERPETUAL'
 
+    def __call__(self, syminfo:dict) -> list:
+        symbols = [info['symbol'] for info in syminfo.values() if self.is_trading_usdt_swap(info)]
+        if self.keep_symbols is not None:
+            symbols = [sym for sym in symbols if sym in self.keep_symbols]
+        return symbols
 
 class Crawler:
 
