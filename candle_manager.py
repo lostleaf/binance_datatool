@@ -38,8 +38,12 @@ class CandleFeatherManager:
             fout.write(str(now_time()))
 
     def update_candle(self, symbol, run_time, df_new: pd.DataFrame):
-        df_old = self.read_candle(symbol)
-        df: pd.DataFrame = pd.concat([df_old, df_new]).drop_duplicates(subset='candle_begin_time', keep='last')
+        if self.has_symbol(symbol):
+            df_old = self.read_candle(symbol)
+            df: pd.DataFrame = pd.concat([df_old, df_new])
+        else:
+            df = df_new
+        df.drop_duplicates(subset='candle_begin_time', keep='last', inplace=True)
         df.sort_values('candle_begin_time', inplace=True)
         df = df.iloc[-BinanceMarketApi.MAX_ONCE_CANDLES:]
         self.set_candle(symbol, run_time, df)
@@ -50,6 +54,10 @@ class CandleFeatherManager:
 
     def read_candle(self, symbol) -> pd.DataFrame:
         return pd.read_feather(os.path.join(self.base_dir, f'{symbol}.fea'))
+    
+    def has_symbol(self, symbol) -> bool:
+        p = os.path.join(self.base_dir, f'{symbol}.fea')
+        return os.path.exists(p)
 
     def remove_symbol(self, symbol):
         old_ready_file_paths = glob(os.path.join(self.base_dir, f'{symbol}_*.ready'))
