@@ -1,5 +1,5 @@
 sync.sh
 run.sh
-usdt_5m_example/usdt_swap_*
-usdt_5m_example/exginfo_*
+*_5m_example/*_5m
+*_5m_example/config.json
 *.pyc
