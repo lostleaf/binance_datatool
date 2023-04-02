@@ -78,7 +78,7 @@ class BinanceMarketApi(ABC):
                 break
 
             if now_time() - run_time > timedelta(seconds=expire_sec):
-                logging.warning(f'Candle may not closed in {expire_sec}sec {symbol} {interval}')
+                # logging.warning(f'Candle may not closed in {expire_sec}sec {symbol} {interval}')
                 break
 
             await asyncio.sleep(1)

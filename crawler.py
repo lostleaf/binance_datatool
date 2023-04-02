@@ -78,15 +78,12 @@ class Crawler:
 
     async def fetch_and_save_recent_closed_candle(self, symbol, run_time):
         df_new, is_closed = await self.market_api.fetch_recent_closed_candle(symbol, self.interval, run_time)
-        df_old = self.candle_mgr.read_candle(symbol)
-        df: pd.DataFrame = pd.concat([df_old, df_new]).drop_duplicates(subset='candle_begin_time', keep='last')
-        df.sort_values('candle_begin_time', inplace=True)
-        df = df.iloc[-self.market_api.MAX_ONCE_CANDLES:]
-        self.candle_mgr.set_candle(symbol, run_time, df)
+        self.candle_mgr.update_candle(symbol, run_time, df_new)
         return is_closed
 
     async def run_loop(self):
         run_time = next_run_time(self.interval)
+        msg = dict()
         logging.info(f'Next candle crawler run at {run_time}')
         await async_sleep_until_run_time(run_time)
 
@@ -101,6 +98,7 @@ class Crawler:
 
         if notradings:
             logging.info(f'Remove not trading symbols {notradings}')
+            msg['not_trading'] = list(notradings)
             for symbol in notradings:
                 self.candle_mgr.remove_symbol(symbol)
 
@@ -116,7 +114,9 @@ class Crawler:
         
         if may_not_closed:
             logging.warning(f'Candle may not closed: {may_not_closed}')
+            msg['not_closed'] = list(may_not_closed)
 
         server_time, weight = await self.market_api.get_timestamp_and_weight()
         num_symbols = len(self.candle_mgr.get_all_symbols())
         logging.info(f'Saved symbols: {num_symbols}. Server time: {server_time}, used weight: {weight}')
+        return msg

@@ -7,7 +7,7 @@ import os
 from crawler import Crawler, TradingUsdtSwapFilter, TradingCoinSwapFilter
 from dingding import DingDingSender
 from market_api import BinanceUsdtFutureMarketApi, BinanceCoinFutureMarketApi
-from util import create_aiohttp_session
+from util import create_aiohttp_session, now_time
 from candle_manager import CandleFeatherManager
 
 logging.basicConfig(format='%(asctime)s (%(levelname)s) - %(message)s', level=logging.INFO, datefmt='%Y%m%d %H:%M:%S')
@@ -26,6 +26,7 @@ async def main(argv):
     candle_close_timeout_sec = cfg['candle_close_timeout_sec']
     trade_type = cfg['trade_type']
     keep_symbols = cfg.get('keep_symbols', None)
+    dingding_cfg = cfg.get('dingding', None)
 
     market_api_cls = MARKET_API_DICT[trade_type]
     symbol_filter_cls = SYMBOL_FILTER_DICT[trade_type]
@@ -38,15 +39,27 @@ async def main(argv):
                 candle_mgr = CandleFeatherManager(os.path.join(base_dir, f'{trade_type}_{interval}'))
                 exginfo_mgr = CandleFeatherManager(os.path.join(base_dir, f'exginfo_{interval}'))
                 crawler = Crawler(interval, exginfo_mgr, candle_mgr, market_api, symbol_filter)
+                msg_sender = DingDingSender(dingding_cfg, session) if dingding_cfg is not None else None
 
                 await crawler.init_history()
                 while True:
-                    await crawler.run_loop()
+                    msg = await crawler.run_loop()
+                    if msg and msg_sender:
+                        msg['localtime'] = str(now_time())
+                        await msg_sender.send_message(json.dumps(msg, indent=1), 'error')
         except Exception as e:
             logging.error(f'An error occurred {str(e)}')
             import traceback
             traceback.print_exc()
-            raise e
+            if dingding_cfg is not None:
+                try:
+                    error_stack_str = traceback.format_exc()
+                    async with create_aiohttp_session(http_timeout_sec) as session:
+                        msg_sender = DingDingSender(dingding_cfg, session)
+                        msg = f'An error occurred {str(e)}\n' + error_stack_str
+                        await msg_sender.send_message(msg, 'error')
+                except:
+                    pass
 
 
 if __name__ == '__main__':

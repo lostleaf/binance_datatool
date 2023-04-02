@@ -33,9 +33,10 @@ class CandleFeatherManager:
         for p in old_ready_file_paths:
             os.remove(p)
 
-        ready_file_path = self.format_ready_file_path(symbol, run_time)
-        with open(ready_file_path, 'w') as fout:
-            fout.write(str(now_time()))
+        if run_time is not None:
+            ready_file_path = self.format_ready_file_path(symbol, run_time)
+            with open(ready_file_path, 'w') as fout:
+                fout.write(str(now_time()))
 
     def update_candle(self, symbol, run_time, df_new: pd.DataFrame):
         if self.has_symbol(symbol):
@@ -54,7 +55,7 @@ class CandleFeatherManager:
 
     def read_candle(self, symbol) -> pd.DataFrame:
         return pd.read_feather(os.path.join(self.base_dir, f'{symbol}.fea'))
-    
+
     def has_symbol(self, symbol) -> bool:
         p = os.path.join(self.base_dir, f'{symbol}.fea')
         return os.path.exists(p)
