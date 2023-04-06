@@ -47,10 +47,3 @@ class DingDingSender:
         headers = {"Content-Type": "application/json", "Charset": "UTF-8"}
         req_json_str = json.dumps({"msgtype": "text", "text": {"content": msg}})
         await async_retry_getter(lambda: self.session.post(url=post_url, data=req_json_str, headers=headers))
-
-
-if __name__ == '__main__':
-    API = json.load(open('../dingding.json', 'r'))
-    D = DingDingSender(API)
-    D.send_message('test from python', 'trade')
-    D.send_message('test from python', 'error')

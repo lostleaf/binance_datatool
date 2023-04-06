@@ -1,14 +1,14 @@
 import asyncio
-import logging
-import sys
 import json
+import logging
 import os
+import sys
 
-from crawler import Crawler, TradingUsdtSwapFilter, TradingCoinSwapFilter
-from dingding import DingDingSender
-from market_api import BinanceUsdtFutureMarketApi, BinanceCoinFutureMarketApi
-from util import create_aiohttp_session, now_time
 from candle_manager import CandleFeatherManager
+from crawler import Crawler, TradingCoinSwapFilter, TradingUsdtSwapFilter
+from dingding import DingDingSender
+from market_api import BinanceCoinFutureMarketApi, BinanceUsdtFutureMarketApi
+from util import create_aiohttp_session, now_time
 
 logging.basicConfig(format='%(asctime)s (%(levelname)s) - %(message)s', level=logging.INFO, datefmt='%Y%m%d %H:%M:%S')
 
