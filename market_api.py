@@ -17,35 +17,63 @@ def get_from_filters(filters, filter_type, field_name):
 
 
 class BinanceMarketApi(ABC):
+    '''
+    BinanceMarketApi 类为抽象类
+    '''
+
+    # 每次最多获取的K线数量
     MAX_ONCE_CANDLES = 1500
+
+    # 每分钟权重上限
     MAX_MINUTE_WEIGHT = 2400
 
     def __init__(self, aiohttp_session, candle_close_timeout_sec):
+        '''
+        构造函数，接收 aiohttp Session 和K线闭合超时时间 candle_close_timeout_sec
+        '''
         self.session = aiohttp_session
         self.candle_close_timeout_sec = candle_close_timeout_sec
 
     @abstractclassmethod
     def parse_syminfo(cls, info):
+        '''
+        抽象函数，解析 exchange info 中每个 symbol 交易规则，币U本位有所不同
+        '''
         pass
 
     @abstractmethod
     async def aioreq_timestamp_and_weight(self) -> Tuple[int, int]:
+        '''
+        抽象函数, /time 接口具体 http 调用
+        '''
         pass
 
     @abstractmethod
     async def aioreq_candle(self, symbol, interval, **kwargs) -> list:
+        '''
+        抽象函数, /klines 接口具体 http 调用
+        '''
         pass
 
     @abstractmethod
     async def aioreq_exchange_info(self) -> dict:
+        '''
+        抽象函数, /exchangeInfo 接口具体 http 调用
+        '''
         pass
 
     async def get_timestamp_and_weight(self) -> Tuple[int, int]:
+        '''
+        从 /time 接口的返回值中，解析出当前服务器时间和已消耗权重
+        '''
         ts, wei = await async_retry_getter(self.aioreq_timestamp_and_weight)
         ts = pd.to_datetime(ts, unit='ms', utc=True).astimezone(DEFAULT_TZ)
         return ts, wei
 
     async def get_candle(self, symbol, interval, **kwargs) -> pd.DataFrame:
+        '''
+        从 /klines 接口返回值中，解析出K线数据并转换为 dataframe
+        '''
         data = await async_retry_getter(lambda: self.aioreq_candle(symbol, interval, **kwargs))
         columns = [
             'candle_begin_time',
@@ -68,6 +96,10 @@ class BinanceMarketApi(ABC):
         return df
 
     async def fetch_recent_closed_candle(self, symbol, interval, run_time, limit=5) -> Tuple[pd.DataFrame, bool]:
+        '''
+        获取 run_time 周期闭合K线，原理为反复获取K线，直到K线闭合或超时
+        返回值为 tuple(K线df, 是否闭合布尔值)
+        '''
         expire_sec = self.candle_close_timeout_sec
         is_closed = False
         while True:
@@ -85,6 +117,9 @@ class BinanceMarketApi(ABC):
         return df[df['candle_begin_time'] < run_time], is_closed
 
     async def get_syminfo(self):
+        '''
+        从 /exchangeinfo 接口的返回值中，解析出当前每个symbol交易规则
+        '''
         exg_info = await async_retry_getter(self.aioreq_exchange_info)
         results = dict()
         for info in exg_info['symbols']:
