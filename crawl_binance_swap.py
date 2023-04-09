@@ -55,6 +55,7 @@ async def main(argv):
                         msg['localtime'] = str(now_time())
                         await msg_sender.send_message(json.dumps(msg, indent=1), 'error')
         except Exception as e:
+            # 出错则通过钉钉报错
             logging.error(f'An error occurred {str(e)}')
             import traceback
             traceback.print_exc()
