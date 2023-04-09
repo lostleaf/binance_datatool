@@ -22,13 +22,22 @@ async def wait_until_ready(mgr: CandleFeatherManager, symbol, run_time, expire_t
     return True
 
 
+def check_diff(symbol, diff_max: pd.Series):
+    for i, v in diff_max.items():
+        if 'time' in i:
+            v = v.total_seconds()
+        if v > 0:
+            raise RuntimeError(f'{symbol} mismatch, {i} {v}')
+
+
 class Checker:
 
-    def __init__(self, interval, exginfo_mgr, candle_mgr):
+    def __init__(self, interval, exginfo_mgr, candle_mgr, market_api):
         self.interval = interval
         self.exginfo_mgr: CandleFeatherManager = exginfo_mgr
         self.candle_mgr: CandleFeatherManager = candle_mgr
         self.expire_delta = timedelta(seconds=30)
+        self.market_api: BinanceUsdtFutureMarketApi = market_api
 
     async def check_symbol_ready_in_time(self, symbol, run_time):
         is_ready = await wait_until_ready(self.candle_mgr, symbol, run_time, run_time + self.expire_delta)
@@ -41,7 +50,7 @@ class Checker:
 
         if not is_ready:
             raise RuntimeError(f'{run_time} exginfo not ready in time')
-        
+
         logging.info(f'{run_time} exginfo ready at {now_time()}')
 
         df_exginfo = self.exginfo_mgr.read_candle('exginfo')
@@ -51,17 +60,17 @@ class Checker:
 
         not_ready_symbols = []
         last_ready_symbol, last_ready_time = None, None
-        
+
         for symbol, result in zip(df_exginfo['symbol'], results):
             if result is None:
                 not_ready_symbols.append(symbol)
             else:
                 if last_ready_time is None or result > last_ready_time:
                     last_ready_symbol, last_ready_time = symbol, result
-        
+
         if not_ready_symbols:
             raise RuntimeError(f'{run_time} {not_ready_symbols} not ready in time')
-        
+
         logging.info(f'{run_time}, {len(results)} symbols ready, last ready {last_ready_symbol} {last_ready_time}')
 
     async def run_loop(self):
@@ -69,6 +78,26 @@ class Checker:
         logging.info(f'Next checker run at {run_time}')
         await async_sleep_until_run_time(run_time)
         await self.check_ready_in_time(run_time)
+        sleep_sec = (run_time + timedelta(minutes=3) - now_time()).total_seconds()
+        await asyncio.sleep(sleep_sec)
+        df_exginfo = self.exginfo_mgr.read_candle('exginfo')
+        symbols = self.candle_mgr.get_all_symbols()
+        symbols_match = set(df_exginfo['symbol']) == set(symbols)
+
+        if symbols_match:
+            logging.info(f'Symbols match {symbols_match}')
+        else:
+            raise RuntimeError(
+                f'Syms mismatch {set(df_exginfo["symbol"]) - set(symbols)} {set(symbols) - set(df_exginfo["symbol"])}')
+
+        for i, symbol in enumerate(symbols):
+            df_candle = await self.market_api.get_candle(symbol, self.interval, limit=self.market_api.MAX_ONCE_CANDLES)
+            df_candle_api = df_candle.iloc[:-1].tail(1400).reset_index(drop=True)
+            df_candle_fea = self.candle_mgr.read_candle(symbol).tail(1400).reset_index(drop=True)
+            diff_max = (df_candle_api - df_candle_fea).max()
+            check_diff(symbol, diff_max)
+
+        logging.info('All symbols candle correct')
 
 
 async def main(argv):
@@ -86,8 +115,8 @@ async def main(argv):
 
                 candle_mgr = CandleFeatherManager(os.path.join(base_dir, f'{trade_type}_{interval}'))
                 exginfo_mgr = CandleFeatherManager(os.path.join(base_dir, f'exginfo_{interval}'))
-
-                checker = Checker(interval, exginfo_mgr, candle_mgr)
+                market_api = BinanceUsdtFutureMarketApi(session, 12)
+                checker = Checker(interval, exginfo_mgr, candle_mgr, market_api)
                 # await checker.check_ready_in_time(pd.to_datetime('2023-04-06 22:30:00+08:00'))
                 while True:
                     await checker.run_loop()

@@ -20,9 +20,9 @@ class BinanceMarketApi(ABC):
     MAX_ONCE_CANDLES = 1500
     MAX_MINUTE_WEIGHT = 2400
 
-    def __init__(self, aiohttp_session, cande_close_timeout_sec):
+    def __init__(self, aiohttp_session, candle_close_timeout_sec):
         self.session = aiohttp_session
-        self.candle_close_timeout_sec = cande_close_timeout_sec
+        self.candle_close_timeout_sec = candle_close_timeout_sec
 
     @abstractclassmethod
     def parse_syminfo(cls, info):
