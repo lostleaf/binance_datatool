@@ -1,0 +1,12 @@
+{
+    "interval": "1h",
+    "http_timeout_sec": 3,
+    "candle_close_timeout_sec": 12,
+    "trade_type": "usdt_swap",
+    "dingding": {
+        "error": {
+            "access_token": "f06e5.....",
+            "secret": "SEC439...."        
+        }
+    }
+}

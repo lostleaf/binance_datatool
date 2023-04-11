@@ -68,6 +68,7 @@ async def main(argv):
                         await msg_sender.send_message(msg, 'error')
                 except:
                     pass
+            await asyncio.sleep(10)
 
 
 if __name__ == '__main__':
