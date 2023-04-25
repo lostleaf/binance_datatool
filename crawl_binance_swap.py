@@ -30,6 +30,7 @@ async def main(argv):
     trade_type = cfg['trade_type']
     keep_symbols = cfg.get('keep_symbols', None)
     dingding_cfg = cfg.get('dingding', None)
+    fetch_funding_rate = cfg.get('funding_rate', False)
 
     market_api_cls = MARKET_API_DICT[trade_type]
     symbol_filter_cls = SYMBOL_FILTER_DICT[trade_type]
@@ -42,7 +43,7 @@ async def main(argv):
                 symbol_filter = symbol_filter_cls(keep_symbols)
                 candle_mgr = CandleFeatherManager(os.path.join(base_dir, f'{trade_type}_{interval}'))
                 exginfo_mgr = CandleFeatherManager(os.path.join(base_dir, f'exginfo_{interval}'))
-                crawler = Crawler(interval, exginfo_mgr, candle_mgr, market_api, symbol_filter)
+                crawler = Crawler(interval, exginfo_mgr, candle_mgr, market_api, symbol_filter, fetch_funding_rate)
                 msg_sender = DingDingSender(dingding_cfg, session) if dingding_cfg is not None else None
 
                 # 首先获取历史数据
