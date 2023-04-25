@@ -62,6 +62,13 @@ class BinanceMarketApi(ABC):
         '''
         pass
 
+    @abstractmethod
+    async def aioreq_premium_index(self) -> list:
+        '''
+        抽象函数, /premiumIndex 接口具体 http 调用
+        '''
+        pass
+
     async def get_timestamp_and_weight(self) -> Tuple[int, int]:
         '''
         从 /time 接口的返回值中，解析出当前服务器时间和已消耗权重
@@ -69,6 +76,16 @@ class BinanceMarketApi(ABC):
         ts, wei = await async_retry_getter(self.aioreq_timestamp_and_weight)
         ts = pd.to_datetime(ts, unit='ms', utc=True).astimezone(DEFAULT_TZ)
         return ts, wei
+
+    async def get_funding_rate(self) -> pd.DataFrame:
+        data = await self.aioreq_premium_index()
+        # 如果 lastFundingRate 不能转换为浮点数，则转换为 nan
+        data = [{
+            'symbol': d['symbol'],
+            'fundingRate': pd.to_numeric(d['lastFundingRate'], errors='coerce')
+        } for d in data]
+        df = pd.DataFrame.from_records(data)
+        return df
 
     async def get_candle(self, symbol, interval, **kwargs) -> pd.DataFrame:
         '''
@@ -154,6 +171,12 @@ class BinanceUsdtFutureMarketApi(BinanceMarketApi):
             results = await resp.json()
         return results
 
+    async def aioreq_premium_index(self):
+        url = 'https://fapi.binance.com/fapi/v1/premiumIndex'
+        async with self.session.get(url) as resp:
+            results = await resp.json()
+        return results
+
     @classmethod
     def parse_syminfo(cls, info):
         filters = info['filters']
@@ -193,6 +216,12 @@ class BinanceCoinFutureMarketApi(BinanceMarketApi):
 
     async def aioreq_exchange_info(self):
         url = 'https://dapi.binance.com/dapi/v1/exchangeInfo'
+        async with self.session.get(url) as resp:
+            results = await resp.json()
+        return results
+
+    async def aioreq_premium_index(self):
+        url = 'https://dapi.binance.com/dapi/v1/premiumIndex'
         async with self.session.get(url) as resp:
             results = await resp.json()
         return results

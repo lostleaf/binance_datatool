@@ -4,6 +4,7 @@ from market_api import BinanceCoinFutureMarketApi, BinanceUsdtFutureMarketApi
 from crawler import TradingCoinSwapFilter, TradingUsdtSwapFilter
 from util import create_aiohttp_session
 
+
 async def test_coin_market_api():
 
     async with create_aiohttp_session(3) as session:
@@ -18,6 +19,9 @@ async def test_coin_market_api():
         print('Last row of BTC:\n', candles.iloc[-1])
         filter = TradingCoinSwapFilter()
         print('Trading swaps:', filter(syminfo))
+        df_funding = await m.get_funding_rate()
+        print('FundingRates', df_funding.head())
+
 
 async def test_usdt_market_api():
     async with create_aiohttp_session(3) as session:
@@ -30,6 +34,8 @@ async def test_usdt_market_api():
         print('Last row of BTC:\n', candles.iloc[-1])
         filter = TradingUsdtSwapFilter()
         print('Trading swaps:', filter(syminfo))
+        df_funding = await m.get_funding_rate()
+        print('FundingRates', df_funding.head())
 
 
 if __name__ == '__main__':
