@@ -7,7 +7,7 @@ import pandas as pd
 
 from candle_manager import CandleFeatherManager
 from market_api import BinanceMarketApi, BinanceUsdtFutureMarketApi
-from util import async_sleep_until_run_time, next_run_time, now_time
+from util import async_sleep_until_run_time, next_run_time, now_time, parse_interval_str
 
 
 def batched(iterable, n):
@@ -140,8 +140,11 @@ class Crawler:
             df_funding = await self.market_api.get_funding_rate()
             df_funding['time'] = run_time
             if self.exginfo_mgr.has_symbol('funding'):
+                interval_delta = parse_interval_str(self.interval)
                 df_funding_old = self.exginfo_mgr.read_candle('funding')
                 df_funding = pd.concat([df_funding_old, df_funding])
+                min_time = run_time - interval_delta * self.market_api.MAX_ONCE_CANDLES
+                df_funding = df_funding[df_funding['time'] >= min_time]
             self.exginfo_mgr.set_candle('funding', run_time, df_funding)
 
         # 5. 对所有这在交易的 symbol, 调用 self.market_api.fetch_recent_closed_candle 获取最近 5 根 K线
