@@ -35,6 +35,9 @@ async def main(argv):
     market_api_cls = MARKET_API_DICT[trade_type]
     symbol_filter_cls = SYMBOL_FILTER_DICT[trade_type]
 
+    logging.info('interval=%s, type=%s, funding_rate=%r, keep_symbols=%r', interval, trade_type, fetch_funding_rate,
+                 keep_symbols)
+
     while True:
         try:
             async with create_aiohttp_session(http_timeout_sec) as session:
