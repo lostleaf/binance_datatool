@@ -5,7 +5,6 @@ from glob import glob
 import pandas as pd
 
 from util import now_time
-from market_api import BinanceMarketApi
 
 
 class CandleFeatherManager:
@@ -39,7 +38,7 @@ class CandleFeatherManager:
         设置K线，首先将新的K线 DataFrame 写入 Feather，然后删除旧 ready file，并生成新 ready file
         '''
         df_path = os.path.join(self.base_dir, f'{symbol}.fea')
-        df.reset_index(drop=True, inplace=True)
+        df = df.reset_index(drop=True)
         df.to_feather(df_path)
 
         old_ready_file_paths = glob(os.path.join(self.base_dir, f'{symbol}_*.ready'))
@@ -51,7 +50,7 @@ class CandleFeatherManager:
             with open(ready_file_path, 'w') as fout:
                 fout.write(str(now_time()))
 
-    def update_candle(self, symbol, run_time, df_new: pd.DataFrame):
+    def update_candle(self, symbol, run_time, df_new: pd.DataFrame, num_candles):
         '''
         使用新获取的K线，更新 symbol 对应K线 Feather，主要用于每周期K线更新
         '''
@@ -60,10 +59,13 @@ class CandleFeatherManager:
             df: pd.DataFrame = pd.concat([df_old, df_new])
         else:
             df = df_new
-        df.drop_duplicates(subset='candle_begin_time', keep='last', inplace=True)
         df.sort_values('candle_begin_time', inplace=True)
-        df = df.iloc[-BinanceMarketApi.MAX_ONCE_CANDLES:]
+        df.drop_duplicates(subset='candle_begin_time', keep='last', inplace=True)
+        if num_candles is not None:
+            df = df.iloc[-num_candles:]
         self.set_candle(symbol, run_time, df)
+
+        return df
 
     def check_ready(self, symbol, run_time):
         '''

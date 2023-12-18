@@ -4,6 +4,7 @@
     "candle_close_timeout_sec": 12,
     "trade_type": "usdt_swap",
     "funding_rate": true,
+    "num_candles": 10000,
     "dingding": {
         "error": {
             "access_token": "f06e5.....",

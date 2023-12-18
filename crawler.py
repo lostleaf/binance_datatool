@@ -7,7 +7,7 @@ import pandas as pd
 
 from candle_manager import CandleFeatherManager
 from market_api import BinanceMarketApi, BinanceUsdtFutureMarketApi
-from util import async_sleep_until_run_time, next_run_time, now_time, parse_interval_str
+from util import async_sleep_until_run_time, next_run_time, now_time, parse_interval_str, DEFAULT_TZ
 
 
 def batched(iterable, n):
@@ -57,7 +57,7 @@ class TradingCoinSwapFilter:
 
 class Crawler:
 
-    def __init__(self, interval, exginfo_mgr, candle_mgr, market_api, symbol_filter, fetch_funding_rate):
+    def __init__(self, interval, exginfo_mgr, candle_mgr, market_api, symbol_filter, fetch_funding_rate, num_candles):
         '''
         interval: K线周期
         exginfo_mgr: 用于管理 exchange info（合约交易规则）的 CandleFeatherManager
@@ -73,38 +73,85 @@ class Crawler:
         self.exginfo_mgr: CandleFeatherManager = exginfo_mgr
         self.symbol_filter = symbol_filter
         self.fetch_funding_rate = fetch_funding_rate
+        self.num_candles = num_candles
         self.exginfo_mgr.clear_all()
         self.candle_mgr.clear_all()
 
     async def init_history(self):
         '''
         初始化历史阶段 init_history
-        1. 通过调用 self.market_api.get_syminfo 获取所有交易的 symbol, 并根据 symbol_filter 过滤出我们想要的 symbol
-        2. 通过调用 self.market_api.get_candle，请求每个 symbol 最近 1500 根K线（币安最大值）
-        3. 将每个 symbol 获取的 1500 根近期的 K线通过 self.candle_mgr.set_candle 写入文件
         '''
-        syminfo = await self.market_api.get_syminfo()
-        symbols_trading = self.symbol_filter(syminfo)
-        limit = self.market_api.MAX_ONCE_CANDLES
-        cnt = 0
 
-        for sym_batch in batched(symbols_trading, 20):
+        # 1. 通过调用 self.market_api.get_syminfo 获取所有交易的 symbol, 并根据 symbol_filter 过滤出我们想要的 symbol
+        syminfo = await self.market_api.get_syminfo()
+        all_symbols: list = self.symbol_filter(syminfo)
+        limit = self.market_api.WEIGHT_EFFICIENT_ONCE_CANDLES
+        cnt = 0
+        last_begin_time = dict()
+        interval_delta = parse_interval_str(self.interval)
+
+        # 2. 循环分批初始化每个 symbol 历史数据
+        while all_symbols:
+            # 2.1 获取权重和服务器时间，若使用权重到达临界点，sleep 到下一分钟
             server_time, weight = await self.market_api.get_timestamp_and_weight()
-            logging.info(f'Saved symbols: {cnt}, Server time:, {server_time}, Used weight: {weight}')
             if weight > self.market_api.MAX_MINUTE_WEIGHT * 0.9:
                 await async_sleep_until_run_time(next_run_time('1m'))
-            tasks = [self.market_api.get_candle(symbol, self.interval, limit=limit) for symbol in sym_batch]
-            candles = await asyncio.gather(*tasks)
-            for symbol, df in zip(sym_batch, candles):
-                self.candle_mgr.set_candle(symbol, now_time(), df.iloc[:-1])
-            cnt += len(sym_batch)
+                continue
+
+            # 2.2 每批获取还未获取完毕的 80 个 symbol，预计消耗权重 160
+            fetch_symbols = all_symbols[:80]
+            cnt += 1
+            logging.info('Round %d, Server time: %s, Used weight: %d, Symbol num %d, %s - %s', cnt, str(server_time),
+                         weight, len(all_symbols), fetch_symbols[0], fetch_symbols[-1])
+
+            tasks = []
+            for symbol in fetch_symbols:
+                # 默认还没有被获取过
+                end_timestamp = None
+
+                # 已经获取过，接着上次比上次已经获取过更旧的 limit 根
+                if symbol in last_begin_time:
+                    end_timestamp = (last_begin_time[symbol] - interval_delta).value // 1000000
+
+                tasks.append(self.fetch_and_save_history_candle(symbol, end_timestamp))
+
+            results = await asyncio.gather(*tasks)
+
+            # 2.3 更新 symbol 状态
+            round_finished_symbols = []
+            for symbol, (not_enough, begin_time, num) in zip(fetch_symbols, results):
+                last_begin_time[symbol] = begin_time
+
+                # 如果已经获取了足够的 K 线，或 K 线已不足（标的上市时间过短），则不需要继续获取
+                if num >= self.num_candles or not_enough:
+                    all_symbols.remove(symbol)
+                    if num < self.num_candles:
+                        logging.warn('%s finished not enough, candle num: %d', symbol, num)
+                    else:
+                        round_finished_symbols.append(symbol)
+
+            if round_finished_symbols:
+                logging.info('%s finished', str(round_finished_symbols))
 
         server_time, weight = await self.market_api.get_timestamp_and_weight()
-        logging.info(f'Saved symbols: {cnt}, Server time:, {server_time}, Used weight: {weight}')
+        logging.info(f'Init history finished, Server time:, {server_time}, Used weight: {weight}')
+
+    async def fetch_and_save_history_candle(self, symbol, end_timestamp):
+
+        limit = self.market_api.WEIGHT_EFFICIENT_ONCE_CANDLES
+        if end_timestamp is None:
+            candles = await self.market_api.get_candle(symbol, self.interval, limit=limit)
+        else:
+            candles = await self.market_api.get_candle(symbol, self.interval, limit=limit, endTime=end_timestamp)
+        not_enough = candles.shape[0] < limit  # 已经没有足够的 K 线
+        df_candle = self.candle_mgr.update_candle(symbol, now_time(), candles, self.num_candles)
+        begin_time = df_candle['candle_begin_time'].min()
+        num = df_candle.shape[0]
+        return not_enough, begin_time, num
 
     async def fetch_and_save_recent_closed_candle(self, symbol, run_time):
         df_new, is_closed = await self.market_api.fetch_recent_closed_candle(symbol, self.interval, run_time)
-        self.candle_mgr.update_candle(symbol, run_time, df_new)
+        self.candle_mgr.update_candle(symbol, run_time, df_new, self.num_candles)
         return is_closed
 
     async def run_loop(self):

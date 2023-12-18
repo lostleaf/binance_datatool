@@ -24,6 +24,9 @@ class BinanceMarketApi(ABC):
     # 每次最多获取的K线数量
     MAX_ONCE_CANDLES = 1500
 
+    # 最省权重的K线数量，https://binance-docs.github.io/apidocs/futures/en/#kline-candlestick-data
+    WEIGHT_EFFICIENT_ONCE_CANDLES = 499
+
     # 每分钟权重上限
     MAX_MINUTE_WEIGHT = 2400
 
@@ -69,7 +72,7 @@ class BinanceMarketApi(ABC):
         '''
         pass
 
-    async def get_timestamp_and_weight(self) -> Tuple[int, int]:
+    async def get_timestamp_and_weight(self) -> Tuple[pd.Timestamp, int]:
         '''
         从 /time 接口的返回值中，解析出当前服务器时间和已消耗权重
         '''
