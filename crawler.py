@@ -54,6 +54,23 @@ class TradingCoinSwapFilter:
             symbols = [sym for sym in symbols if sym in self.keep_symbols]
         return symbols
 
+class TradingUsdtSpotFilter:
+
+    def __init__(self, keep_symbols=None):
+        self.keep_symbols = set(keep_symbols) if keep_symbols else None
+
+    @classmethod
+    def is_trading_usdt_spot(cls, x):
+        '''
+        筛选出所有USDT本位的，正在被交易的(TRADING)，现货（Spot）
+        '''
+        return x['quote_asset'] == 'USDT' and x['status'] == 'TRADING' and not x['base_asset'].endswith(('UP', 'DOWN', 'BEAR', 'BULL'))
+
+    def __call__(self, syminfo: dict) -> list:
+        symbols = [info['symbol'] for info in syminfo.values() if self.is_trading_usdt_spot(info)]
+        if self.keep_symbols is not None:  # 如有白名单，则只保留白名单内的
+            symbols = [sym for sym in symbols if sym in self.keep_symbols]
+        return symbols
 
 class Crawler:
 

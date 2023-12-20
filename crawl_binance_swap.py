@@ -5,16 +5,24 @@ import os
 import sys
 
 from candle_manager import CandleFeatherManager
-from crawler import Crawler, TradingCoinSwapFilter, TradingUsdtSwapFilter
+from crawler import Crawler, TradingCoinSwapFilter, TradingUsdtSwapFilter, TradingUsdtSpotFilter
 from dingding import DingDingSender
-from market_api import BinanceCoinFutureMarketApi, BinanceUsdtFutureMarketApi
+from market_api import BinanceCoinFutureMarketApi, BinanceUsdtFutureMarketApi, BinanceUsdtSpotMarketApi
 from util import create_aiohttp_session, now_time
 
 logging.basicConfig(format='%(asctime)s (%(levelname)s) - %(message)s', level=logging.INFO, datefmt='%Y%m%d %H:%M:%S')
 
-MARKET_API_DICT = {'usdt_swap': BinanceUsdtFutureMarketApi, 'coin_swap': BinanceCoinFutureMarketApi}
+MARKET_API_DICT = {
+    'usdt_swap': BinanceUsdtFutureMarketApi,
+    'coin_swap': BinanceCoinFutureMarketApi,
+    'usdt_spot': BinanceUsdtSpotMarketApi
+}
 
-SYMBOL_FILTER_DICT = {'usdt_swap': TradingUsdtSwapFilter, 'coin_swap': TradingCoinSwapFilter}
+SYMBOL_FILTER_DICT = {
+    'usdt_swap': TradingUsdtSwapFilter,
+    'coin_swap': TradingCoinSwapFilter,
+    'usdt_spot': TradingUsdtSpotFilter
+}
 
 
 async def main(argv):
