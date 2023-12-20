@@ -242,3 +242,46 @@ class BinanceCoinFutureMarketApi(BinanceMarketApi):
             'price_tick': Decimal(get_from_filters(filters, 'PRICE_FILTER', 'tickSize')),
             'face_value': Decimal(get_from_filters(filters, 'LOT_SIZE', 'stepSize'))
         }
+
+class BinanceUsdtSpotMarketApi(BinanceMarketApi):
+
+    async def aioreq_timestamp_and_weight(self):
+        url = 'https://api.binance.com/api/v3/time'
+        async with self.session.get(url) as resp:
+            weight = int(resp.headers['X-MBX-USED-WEIGHT-1M'])
+            timestamp = (await resp.json())['serverTime']
+        return timestamp, weight
+
+    async def aioreq_candle(self, symbol, interval, **kwargs):
+        params = {
+            'symbol': symbol,
+            'interval': interval,
+        }
+        params.update(kwargs)
+        url = 'https://api.binance.com/api/v3/klines'
+
+        async with self.session.get(url, params=params) as resp:
+            results = await resp.json()
+        return results
+
+    async def aioreq_exchange_info(self):
+        url = 'https://api.binance.com/api/v3/exchangeInfo'
+        async with self.session.get(url) as resp:
+            results = await resp.json()
+        return results
+
+    async def aioreq_premium_index(self):
+        pass
+
+    @classmethod
+    def parse_syminfo(cls, info):
+        filters = info['filters']
+        return {
+            'symbol': info['symbol'],
+            'status': info['status'],
+            'base_asset': info['baseAsset'],
+            'quote_asset': info['quoteAsset'],
+            'price_tick': Decimal(get_from_filters(filters, 'PRICE_FILTER', 'tickSize')),
+            'face_value': Decimal(get_from_filters(filters, 'LOT_SIZE', 'stepSize')),
+            'min_notional_value': Decimal(get_from_filters(filters, 'NOTIONAL', 'minNotional'))
+        }
