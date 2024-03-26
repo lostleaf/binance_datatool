@@ -4,6 +4,7 @@ import hashlib
 import shutil
 from collections import defaultdict
 from glob import glob
+from pathlib import Path
 
 import pandas as pd
 from joblib import delayed, Parallel
@@ -37,7 +38,8 @@ async def get_aws_candle(type_, symbol, time_interval):
 
     logging.info('%d files missing, downloading', len(missing_file_paths))
 
-    aws_download_into_folder(missing_file_paths, local_dir)
+    if missing_file_paths:
+        aws_download_into_folder(missing_file_paths, local_dir)
 
 
 def _read_aws_futures_candle_csv(p):
@@ -71,19 +73,32 @@ def _verify(data_path, candles_per_day):
         checksum_value = hashlib.sha256(data).hexdigest()
 
     if checksum_value != checksum_standard:
-        # print('Checksum error', data_path)
+        logging.error('Checksum error %s', data_path)
         return False
 
     try:
         df = _read_aws_futures_candle_csv(data_path)
     except:
+        logging.error('Cannot read csv %s', data_path)
         return False
 
-    if len(df) != candles_per_day:
-        # print('Num of candles error', len(df), data_path)
+    if candles_per_day is not None and len(df) != candles_per_day:
+        logging.error('Num of candles error %d %s', len(df), data_path)
         return False
 
     return True
+
+
+def verify_all_candle(type_, time_interval):
+    local_dirs = glob(
+        os.path.join(
+            Config.BINANCE_DATA_DIR,
+            'aws_data',
+            aws_get_candle_dir(type_, '*', time_interval, local=True),
+        ))
+    symbols = [Path(os.path.normpath(d)).parts[-2] for d in local_dirs]
+    for symbol in symbols:
+        verify_candle(type_, symbol, time_interval)
 
 
 def verify_candle(type_, symbol, time_interval):
@@ -91,7 +106,7 @@ def verify_candle(type_, symbol, time_interval):
                              aws_get_candle_dir(type_, symbol, time_interval, local=True))
     logging.info('Local directory %s', local_dir)
 
-    paths = glob(os.path.join(local_dir, '*.zip'))
+    paths = sorted(glob(os.path.join(local_dir, '*.zip')))
     unverified_paths = []
 
     for p in paths:
@@ -100,11 +115,21 @@ def verify_candle(type_, symbol, time_interval):
             unverified_paths.append(p)
 
     logging.info('%d files to be verified', len(unverified_paths))
+    if not unverified_paths:
+        return
 
     candles_per_day = round(pd.Timedelta(days=1) / convert_interval_to_timedelta(time_interval))
     logging.info('Time interval %s, %d candles per day', time_interval, candles_per_day)
-    results = Parallel(n_jobs=os.cpu_count() - 1)(delayed(_verify)(p, candles_per_day) for p in unverified_paths)
 
+    if unverified_paths[0] == paths[0]:
+        # Don't verify num of candles for the first day
+        tasks = [delayed(_verify)(unverified_paths[0], None)]
+    else:
+        tasks = [delayed(_verify)(unverified_paths[0], candles_per_day)]
+
+    tasks.extend([delayed(_verify)(p, candles_per_day) for p in unverified_paths[1:]])
+
+    results = Parallel(n_jobs=os.cpu_count() - 1)(tasks)
     for unverified_path, verify_success in zip(unverified_paths, results):
         if verify_success:
             with open(unverified_path + '.verified', 'w') as fout:
