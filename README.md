@@ -9,6 +9,8 @@ Currently, the services included are:
 
 Please refer to the `environment.yml` file for the setup of the conda environment.
 
+By default, the BHDS service uses `$HOME/crypto_data` as the base directory. All data will be downloaded into this base directory. The base directory can be changed by setting the environment variable `CRYPTO_BASE_DIR`.
+
 The BHDS service requires `aria2`, a lightweight cross-platform download utility. 
 Linux/MacOS x86_64 users may install it with `conda` or through system package managers:
 
