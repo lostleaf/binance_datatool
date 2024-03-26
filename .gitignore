@@ -1,6 +1,5 @@
 sync.sh
-run.sh
-*_5m_example/*_5m
-*example/config.json
 *.pyc
 .DS_Store
+.vscode
+example/*/config.json
