@@ -12,7 +12,7 @@ class Bhds:
 
     def get_aws_candle(self, typ, time_interval, *symbols):
         """
-        Download candlestick data from Binance's AWS data center
+        Download daily candlestick data from Binance's AWS data center. All available dates will be downloaded.
         """
         for symbol in symbols:
             asyncio.run(get_aws_candle(typ, symbol, time_interval))
