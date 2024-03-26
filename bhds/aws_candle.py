@@ -164,7 +164,7 @@ def convert_aws_candle_csv(type_, time_interval):
         sym = p.split(os.sep)[-3]
         sym_paths[sym].append(p)
 
-    print(sym_paths.keys())
+    logging.info('Symbols %s', list(sym_paths.keys()))
 
     odir = os.path.join(Config.BINANCE_DATA_DIR, 'candle_feather', type_, time_interval)
     if os.path.exists(odir):
