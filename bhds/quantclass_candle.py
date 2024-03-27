@@ -53,5 +53,4 @@ def convert_quantclass_candle_csv(type_, time_interval):
         symbol = os.path.splitext(os.path.basename(p))[0].replace('-', '')
         sym_files[symbol].append(p)
 
-    n_jobs = os.cpu_count() - 1
-    Parallel(n_jobs=n_jobs, verbose=1)(delayed(convert_symbol)(sym, odir, fs) for sym, fs in sym_files.items())
+    Parallel(n_jobs=Config.N_JOBS, verbose=1)(delayed(convert_symbol)(sym, odir, fs) for sym, fs in sym_files.items())

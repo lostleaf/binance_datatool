@@ -133,7 +133,7 @@ def verify_candle(type_, symbol, time_interval):
 
     tasks.extend([delayed(_verify)(p, candles_per_day) for p in unverified_paths[1:]])
 
-    results = Parallel(n_jobs=os.cpu_count() - 1)(tasks)
+    results = Parallel(n_jobs=Config.N_JOBS)(tasks)
     for unverified_path, verify_success in zip(unverified_paths, results):
         if verify_success:
             with open(unverified_path + '.verified', 'w') as fout:
@@ -176,5 +176,4 @@ def convert_aws_candle_csv(type_, time_interval):
         shutil.rmtree(odir)
     os.makedirs(odir)
 
-    n_jobs = os.cpu_count() - 1
-    Parallel(n_jobs=n_jobs, verbose=1)(delayed(convert_symbol)(s, odir, ps) for s, ps, in sym_paths.items())
+    Parallel(n_jobs=Config.N_JOBS, verbose=1)(delayed(convert_symbol)(s, odir, ps) for s, ps, in sym_paths.items())
