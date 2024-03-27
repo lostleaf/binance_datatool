@@ -71,3 +71,28 @@ python cli.py bhds verify_all_candle usdt_futures 1h
 # Convert and merge into a single Feather file
 python cli.py bhds convert_aws_candle_csv usdt_futures 1h
 ```
+
+After the download procedure has successfully finished, the directory structure under `$CRYPTO_BASE_DIR` should look like:
+
+```
+.
+├── binance_data
+│   ├── aws_data
+│   │   └── data
+│   │       └── futures
+│   │           └── um
+│   │               └── daily
+│   │                   └── klines
+│   │                       ├── BTCUSDT
+│   │                       │   └── 1h  [4641 entries exceeds filelimit, not opening dir]
+│   │                       ├── ETHUSDT
+│   │                       │   └── 1h  [4641 entries exceeds filelimit, not opening dir]
+│   │                       └── LTCUSDT
+│   │                           └── 1h  [4614 entries exceeds filelimit, not opening dir]
+│   └── candle_feather
+│       └── usdt_futures
+│           └── 1h
+│               ├── BTCUSDT.fea
+│               ├── ETHUSDT.fea
+│               └── LTCUSDT.fea
+```
