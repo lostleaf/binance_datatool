@@ -1,6 +1,6 @@
 import asyncio
 
-from .aws_candle import convert_aws_candle_csv, get_aws_candle, verify_all_candle
+from .aws_candle import convert_aws_candle_csv, get_aws_candle, verify_aws_candle
 from .quantclass_candle import convert_quantclass_candle_csv
 from .compare import compare_aws_quantclass_candle
 
@@ -19,11 +19,11 @@ class Bhds:
         for symbol in symbols:
             asyncio.run(get_aws_candle(typ, symbol, time_interval))
 
-    def verify_all_candle(self, typ, time_interval):
+    def verify_aws_candle(self, typ, time_interval):
         """
-        Verifies the integrity of all candlestick data and deletes incorrect data.
+        Verifies the integrity of all AWS candlestick data and deletes incorrect data.
         """
-        verify_all_candle(typ, time_interval)
+        verify_aws_candle(typ, time_interval)
 
     def convert_aws_candle_csv(self, typ, time_interval):
         """

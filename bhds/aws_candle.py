@@ -64,6 +64,10 @@ def _read_aws_futures_candle_csv(p):
 
 def _verify(data_path, candles_per_day):
     checksum_path = data_path + '.CHECKSUM'
+    if not os.path.exists(checksum_path):
+        logging.error('Checksum file not exists %s', data_path)
+        return False
+    
     with open(checksum_path, 'r') as fin:
         text = fin.read()
     checksum_standard, _ = text.strip().split()
@@ -89,7 +93,7 @@ def _verify(data_path, candles_per_day):
     return True
 
 
-def verify_all_candle(type_, time_interval):
+def verify_aws_candle(type_, time_interval):
     local_dirs = glob(
         os.path.join(
             Config.BINANCE_DATA_DIR,

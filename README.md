@@ -41,14 +41,20 @@ DESCRIPTION
 COMMANDS
     COMMAND is one of the following:
 
+     compare_aws_quantclass_candle
+       Compare AWS candle with Quantclass
+
      convert_aws_candle_csv
        Converts and merges downloaded candlestick data into Pandas Feather format.
+
+     convert_quantclass_candle_csv
+       Converts quantclass candlestick data into Pandas Feather format.
 
      get_aws_candle
        Downloads daily candlestick data from Binance's AWS data center. All available dates will be downloaded.
 
-     verify_all_candle
-       Verifies the integrity of all candlestick data and deletes incorrect data.
+     verify_aws_candle
+       Verifies the integrity of all AWS candlestick data and deletes incorrect data.
 ```
 
 For example, to download 1-hour candlestick data for perpetual contracts BTCUSDT, ETHUSDT, and LTCUSDT from Binance, and then merge them into Pandas Feather format, a suggested download procedure is as follows:
