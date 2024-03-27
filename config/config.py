@@ -7,3 +7,4 @@ _CUR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 class Config:
     BINANCE_DATA_DIR = os.path.join(_BASE_DIR, 'binance_data')
+    BINANCE_QUANTCLASS_DIR = os.path.join(_BASE_DIR, 'binance_quantclass')

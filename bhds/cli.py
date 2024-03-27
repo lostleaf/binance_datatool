@@ -2,7 +2,7 @@ import asyncio
 
 from .aws_candle import convert_aws_candle_csv, get_aws_candle, verify_all_candle
 
-
+from .quantclass_candle import convert_quantclass_candle_csv
 class Bhds:
     """
     Binance Historical Data Service
@@ -28,3 +28,8 @@ class Bhds:
         Converts and merges downloaded candlestick data into Pandas Feather format.
         """
         convert_aws_candle_csv(typ, time_interval)
+    def convert_quantclass_candle_csv(self, typ, time_interval):
+        """
+        Converts quantclass candlestick data into Pandas Feather format.
+        """
+        convert_quantclass_candle_csv(typ, time_interval)
