@@ -67,10 +67,13 @@ def _verify(data_path, candles_per_day):
     if not os.path.exists(checksum_path):
         logging.error('Checksum file not exists %s', data_path)
         return False
-    
-    with open(checksum_path, 'r') as fin:
-        text = fin.read()
-    checksum_standard, _ = text.strip().split()
+    try:
+        with open(checksum_path, 'r') as fin:
+            text = fin.read()
+        checksum_standard, _ = text.strip().split()
+    except:
+        logging.error('Error reading checksum file', checksum_path)
+        return False
 
     with open(data_path, 'rb') as file_to_check:
         data = file_to_check.read()
