@@ -143,8 +143,11 @@ def verify_candle(type_, symbol, time_interval):
                 fout.write('')
         else:
             logging.warning('%s failed to verify, deleting', unverified_path)
-            os.remove(unverified_path)
-            os.remove(unverified_path + '.CHECKSUM')
+            if os.path.exists(unverified_path):
+                os.remove(unverified_path)
+            checksum_path = unverified_path + '.CHECKSUM'
+            if os.path.exists(checksum_path):
+                os.remove(checksum_path)
 
 
 def convert_symbol(symbol, output_dir, paths):
