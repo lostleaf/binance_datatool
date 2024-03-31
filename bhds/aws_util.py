@@ -27,14 +27,27 @@ def parse_aws_dt_from_filepath(p):
     return dt
 
 
-def aws_get_candle_dir(type_, symbol, time_interval, local=False):
-    path_tokens = AWS_TYPE_MAP[type_] + ['daily', 'klines', symbol, time_interval]
+def aws_filter_recent_dates(paths, recent):
+    zip_paths = [p for p in paths if p.endswith('.zip')]
+    zip_paths = zip_paths[-recent:]
+    checksum_paths = [p for p in paths if p.endswith('.CHECKSUM') and p.replace('.CHECKSUM', '') in zip_paths]
+    return sorted(zip_paths + checksum_paths)
 
+
+def _get_dir(path_tokens, local):
     if local:
         return os.path.join(*path_tokens) + os.sep
 
     # As AWS web path
     return '/'.join(path_tokens) + '/'
+
+
+def aws_get_candle_dir(type_, symbol, time_interval, local=False):
+    return _get_dir(AWS_TYPE_MAP[type_] + ['daily', 'klines', symbol, time_interval], local)
+
+
+def aws_get_aggtrades_dir(type_, symbol, local=False):
+    return _get_dir(AWS_TYPE_MAP[type_] + ['daily', 'aggTrades', symbol], local)
 
 
 async def _aio_get(session: aiohttp.ClientSession, url):
@@ -78,3 +91,28 @@ def aws_download_into_folder(paths, output_dir):
     cmd = ['aria2c', '-c', '-d', output_dir, '-Z'] + paths
 
     subprocess.run(cmd)
+
+
+def aws_download_symbol_files(symbol_to_dpath, symbol_to_lddir, dpath_to_aws_paths):
+    for symbol, dir_path in symbol_to_dpath.items():
+        local_dir = symbol_to_lddir[symbol]
+        logging.info('Download candle from %s', dir_path)
+        logging.info('Local directory %s', local_dir)
+
+        if not os.path.exists(local_dir):
+            logging.warning('Local directory not exists, creating')
+            os.makedirs(local_dir)
+
+        aws_paths = dpath_to_aws_paths[dir_path]
+        local_filenames = set(os.listdir(local_dir))
+        missing_file_paths = []
+
+        for aws_path in aws_paths:
+            filename = os.path.basename(aws_path)
+            if filename not in local_filenames:
+                missing_file_paths.append(aws_path)
+
+        logging.info('%d files missing, downloading', len(missing_file_paths))
+
+        if missing_file_paths:
+            aws_download_into_folder(missing_file_paths, local_dir)
