@@ -11,35 +11,38 @@ from joblib import delayed, Parallel
 
 from config import Config
 
-from .aws_util import aws_download_into_folder, aws_list_dir, aws_get_candle_dir
+from .aws_util import aws_download_into_folder, aws_list_dir, aws_get_candle_dir, aws_batch_list_dir
 from util import convert_interval_to_timedelta
 
 
-async def get_aws_candle(type_, symbol, time_interval):
-    dir_path = aws_get_candle_dir(type_, symbol, time_interval)
-    logging.info('Download candle from %s', dir_path)
+async def get_aws_candle(type_, time_interval, symbols):
+    symbol_to_dpath = {sym: aws_get_candle_dir(type_, sym, time_interval) for sym in symbols}
+    dpath_to_aws_paths = await aws_batch_list_dir(symbol_to_dpath.values())
+    for symbol, dir_path in symbol_to_dpath.items():
+        dir_path = aws_get_candle_dir(type_, symbol, time_interval)
+        logging.info('Download candle from %s', dir_path)
 
-    local_dir = os.path.join(Config.BINANCE_DATA_DIR, 'aws_data',
-                             aws_get_candle_dir(type_, symbol, time_interval, local=True))
-    logging.info('Local directory %s', local_dir)
+        local_dir = os.path.join(Config.BINANCE_DATA_DIR, 'aws_data',
+                                 aws_get_candle_dir(type_, symbol, time_interval, local=True))
+        logging.info('Local directory %s', local_dir)
 
-    if not os.path.exists(local_dir):
-        logging.warning('Local directory not exists, creating')
-        os.makedirs(local_dir)
+        if not os.path.exists(local_dir):
+            logging.warning('Local directory not exists, creating')
+            os.makedirs(local_dir)
 
-    aws_paths = await aws_list_dir(dir_path)
-    local_filenames = set(os.listdir(local_dir))
-    missing_file_paths = []
+        aws_paths = dpath_to_aws_paths[dir_path]
+        local_filenames = set(os.listdir(local_dir))
+        missing_file_paths = []
 
-    for aws_path in aws_paths:
-        filename = os.path.basename(aws_path)
-        if filename not in local_filenames:
-            missing_file_paths.append(aws_path)
+        for aws_path in aws_paths:
+            filename = os.path.basename(aws_path)
+            if filename not in local_filenames:
+                missing_file_paths.append(aws_path)
 
-    logging.info('%d files missing, downloading', len(missing_file_paths))
+        logging.info('%d files missing, downloading', len(missing_file_paths))
 
-    if missing_file_paths:
-        aws_download_into_folder(missing_file_paths, local_dir)
+        if missing_file_paths:
+            aws_download_into_folder(missing_file_paths, local_dir)
 
 
 def _read_aws_futures_candle_csv(p):
