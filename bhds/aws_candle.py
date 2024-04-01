@@ -106,10 +106,12 @@ def verify_candle(type_, symbol, time_interval, verify_num):
         if not os.path.exists(verify_file):
             unverified_paths.append(p)
 
-    candles_per_day = None
     if verify_num:
         candles_per_day = round(pd.Timedelta(days=1) / convert_interval_to_timedelta(time_interval))
-    logging.info('Time interval %s, %d candles per day', time_interval, candles_per_day)
+        logging.info('Time interval %s, %d candles per day', time_interval, candles_per_day)
+    else:
+        candles_per_day = None
+        logging.info('Will not be verified number of candles')
 
     logging.info('%d files to be verified', len(unverified_paths))
     if not unverified_paths:
