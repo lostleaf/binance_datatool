@@ -31,6 +31,9 @@ def compare_aws_quantclass_candle(type_, time_interval, symbol):
     df_qtc = df_qtc[df_qtc['candle_begin_time'].between(begin_ts, end_ts)]
     logging.info('Trimmed shape %s Quantclass', df_qtc.shape)
 
+    ts_intersect = set(df_aws['candle_begin_time']).intersection(set(df_qtc['candle_begin_time']))
+    logging.info('Intersecion num candle_begin_time %s', len(ts_intersect)) 
+ 
     df = df_aws.join(df_qtc.set_index('candle_begin_time'), on='candle_begin_time', rsuffix='_qtc')
 
     cols = [
