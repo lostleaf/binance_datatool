@@ -57,9 +57,9 @@ class BinanceBaseApi:
     async def _aio_get(self, url, params):
         if params is None:
             params = {}
-        async with self.session.get(url, params=params, headers=self.headers) as resp:
+        async with self.session.get(url, params=params) as resp:
             return await self._handle_response(resp)
 
     async def _aio_post(self, url, params):
-        async with self.session.post(url, data=params, headers=self.headers) as resp:
+        async with self.session.post(url, data=params) as resp:
             return await self._handle_response(resp)

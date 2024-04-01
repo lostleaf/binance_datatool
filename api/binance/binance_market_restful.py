@@ -4,11 +4,25 @@ API keys are not required here
 '''
 
 from typing import Tuple
+from abc import ABC, abstractmethod
 
 from .basics import BinanceBaseApi
 
+class BinanceBaseMarketApi(ABC, BinanceBaseApi):
+    @abstractmethod
+    async def aioreq_time_and_weight(self) -> Tuple[int, int]:
+        pass
 
-class BinanceMarketUMFapi(BinanceBaseApi):
+    @abstractmethod
+    async def aioreq_klines(self, **kwargs) -> list:
+        pass
+
+    @abstractmethod
+    async def aioreq_exchange_info(self) -> dict:
+        pass
+
+
+class BinanceMarketUMFapi(BinanceBaseMarketApi):
     """
     Abstraction for binance USDⓈ-M Futures Fapi market endpoints
     """
@@ -62,14 +76,14 @@ class BinanceMarketUMFapi(BinanceBaseApi):
         return await self._aio_get(url, kwargs)
 
 
-class BinanceMarketCMDapi(BinanceBaseApi):
+class BinanceMarketCMDapi(BinanceBaseMarketApi):
     """
     Abstraction for Binance COIN-M Futures Dapi market endpoints
     """
 
     PREFIX = 'https://dapi.binance.com/dapi'
 
-    async def aioreq_timestamp_and_weight(self) -> Tuple[int, int]:
+    async def aioreq_time_and_weight(self) -> Tuple[int, int]:
         """
         Get the current server time and consumed weight
         """
@@ -79,7 +93,7 @@ class BinanceMarketCMDapi(BinanceBaseApi):
             timestamp = (await resp.json())['serverTime']
         return timestamp, weight
 
-    async def aioreq_candle(self, **kwargs) -> list:
+    async def aioreq_klines(self, **kwargs) -> list:
         """
         Get Kline/candlestick bars for a symbol.
         Klines are uniquely identified by their open time.
@@ -109,14 +123,14 @@ class BinanceMarketCMDapi(BinanceBaseApi):
         return await self._aio_get(url, kwargs)
 
 
-class BinanceMarketSpotApi(BinanceBaseApi):
+class BinanceMarketSpotApi(BinanceBaseMarketApi):
     """
     Abstraction for Binance Spot Api market endpoints
     """
 
     PREFIX = 'https://api.binance.com/api'
 
-    async def aioreq_timestamp_and_weight(self) -> Tuple[int, int]:
+    async def aioreq_time_and_weight(self) -> Tuple[int, int]:
         """
         Get the current server time and consumed weight
         """
@@ -126,7 +140,7 @@ class BinanceMarketSpotApi(BinanceBaseApi):
             timestamp = (await resp.json())['serverTime']
         return timestamp, weight
 
-    async def aioreq_candle(self, **kwargs):
+    async def aioreq_klines(self, **kwargs):
         """
         Get Kline/candlestick bars for a symbol.
         Klines are uniquely identified by their open time.

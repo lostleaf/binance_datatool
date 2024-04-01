@@ -1,1 +1,1 @@
-from .binance_market_restful import BinanceMarketCMDapi, BinanceMarketUMFapi
+from .binance_market_restful import BinanceMarketCMDapi, BinanceMarketUMFapi, BinanceMarketSpotApi, BinanceBaseMarketApi
