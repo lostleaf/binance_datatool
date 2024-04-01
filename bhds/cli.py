@@ -25,11 +25,11 @@ class Bhds:
         """
         asyncio.run(get_aws_aggtrades(typ, recent, symbols))
 
-    def verify_aws_candle(self, typ, time_interval):
+    def verify_aws_candle(self, typ, time_interval, verify_num=False):
         """
         Verifies the integrity of all AWS candlestick data and deletes incorrect data.
         """
-        verify_aws_candle(typ, time_interval)
+        verify_aws_candle(typ, time_interval, verify_num)
 
     def convert_aws_candle_csv(self, typ, time_interval):
         """

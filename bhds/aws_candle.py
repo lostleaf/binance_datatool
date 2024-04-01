@@ -81,7 +81,7 @@ def _verify(data_path, candles_per_day):
     return True
 
 
-def verify_aws_candle(type_, time_interval):
+def verify_aws_candle(type_, time_interval, verify_num):
     local_dirs = glob(
         os.path.join(
             Config.BINANCE_DATA_DIR,
@@ -90,10 +90,10 @@ def verify_aws_candle(type_, time_interval):
         ))
     symbols = [Path(os.path.normpath(d)).parts[-2] for d in local_dirs]
     for symbol in symbols:
-        verify_candle(type_, symbol, time_interval)
+        verify_candle(type_, symbol, time_interval, verify_num)
 
 
-def verify_candle(type_, symbol, time_interval):
+def verify_candle(type_, symbol, time_interval, verify_num):
     local_dir = os.path.join(Config.BINANCE_DATA_DIR, 'aws_data',
                              aws_get_candle_dir(type_, symbol, time_interval, local=True))
     logging.info('Local directory %s', local_dir)
@@ -106,12 +106,14 @@ def verify_candle(type_, symbol, time_interval):
         if not os.path.exists(verify_file):
             unverified_paths.append(p)
 
+    candles_per_day = None
+    if verify_num:
+        candles_per_day = round(pd.Timedelta(days=1) / convert_interval_to_timedelta(time_interval))
+    logging.info('Time interval %s, %d candles per day', time_interval, candles_per_day)
+
     logging.info('%d files to be verified', len(unverified_paths))
     if not unverified_paths:
         return
-
-    candles_per_day = round(pd.Timedelta(days=1) / convert_interval_to_timedelta(time_interval))
-    logging.info('Time interval %s, %d candles per day', time_interval, candles_per_day)
 
     if unverified_paths[0] == paths[0]:
         # Don't verify num of candles for the first day
