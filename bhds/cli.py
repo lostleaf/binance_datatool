@@ -1,6 +1,6 @@
 import asyncio
 
-from .aws_candle import convert_aws_candle_csv, get_aws_candle, verify_aws_candle
+from .aws_candle import convert_aws_candle_csv, get_aws_candle, verify_aws_candle, get_aws_all_coin_perpetual, get_aws_all_usdt_perpetual
 from .aws_trades import get_aws_aggtrades
 from .quantclass_candle import convert_quantclass_candle_csv
 from .compare import compare_aws_quantclass_candle
@@ -18,6 +18,18 @@ class Bhds:
         Downloads daily candlestick data from Binance's AWS data center. All available dates will be downloaded.
         """
         asyncio.run(get_aws_candle(typ, time_interval, symbols))
+
+    def get_aws_all_coin_perpetual(self, time_interval):
+        """
+        Downloads all coin perpetual daily candlestick data from Binance's AWS data center.
+        """
+        asyncio.run(get_aws_all_coin_perpetual(time_interval))
+
+    def get_aws_all_usdt_perpetual(self, time_interval):
+        """
+        Downloads all USDT perpetual daily candlestick data from Binance's AWS data center.
+        """
+        asyncio.run(get_aws_all_usdt_perpetual(time_interval))
 
     def get_aws_aggtrades(self, typ, recent=30, *symbols):
         """

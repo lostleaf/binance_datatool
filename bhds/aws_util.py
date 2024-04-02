@@ -75,7 +75,7 @@ async def _list_dir(session, path):
 
 async def aws_list_dir(path):
     async with create_aiohttp_session(AWS_TIMEOUT_SEC) as session:
-        return _list_dir(session, path)
+        return await _list_dir(session, path)
 
 
 async def aws_batch_list_dir(paths):

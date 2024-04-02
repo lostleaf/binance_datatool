@@ -12,7 +12,7 @@ from joblib import delayed, Parallel
 from bhds.aws_util import aws_download_symbol_files
 from config import Config
 
-from .aws_util import aws_get_candle_dir, aws_batch_list_dir
+from .aws_util import aws_get_candle_dir, aws_batch_list_dir, aws_list_dir
 from util import convert_interval_to_timedelta
 
 
@@ -25,6 +25,22 @@ async def get_aws_candle(type_, time_interval, symbols):
     }
     dpath_to_aws_paths = await aws_batch_list_dir(symbol_to_dpath.values())
     aws_download_symbol_files(symbol_to_dpath, symbol_to_lddir, dpath_to_aws_paths)
+
+
+async def get_aws_all_coin_perpetual(time_interval):
+    d = aws_get_candle_dir('coin_futures', '', '')[:-2]
+    paths = await aws_list_dir(d)
+    symbols = [Path(os.path.normpath(p)).parts[-1] for p in paths]
+    symbols_perp = [s for s in symbols if s.endswith('_PERP')]
+    await get_aws_candle('coin_futures', time_interval, symbols_perp)
+
+
+async def get_aws_all_usdt_perpetual(time_interval):
+    d = aws_get_candle_dir('usdt_futures', '', '')[:-2]
+    paths = await aws_list_dir(d)
+    symbols = [Path(os.path.normpath(p)).parts[-1] for p in paths]
+    symbols_perp = [s for s in symbols if s.endswith('USDT')]
+    await get_aws_candle('usdt_futures', time_interval, symbols_perp)
 
 
 def _read_aws_futures_candle_csv(p):
