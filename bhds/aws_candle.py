@@ -1,27 +1,26 @@
+import hashlib
 import logging
 import os
-import hashlib
 import shutil
 from collections import defaultdict
 from glob import glob
 from pathlib import Path
 
 import pandas as pd
-from joblib import delayed, Parallel
+from joblib import Parallel, delayed
 
 from bhds.aws_util import aws_download_symbol_files
 from config import Config
-
-from .aws_util import aws_get_candle_dir, aws_batch_list_dir, aws_list_dir
 from util import convert_interval_to_timedelta
+
+from .aws_util import aws_batch_list_dir, aws_get_candle_dir, aws_list_dir
 
 
 async def get_aws_candle(type_, time_interval, symbols):
     symbol_to_dpath = {sym: aws_get_candle_dir(type_, sym, time_interval) for sym in symbols}
     prefix_dir = os.path.join(Config.BINANCE_DATA_DIR, 'aws_data')
     symbol_to_lddir = {
-        sym: os.path.join(prefix_dir, aws_get_candle_dir(type_, sym, time_interval, local=True))
-        for sym in symbols
+        sym: os.path.join(prefix_dir, aws_get_candle_dir(type_, sym, time_interval, local=True)) for sym in symbols
     }
     dpath_to_aws_paths = await aws_batch_list_dir(symbol_to_dpath.values())
     aws_download_symbol_files(symbol_to_dpath, symbol_to_lddir, dpath_to_aws_paths)
@@ -42,6 +41,22 @@ async def get_aws_all_usdt_perpetual(time_interval):
     symbols_perp = [s for s in symbols if s.endswith('USDT')]
     await get_aws_candle('usdt_futures', time_interval, symbols_perp)
 
+
+async def get_aws_all_usdt_spot(time_interval):
+    d = aws_get_candle_dir('spot', '', '')[:-2]
+    paths = await aws_list_dir(d)
+    symbols = [Path(os.path.normpath(p)).parts[-1] for p in paths]
+    symbols = [s for s in symbols if s.endswith('USDT')]
+
+    lev_symbols = [x for x in symbols if x.endswith(('UPUSDT', 'DOWNUSDT', 'BEARUSDT', 'BULLUSDT')) and x != 'JUPUSDT']
+    logging.info('Skip leverage tokens %s', lev_symbols)
+
+    stables = ('BKRWUSDT', 'USDCUSDT', 'USDPUSDT', 'TUSDUSDT', 'BUSDUSDT', 'FDUSDUSDT', 'DAIUSDT', 'EURUSDT', 'GBPUSDT',
+               'USBPUSDT', 'SUSDUSDT', 'PAXGUSDT')
+    logging.info('Skip stable coins %s', stables)
+    symbols = sorted(set(symbols) - set(lev_symbols) - set(stables))
+    logging.info('Download %s', symbols)
+    await get_aws_candle('spot', time_interval, symbols)
 
 def _read_aws_futures_candle_csv(p):
     columns = [
