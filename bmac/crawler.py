@@ -7,7 +7,8 @@ import pandas as pd
 
 from candle_manager import CandleFeatherManager
 from market_api import BinanceMarketApi, BinanceUsdtFutureMarketApi
-from util import async_sleep_until_run_time, next_run_time, now_time, parse_interval_str, DEFAULT_TZ
+from util import async_sleep_until_run_time, next_run_time, parse_interval_str, DEFAULT_TZ
+from util.time import now_time
 
 
 def batched(iterable, n):

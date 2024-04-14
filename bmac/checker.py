@@ -7,8 +7,9 @@ import os
 import pandas as pd
 from dingding import DingDingSender
 from market_api import BinanceUsdtFutureMarketApi, BinanceCoinFutureMarketApi
-from util import async_sleep_until_run_time, create_aiohttp_session, next_run_time, now_time
+from util import async_sleep_until_run_time, create_aiohttp_session, next_run_time
 from candle_manager import CandleFeatherManager
+from util.time import now_time
 
 logging.basicConfig(format='%(asctime)s (%(levelname)s) - %(message)s', level=logging.INFO, datefmt='%Y%m%d %H:%M:%S')
 

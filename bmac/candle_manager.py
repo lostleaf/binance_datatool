@@ -4,7 +4,7 @@ from glob import glob
 
 import pandas as pd
 
-from util import now_time
+from util.time import now_time
 
 
 class CandleFeatherManager:

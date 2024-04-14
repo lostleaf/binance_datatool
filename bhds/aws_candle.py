@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 
 from bhds.aws_util import aws_download_symbol_files
 from config import Config
-from util import convert_interval_to_timedelta
+from util.time import convert_interval_to_timedelta
 
 from .aws_util import aws_batch_list_dir, aws_get_candle_dir, aws_list_dir
 

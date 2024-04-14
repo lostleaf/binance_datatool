@@ -8,7 +8,8 @@ from candle_manager import CandleFeatherManager
 from crawler import Crawler, TradingCoinSwapFilter, TradingUsdtSwapFilter, TradingUsdtSpotFilter
 from dingding import DingDingSender
 from market_api import BinanceCoinFutureMarketApi, BinanceUsdtFutureMarketApi, BinanceUsdtSpotMarketApi
-from util import create_aiohttp_session, now_time
+from util import create_aiohttp_session
+from util.time import now_time
 
 logging.basicConfig(format='%(asctime)s (%(levelname)s) - %(message)s', level=logging.INFO, datefmt='%Y%m%d %H:%M:%S')
 

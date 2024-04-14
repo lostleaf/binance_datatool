@@ -62,11 +62,11 @@ class Bhds:
         """
         convert_aws_candle_csv(typ, time_interval)
 
-    def convert_quantclass_candle_csv(self, typ, time_interval):
+    def convert_quantclass_candle_csv(self, typ, time_interval, fill_gap=True):
         """
         Converts quantclass candlestick data into Pandas Feather format.
         """
-        convert_quantclass_candle_csv(typ, time_interval)
+        convert_quantclass_candle_csv(typ, time_interval, fill_gap)
 
     def compare_aws_quantclass_candle(self, typ, time_interval, *symbols):
         """

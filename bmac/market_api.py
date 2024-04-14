@@ -7,7 +7,8 @@ from typing import Tuple
 
 import pandas as pd
 
-from util import DEFAULT_TZ, async_retry_getter, now_time
+from util import DEFAULT_TZ, async_retry_getter
+from util.time import now_time
 
 
 def get_from_filters(filters, filter_type, field_name):
