@@ -52,11 +52,11 @@ def _fill_gap(df: pd.DataFrame, delta: timedelta, symbol: str) -> pd.DataFrame:
     return df
 
 
-def convert_quantclass_candle_csv(type_, time_interval, fill_gap):
+def convert_quantclass_candle_csv(type_, time_interval):
     logging.info('Convert quantclass candle %s %s', type_, time_interval)
 
     csv_dir = _get_csv_dir(type_, time_interval)
-    output_dir = _create_output_dir(type_, time_interval, fill_gap)
+    output_dir = _create_output_dir(type_, time_interval)
 
     sym_files = _group_csv_files(csv_dir)
 
@@ -64,9 +64,6 @@ def convert_quantclass_candle_csv(type_, time_interval, fill_gap):
 
     def _convert(symbol, files):
         df = pd.concat([_read_quantclass_csv(p) for p in files])
-
-        if fill_gap:
-            df = _fill_gap(df, delta, symbol)
 
         df.sort_values('candle_begin_time', inplace=True)
         df.drop_duplicates(subset=['candle_begin_time'], inplace=True, keep='last')
@@ -98,11 +95,8 @@ def _group_csv_files(csv_dir) -> dict[str, list]:
     return sym_files
 
 
-def _create_output_dir(type_, time_interval, fill_gap):
+def _create_output_dir(type_, time_interval):
     dir_name = 'candle_parquet'
-
-    if fill_gap:
-        dir_name += '_fillgap'
 
     output_dir = os.path.join(Config.BINANCE_QUANTCLASS_DIR, dir_name, type_, time_interval)
 
