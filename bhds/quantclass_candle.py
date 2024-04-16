@@ -49,7 +49,6 @@ def _fill_gap(df: pd.DataFrame, delta: timedelta, symbol: str) -> pd.DataFrame:
     df['trade_num'] = df['trade_num'].fillna(0)
     df['taker_buy_base_asset_volume'] = df['taker_buy_base_asset_volume'].fillna(0)
     df['taker_buy_quote_asset_volume'] = df['taker_buy_quote_asset_volume'].fillna(0)
-
     return df
 
 
@@ -67,7 +66,7 @@ def convert_quantclass_candle_csv(type_, time_interval, fill_gap):
         df = pd.concat([_read_quantclass_csv(p) for p in files])
 
         if fill_gap:
-            _fill_gap(df, delta, symbol)
+            df = _fill_gap(df, delta, symbol)
 
         df.sort_values('candle_begin_time', inplace=True)
         df.drop_duplicates(subset=['candle_begin_time'], inplace=True, keep='last')
@@ -91,8 +90,8 @@ def convert_quantclass_candle_csv(type_, time_interval, fill_gap):
 
 def _group_csv_files(csv_dir) -> dict[str, list]:
     csv_files = glob(os.path.join(csv_dir, f'*.csv')) + glob(os.path.join(csv_dir, '*', f'*.csv'))
-    sym_files = defaultdict(list)
 
+    sym_files = defaultdict(list)
     for p in csv_files:
         symbol = os.path.splitext(os.path.basename(p))[0].replace('-', '')
         sym_files[symbol].append(p)

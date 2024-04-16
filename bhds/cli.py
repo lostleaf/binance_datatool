@@ -64,7 +64,7 @@ class Bhds:
 
     def convert_quantclass_candle_csv(self, typ, time_interval, fill_gap=True):
         """
-        Converts quantclass candlestick data into Pandas Feather format.
+        Converts quantclass candlestick data into Pandas Parquet format.
         """
         convert_quantclass_candle_csv(typ, time_interval, fill_gap)
 
