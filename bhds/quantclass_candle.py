@@ -18,40 +18,6 @@ def _read_quantclass_csv(p):
     return df
 
 
-def _fill_gap(df: pd.DataFrame, delta: timedelta, symbol: str) -> pd.DataFrame:
-
-    # Create a benchmark from begin to end with no gaps
-    first = df['candle_begin_time'].min()
-    last = df['candle_begin_time'].max()
-    benchmark = pd.DataFrame({'candle_begin_time': pd.date_range(first, last, freq=delta)})
-
-    # Merge with benchmark
-    df = pd.merge(left=benchmark, right=df, on='candle_begin_time', how='left', sort=True, indicator=True)
-
-    df_left_only = df[df['_merge'] == 'left_only']
-    if len(df_left_only) > 0:
-        logging.warning('%s has %d gaps', symbol, len(df_left_only))
-
-    df.drop(columns=['_merge'], inplace=True)
-
-    # Fill prices with previous close
-    df['close'] = df['close'].ffill()
-    df['open'] = df['open'].fillna(df['close'])
-    df['high'] = df['high'].fillna(df['close'])
-    df['low'] = df['low'].fillna(df['close'])
-
-    # Fill Vwaps with open
-    df['avg_price_1m'] = df['avg_price_1m'].fillna(df['open'])
-
-    # Fill volumes with 0
-    df['volume'] = df['volume'].fillna(0)
-    df['quote_volume'] = df['quote_volume'].fillna(0)
-    df['trade_num'] = df['trade_num'].fillna(0)
-    df['taker_buy_base_asset_volume'] = df['taker_buy_base_asset_volume'].fillna(0)
-    df['taker_buy_quote_asset_volume'] = df['taker_buy_quote_asset_volume'].fillna(0)
-    return df
-
-
 def convert_quantclass_candle_csv(type_, time_interval):
     logging.info('Convert quantclass candle %s %s', type_, time_interval)
 

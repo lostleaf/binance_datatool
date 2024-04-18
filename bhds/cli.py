@@ -11,6 +11,7 @@ from .aws_candle import (
 from .aws_trades import get_aws_aggtrades
 from .compare import compare_aws_quantclass_candle
 from .quantclass_candle import convert_quantclass_candle_csv
+from .fix_data import check_gaps, fix_candle
 
 
 class Bhds:
@@ -80,3 +81,15 @@ class Bhds:
         """
         for symbol in symbols:
             compare_aws_quantclass_candle(typ, time_interval, symbol)
+
+    def check(self, source, typ, time_interval, hours_threshold=48):
+        """
+        Check and print gaps over hours_threshold
+        """
+        check_gaps(source, typ, time_interval, hours_threshold)
+    
+    def fix_candle(self, source, typ, time_interval):
+        """
+        Split and fill gaps for candlestick data
+        """
+        fix_candle(source, typ, time_interval)

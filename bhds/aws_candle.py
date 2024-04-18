@@ -58,6 +58,7 @@ async def get_aws_all_usdt_spot(time_interval):
     logging.info('Download %s', symbols)
     await get_aws_candle('spot', time_interval, symbols)
 
+
 def _read_aws_futures_candle_csv(p):
     columns = [
         'candle_begin_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_volume', 'trade_num',
