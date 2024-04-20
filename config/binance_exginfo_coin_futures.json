@@ -1,0 +1,162 @@
+{
+  "BTCUSD_PERP": {
+    "price_tick": "0.1",
+    "lot_size": "1"
+  },
+  "ETHUSD_PERP": {
+    "price_tick": "0.01",
+    "lot_size": "1"
+  },
+  "LINKUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "BNBUSD_PERP": {
+    "price_tick": "0.01",
+    "lot_size": "1"
+  },
+  "TRXUSD_PERP": {
+    "price_tick": "0.00001",
+    "lot_size": "1"
+  },
+  "DOTUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "ADAUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "EOSUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "LTCUSD_PERP": {
+    "price_tick": "0.01",
+    "lot_size": "1"
+  },
+  "BCHUSD_PERP": {
+    "price_tick": "0.01",
+    "lot_size": "1"
+  },
+  "XRPUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "ETCUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "FILUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "EGLDUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "DOGEUSD_PERP": {
+    "price_tick": "0.00001",
+    "lot_size": "1"
+  },
+  "UNIUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "THETAUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "XLMUSD_PERP": {
+    "price_tick": "0.00001",
+    "lot_size": "1"
+  },
+  "SOLUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "FTMUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "SANDUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "MANAUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "AVAXUSD_PERP": {
+    "price_tick": "0.01",
+    "lot_size": "1"
+  },
+  "MATICUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "NEARUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "ATOMUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "AAVEUSD_PERP": {
+    "price_tick": "0.01",
+    "lot_size": "1"
+  },
+  "AXSUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "ROSEUSD_PERP": {
+    "price_tick": "0.00001",
+    "lot_size": "1"
+  },
+  "XTZUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "ICXUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "ALGOUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "RUNEUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "APEUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "KNCUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "GMTUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "OPUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "ENSUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  },
+  "CHZUSD_PERP": {
+    "price_tick": "0.0001",
+    "lot_size": "1"
+  },
+  "APTUSD_PERP": {
+    "price_tick": "0.001",
+    "lot_size": "1"
+  }
+}

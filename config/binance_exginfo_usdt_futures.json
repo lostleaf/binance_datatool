@@ -1,0 +1,1522 @@
+{
+  "BTCUSDT": {
+    "price_tick": "0.1",
+    "lot_size": "0.001",
+    "min_notional_value": "100"
+  },
+  "ETHUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "20"
+  },
+  "BCHUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "20"
+  },
+  "XRPUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "EOSUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "LTCUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "20"
+  },
+  "TRXUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ETCUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "20"
+  },
+  "LINKUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "20"
+  },
+  "XLMUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ADAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "XMRUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "DASHUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "ZECUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "XTZUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "BNBUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "ATOMUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "ONTUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "IOTAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "BATUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "VETUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "NEOUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "QTUMUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "IOSTUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "THETAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ALGOUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ZILUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "KNCUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ZRXUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "COMPUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "OMGUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "DOGEUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SXPUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "KAVAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "BANDUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "RLCUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "WAVESUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "MKRUSDT": {
+    "price_tick": "0.1",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "SNXUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "DOTUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "DEFIUSDT": {
+    "price_tick": "0.1",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "YFIUSDT": {
+    "price_tick": "1",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "BALUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "CRVUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "TRBUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "RUNEUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SUSHIUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SRMUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "EGLDUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "SOLUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ICXUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "STORJUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BLZUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "UNIUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "AVAXUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "FTMUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "HNTUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ENJUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "FLMUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "TOMOUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "RENUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "KSMUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "NEARUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "AAVEUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "FILUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "RSRUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "LRCUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "MATICUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "OCEANUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "CVCUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BELUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "CTKUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "AXSUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ALPHAUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ZENUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "SKLUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "GRTUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "1INCHUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "CHZUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SANDUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ANKRUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BTSUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "LITUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "UNFIUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "REEFUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "RVNUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SFPUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "XEMUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "COTIUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "CHRUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "MANAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ALICEUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "HBARUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ONEUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "LINAUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "STMXUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "DENTUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "CELRUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "HOTUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "MTLUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "OGNUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "NKNUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SCUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "DGBUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "1000SHIBUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BAKEUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "GTCUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "BTCDOMUSDT": {
+    "price_tick": "0.1",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "IOTXUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "AUDIOUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "RAYUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "C98USDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "MASKUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ATAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "DYDXUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "1000XECUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "GALAUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "CELOUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ARUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "KLAYUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ARPAUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "CTSIUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "LPTUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ENSUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "PEOPLEUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ANTUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ROSEUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "DUSKUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "FLOWUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "IMXUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "API3USDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "GMTUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "APEUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "WOOUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "FTTUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "JASMYUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "DARUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "GALUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "OPUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "INJUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "STGUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "FOOTBALLUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "SPELLUSDT": {
+    "price_tick": "0.0000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "1000LUNCUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "LUNA2USDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "LDOUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "CVXUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ICPUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "APTUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "QNTUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "BLUEBIRDUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "FETUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "FXSUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "HOOKUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "MAGICUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "TUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "RNDRUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "HIGHUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "MINAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ASTRUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "AGIXUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "PHBUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "GMXUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "CFXUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "STXUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "COCOSUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "BNXUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ACHUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SSVUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "CKBUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "PERPUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "TRUUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "LQTYUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "USDCUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "IDUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ARBUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "JOEUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "TLMUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "AMBUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "LEVERUSDT": {
+    "price_tick": "0.0000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "RDNTUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "HFTUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "XVSUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ETHBTC": {
+    "price_tick": "0.00001",
+    "lot_size": "0.01",
+    "min_notional_value": "0.001"
+  },
+  "BLURUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "EDUUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "IDEXUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SUIUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "1000PEPEUSDT": {
+    "price_tick": "0.0000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "1000FLOKIUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "UMAUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "RADUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "KEYUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "COMBOUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "NMRUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "MAVUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "MDTUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "XVGUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "WLDUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "PENDLEUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ARKMUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "AGLDUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "YGGUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "DODOXUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BNTUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "OXTUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SEIUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "CYBERUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "HIFIUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ARKUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "FRONTUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "GLMRUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BICOUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "STRAXUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "LOOMUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BIGTIMEUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BONDUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ORBSUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "STPTUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "WAXPUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BSVUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "RIFUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "POLYXUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "GASUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "POWRUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SLPUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "TIAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SNTUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "CAKEUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "MEMEUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "TWTUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "TOKENUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ORDIUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "STEEMUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BADGERUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ILVUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "NTRNUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "MBLUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "KASUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BEAMXUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "1000BONKUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "PYTHUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SUPERUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "USTCUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ONGUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ETHWUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "JTOUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "1000SATSUSDT": {
+    "price_tick": "0.0000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "AUCTIONUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "1000RATSUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ACEUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "MOVRUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "NFPUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "BTCUSDC": {
+    "price_tick": "0.1",
+    "lot_size": "0.001",
+    "min_notional_value": "100"
+  },
+  "ETHUSDC": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "20"
+  },
+  "BNBUSDC": {
+    "price_tick": "0.01",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "SOLUSDC": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "XRPUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "AIUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "XAIUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "DOGEUSDC": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "WIFUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "MANTAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ONDOUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "LSKUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ALTUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "JUPUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ZETAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "RONINUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "DYMUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "SUIUSDC": {
+    "price_tick": "0.00001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "OMUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "LINKUSDC": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "PIXELUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "STRKUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "MAVIAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ORDIUSDC": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "GLMUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "PORTALUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "TONUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "AXLUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "MYROUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "1000PEPEUSDC": {
+    "price_tick": "0.0000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "METISUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "AEVOUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "WLDUSDC": {
+    "price_tick": "0.00001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "VANRYUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BOMEUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ETHFIUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "AVAXUSDC": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "1000SHIBUSDC": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ENAUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "WUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "WIFUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "BCHUSDC": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "TNSRUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "SAGAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "LTCUSDC": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "NEARUSDC": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "TAOUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "OMNIUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "ARBUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "NEOUSDC": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "FILUSDC": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  }
+}
