@@ -20,7 +20,7 @@ def _parse_usdt_futures_syminfo(info):
         'quote_asset': info['quoteAsset'],
         'margin_asset': info['marginAsset'],
         'price_tick': Decimal(_get_from_filters(filters, 'PRICE_FILTER', 'tickSize')),
-        'face_value': Decimal(_get_from_filters(filters, 'LOT_SIZE', 'stepSize')),
+        'lot_size': Decimal(_get_from_filters(filters, 'LOT_SIZE', 'stepSize')),
         'min_notional_value': Decimal(_get_from_filters(filters, 'MIN_NOTIONAL', 'notional'))
     }
 
@@ -35,7 +35,7 @@ def _parse_coin_futures_syminfo(info):
         'quote_asset': info['quoteAsset'],
         'margin_asset': info['marginAsset'],
         'price_tick': Decimal(_get_from_filters(filters, 'PRICE_FILTER', 'tickSize')),
-        'face_value': Decimal(_get_from_filters(filters, 'LOT_SIZE', 'stepSize'))
+        'lot_size': Decimal(info['contractSize'])
     }
 
 
@@ -47,7 +47,7 @@ def _parse_spot_syminfo(info):
         'base_asset': info['baseAsset'],
         'quote_asset': info['quoteAsset'],
         'price_tick': Decimal(_get_from_filters(filters, 'PRICE_FILTER', 'tickSize')),
-        'face_value': Decimal(_get_from_filters(filters, 'LOT_SIZE', 'stepSize')),
+        'lot_size': Decimal(_get_from_filters(filters, 'LOT_SIZE', 'stepSize')),
         'min_notional_value': Decimal(_get_from_filters(filters, 'NOTIONAL', 'minNotional'))
     }
 

@@ -111,13 +111,13 @@ def fix_candle(source, type_, time_interval):
         candle_path = os.path.join(input_dir, f'{symbol}.pqt')
         df = pd.read_parquet(candle_path)
 
-        if symbol not in Config.CANDLE_SPLITS[type_]:
+        if symbol not in Config.BINANCE_CANDLE_SPLITS[type_]:
             output_path = os.path.join(output_dir, f'{symbol}.pqt')
             df_fixed = _fill_gap(df, delta, symbol)
             df_fixed.to_parquet(output_path, compression='zstd')
             return
 
-        splits = Config.CANDLE_SPLITS[type_][symbol]
+        splits = Config.BINANCE_CANDLE_SPLITS[type_][symbol]
         for begin_time, end_time, symbol_new in splits:
             output_path = os.path.join(output_dir, f'{symbol_new}.pqt')
             logging.warning('Split %s %s - %s to %s', symbol, begin_time, end_time, output_path)

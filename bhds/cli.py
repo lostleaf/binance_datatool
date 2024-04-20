@@ -1,17 +1,12 @@
 import asyncio
 
-from .aws_candle import (
-    convert_aws_candle_csv,
-    get_aws_all_coin_perpetual,
-    get_aws_all_usdt_perpetual,
-    get_aws_candle,
-    verify_aws_candle,
-    get_aws_all_usdt_spot,
-)
+from .aws_candle import (convert_aws_candle_csv, get_aws_all_coin_perpetual, get_aws_all_usdt_perpetual,
+                         get_aws_all_usdt_spot, get_aws_candle, verify_aws_candle)
 from .aws_trades import get_aws_aggtrades
 from .compare import compare_aws_quantclass_candle
-from .quantclass_candle import convert_quantclass_candle_csv
+from .exchange_info import update_exchange_info
 from .fix_data import check_gaps, fix_candle
+from .quantclass_candle import convert_quantclass_candle_csv
 
 
 class Bhds:
@@ -82,14 +77,17 @@ class Bhds:
         for symbol in symbols:
             compare_aws_quantclass_candle(typ, time_interval, symbol)
 
-    def check(self, source, typ, time_interval, hours_threshold=48):
+    def check_gaps(self, source, typ, time_interval, hours_threshold=48):
         """
         Check and print gaps over hours_threshold
         """
         check_gaps(source, typ, time_interval, hours_threshold)
-    
+
     def fix_candle(self, source, typ, time_interval):
         """
         Split and fill gaps for candlestick data
         """
         fix_candle(source, typ, time_interval)
+
+    def update_exchange_info(self, typ):
+        asyncio.run(update_exchange_info(typ))
