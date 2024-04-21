@@ -113,7 +113,7 @@ def _verify(data_path, candles_per_day):
     return True
 
 
-def verify_aws_candle(type_, time_interval, verify_num):
+def verify_aws_candle(type_, time_interval):
     local_dirs = glob(
         os.path.join(
             Config.BINANCE_DATA_DIR,
@@ -122,10 +122,10 @@ def verify_aws_candle(type_, time_interval, verify_num):
         ))
     symbols = [Path(os.path.normpath(d)).parts[-2] for d in local_dirs]
     for symbol in symbols:
-        verify_candle(type_, symbol, time_interval, verify_num)
+        verify_candle(type_, symbol, time_interval)
 
 
-def verify_candle(type_, symbol, time_interval, verify_num):
+def verify_candle(type_, symbol, time_interval):
     local_dir = os.path.join(Config.BINANCE_DATA_DIR, 'aws_data',
                              aws_get_candle_dir(type_, symbol, time_interval, local=True))
     logging.info('Local directory %s', local_dir)
@@ -138,24 +138,13 @@ def verify_candle(type_, symbol, time_interval, verify_num):
         if not os.path.exists(verify_file):
             unverified_paths.append(p)
 
-    if verify_num:
-        candles_per_day = round(pd.Timedelta(days=1) / convert_interval_to_timedelta(time_interval))
-        logging.info('Time interval %s, %d candles per day', time_interval, candles_per_day)
-    else:
-        candles_per_day = None
-        logging.info('Will not be verified number of candles')
+    logging.info('Will not verify number of candles')
 
     logging.info('%d files to be verified', len(unverified_paths))
     if not unverified_paths:
         return
 
-    if unverified_paths[0] == paths[0]:
-        # Don't verify num of candles for the first day
-        tasks = [delayed(_verify)(unverified_paths[0], None)]
-    else:
-        tasks = [delayed(_verify)(unverified_paths[0], candles_per_day)]
-
-    tasks.extend([delayed(_verify)(p, candles_per_day) for p in unverified_paths[1:]])
+    tasks  = [delayed(_verify)(p, None) for p in unverified_paths]
 
     results = Parallel(n_jobs=Config.N_JOBS)(tasks)
     for unverified_path, verify_success in zip(unverified_paths, results):

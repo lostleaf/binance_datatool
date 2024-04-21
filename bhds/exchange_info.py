@@ -2,9 +2,10 @@ import json
 import logging
 import os
 
-import simplejson
+# import simplejson
 
-from api.binance import (BinanceMarketCMDapi, BinanceMarketSpotApi, BinanceMarketUMFapi)
+from api.binance import (BinanceMarketCMDapi, BinanceMarketSpotApi,
+                         BinanceMarketUMFapi)
 from config import Config
 from fetcher import BinanceFetcher
 from util import create_aiohttp_session, remove_exponent
@@ -39,10 +40,10 @@ async def update_exchange_info(type_):
     if type_.endswith('_futures'):
         exg_info = {k: v for k, v in exg_info.items() if v['contract_type'] == 'PERPETUAL'}
     info_new = {symbol: _get_info(x) for symbol, x in exg_info.items()}
-    
+
     if os.path.exists(Config.BINANCE_EXGINFO_PATH[type_]):
         info: dict = Config.BINANCE_EXGINFO[type_]
         info.update(info_new)
     else:
         info = info_new
-    simplejson.dump(info, open(Config.BINANCE_EXGINFO_PATH[type_], 'w'), indent=2)
+    json.dump(info, open(Config.BINANCE_EXGINFO_PATH[type_], 'w'), indent=2)

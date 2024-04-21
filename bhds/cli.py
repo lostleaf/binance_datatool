@@ -50,12 +50,12 @@ class Bhds:
         """
         asyncio.run(get_aws_aggtrades(typ, recent, symbols))
 
-    def verify_aws_candle(self, typ, verify_num=False, *time_intervals):
+    def verify_aws_candle(self, typ, *time_intervals):
         """
         Verifies the integrity of all AWS candlestick data and deletes incorrect data.
         """
         for time_interval in time_intervals:
-            verify_aws_candle(typ, time_interval, verify_num)
+            verify_aws_candle(typ, time_interval)
 
     def convert_aws_candle_csv(self, typ, *time_intervals):
         """
@@ -90,4 +90,7 @@ class Bhds:
         fix_candle(source, typ, time_interval)
 
     def update_exchange_info(self, typ):
+        """
+        Get exchange info from Binance api and update local json configs
+        """
         asyncio.run(update_exchange_info(typ))
