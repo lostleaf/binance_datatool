@@ -33,7 +33,7 @@ def verify_aws_aggtrades(type_):
         if not os.path.exists(verify_file):
             unverified_paths.append(p)
 
-    logging.info('%d files to be verified', len(paths))
+    logging.info('%d files to be verified', len(unverified_paths))
 
     results = Parallel(Config.N_JOBS)(delayed(verify_checksum)(p) for p in paths)
 

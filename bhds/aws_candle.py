@@ -8,10 +8,9 @@ from pathlib import Path
 import pandas as pd
 from joblib import Parallel, delayed
 
-from bhds.aws_util import aws_download_symbol_files
 from config import Config
-
-from .aws_util import aws_batch_list_dir, aws_get_candle_dir, aws_list_dir
+from util import convert_interval_to_timedelta
+from .aws_util import (aws_batch_list_dir, aws_download_symbol_files, aws_get_candle_dir, aws_list_dir)
 from .checksum import verify_checksum
 
 
@@ -138,15 +137,6 @@ def verify_candle(type_, symbol, time_interval):
                 os.remove(checksum_path)
 
 
-def convert_symbol(symbol, output_dir, paths):
-    dfs = [_read_aws_futures_candle_csv(p) for p in paths]
-    df = pd.concat(dfs)
-    df.sort_values('candle_begin_time', inplace=True, ignore_index=True)
-    df.drop_duplicates('candle_begin_time', keep='last', inplace=True, ignore_index=True)
-    output_path = os.path.join(output_dir, f'{symbol}.fea')
-    df.to_feather(output_path, compression='zstd')
-
-
 def convert_aws_candle_csv(type_, time_interval):
     paths = glob(
         os.path.join(
@@ -164,10 +154,22 @@ def convert_aws_candle_csv(type_, time_interval):
 
     logging.info('Symbols %s', list(sym_paths.keys()))
 
-    odir = os.path.join(Config.BINANCE_DATA_DIR, 'candle_feather', type_, time_interval)
+    odir = os.path.join(Config.BINANCE_DATA_DIR, 'candle_parquet', type_, time_interval)
     if os.path.exists(odir):
         logging.warning('%s exists, deleting', odir)
         shutil.rmtree(odir)
     os.makedirs(odir)
 
-    Parallel(n_jobs=Config.N_JOBS, verbose=1)(delayed(convert_symbol)(s, odir, ps) for s, ps, in sym_paths.items())
+    delta = convert_interval_to_timedelta(time_interval)
+
+    def convert_symbol(symbol, paths):
+        dfs = [_read_aws_futures_candle_csv(p) for p in paths]
+        df = pd.concat(dfs)
+        df.sort_values('candle_begin_time', inplace=True, ignore_index=True)
+        df.drop_duplicates('candle_begin_time', keep='last', inplace=True, ignore_index=True)
+        df['candle_end_time'] = df['candle_begin_time'] + delta
+        df.set_index('candle_end_time', inplace=True)
+        output_path = os.path.join(odir, f'{symbol}.pqt')
+        df.to_parquet(output_path, compression='zstd')
+
+    Parallel(n_jobs=Config.N_JOBS, verbose=1)(delayed(convert_symbol)(s, ps) for s, ps in sym_paths.items())
