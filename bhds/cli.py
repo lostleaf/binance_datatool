@@ -2,7 +2,7 @@ import asyncio
 
 from .aws_candle import (convert_aws_candle_csv, get_aws_all_coin_perpetual, get_aws_all_usdt_perpetual,
                          get_aws_all_usdt_spot, get_aws_candle, verify_aws_candle)
-from .aws_trades import get_aws_aggtrades
+from .aws_trades import get_aws_aggtrades, verify_aws_aggtrades
 from .compare import compare_aws_quantclass_candle
 from .exchange_info import update_exchange_info
 from .fix_data import check_gaps, fix_candle
@@ -56,6 +56,12 @@ class Bhds:
         """
         for time_interval in time_intervals:
             verify_aws_candle(typ, time_interval)
+
+    def verify_aws_aggtrades(self, typ):
+        """
+        Verifies the integrity of all AWS aggtrades data and deletes incorrect data.
+        """
+        verify_aws_aggtrades(typ)
 
     def convert_aws_candle_csv(self, typ, *time_intervals):
         """

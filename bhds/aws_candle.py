@@ -1,4 +1,3 @@
-import hashlib
 import logging
 import os
 import shutil
@@ -11,9 +10,9 @@ from joblib import Parallel, delayed
 
 from bhds.aws_util import aws_download_symbol_files
 from config import Config
-from util.time import convert_interval_to_timedelta
 
 from .aws_util import aws_batch_list_dir, aws_get_candle_dir, aws_list_dir
+from .checksum import verify_checksum
 
 
 async def get_aws_candle(type_, time_interval, symbols):
@@ -79,35 +78,14 @@ def _read_aws_futures_candle_csv(p):
     return df
 
 
-def _verify(data_path, candles_per_day):
-    checksum_path = data_path + '.CHECKSUM'
-    if not os.path.exists(checksum_path):
-        logging.error('Checksum file not exists %s', data_path)
-        return False
-    try:
-        with open(checksum_path, 'r') as fin:
-            text = fin.read()
-        checksum_standard, _ = text.strip().split()
-    except:
-        logging.error('Error reading checksum file', checksum_path)
-        return False
-
-    with open(data_path, 'rb') as file_to_check:
-        data = file_to_check.read()
-        checksum_value = hashlib.sha256(data).hexdigest()
-
-    if checksum_value != checksum_standard:
-        logging.error('Checksum error %s', data_path)
+def _verify(data_path):
+    if not verify_checksum(data_path):
         return False
 
     try:
-        df = _read_aws_futures_candle_csv(data_path)
+        _read_aws_futures_candle_csv(data_path)
     except:
         logging.error('Cannot read csv %s', data_path)
-        return False
-
-    if candles_per_day is not None and len(df) != candles_per_day:
-        logging.error('Num of candles error %d %s', len(df), data_path)
         return False
 
     return True
@@ -144,7 +122,7 @@ def verify_candle(type_, symbol, time_interval):
     if not unverified_paths:
         return
 
-    tasks  = [delayed(_verify)(p, None) for p in unverified_paths]
+    tasks = [delayed(_verify)(p) for p in unverified_paths]
 
     results = Parallel(n_jobs=Config.N_JOBS)(tasks)
     for unverified_path, verify_success in zip(unverified_paths, results):

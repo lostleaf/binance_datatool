@@ -25,3 +25,6 @@ $PY cli.py bhds convert_aws_candle_csv coin_futures 1h 1m
 
 # Convert usdt spot
 $PY cli.py bhds convert_aws_candle_csv spot 1h 1m
+
+python cli.py bhds get_aws_aggtrades usdt_futures --recent=30 BTCUSDT ETHUSDT
+python cli.py bhds verify_aws_aggtrades usdt_futures
