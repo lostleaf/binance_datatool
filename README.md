@@ -29,20 +29,20 @@ brew install aria2
 ### Download candlestick data and verify checksum
 
 ```bash
-  # Download all usdt perpetual candle data
-  $PY cli.py bhds get_aws_all_usdt_perpetual 1h 1m
-  # Verify usdt perpetual candle data and delete corrupted
-  $PY cli.py bhds verify_aws_candle usdt_futures 1h 1m
+# Download all usdt perpetual candle data
+$PY cli.py bhds get_aws_all_usdt_perpetual 1h 1m
+# Verify usdt perpetual candle data and delete corrupted
+$PY cli.py bhds verify_aws_candle usdt_futures 1h 1m
 
-  # Download all coin perpetual candle data
-  $PY cli.py bhds get_aws_all_coin_perpetual 1h 1m
-  # Verify coin perpetual candle data and delete corrupted
-  $PY cli.py bhds verify_aws_candle coin_futures 1h 1m
+# Download all coin perpetual candle data
+$PY cli.py bhds get_aws_all_coin_perpetual 1h 1m
+# Verify coin perpetual candle data and delete corrupted
+$PY cli.py bhds verify_aws_candle coin_futures 1h 1m
 
-  # Download all usdt spot candle data
-  $PY cli.py bhds get_aws_all_usdt_spot 1h 1m
-  # Verify spot candle data and delete corrupted
-  $PY cli.py bhds verify_aws_candle spot 1h 1m
+# Download all usdt spot candle data
+$PY cli.py bhds get_aws_all_usdt_spot 1h 1m
+# Verify spot candle data and delete corrupted
+$PY cli.py bhds verify_aws_candle spot 1h 1m
 ```
 
 ### Merge downloaded candlestick csv files and convert to Pandas parquet format
