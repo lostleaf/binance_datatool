@@ -44,7 +44,7 @@ class Bhds:
         for time_interval in time_intervals:
             asyncio.run(get_aws_all_usdt_spot(time_interval))
 
-    def get_aws_aggtrades(self, typ, recent=30, *symbols):
+    def get_aws_aggtrades(self, typ, *symbols, recent=30):
         """
         Downloads daily aggtrades data from Binance's AWS data center. Only recent dates will be downloaded.
         """
