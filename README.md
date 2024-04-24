@@ -26,56 +26,49 @@ brew install aria2
 
 ## BHDS
 
-Usage (as printed by `python cli.py bhds`):
+### Download candlestick data and verify checksum
 
-```
-NAME
-    cli.py bhds - Binance Historical Data Service
+```bash
+  # Download all usdt perpetual candle data
+  $PY cli.py bhds get_aws_all_usdt_perpetual 1h 1m
+  # Verify usdt perpetual candle data and delete corrupted
+  $PY cli.py bhds verify_aws_candle usdt_futures 1h 1m
 
-SYNOPSIS
-    cli.py bhds COMMAND
+  # Download all coin perpetual candle data
+  $PY cli.py bhds get_aws_all_coin_perpetual 1h 1m
+  # Verify coin perpetual candle data and delete corrupted
+  $PY cli.py bhds verify_aws_candle coin_futures 1h 1m
 
-DESCRIPTION
-    Supports types: spot, usdt_futures, coin_futures
-
-COMMANDS
-    COMMAND is one of the following:
-
-     compare_aws_quantclass_candle
-       Compare AWS candle with Quantclass
-
-     convert_aws_candle_csv
-       Converts and merges downloaded candlestick data into Pandas Feather format.
-
-     convert_quantclass_candle_csv
-       Converts quantclass candlestick data into Pandas Feather format.
-
-     get_aws_candle
-       Downloads daily candlestick data from Binance's AWS data center. All available dates will be downloaded.
-
-     verify_aws_candle
-       Verifies the integrity of all AWS candlestick data and deletes incorrect data.
+  # Download all usdt spot candle data
+  $PY cli.py bhds get_aws_all_usdt_spot 1h 1m
+  # Verify spot candle data and delete corrupted
+  $PY cli.py bhds verify_aws_candle spot 1h 1m
 ```
 
-For example, to download 1-hour candlestick data for perpetual contracts BTCUSDT, ETHUSDT, and LTCUSDT from Binance, and then merge them into Pandas Feather format, a suggested download procedure is as follows:
+### Merge downloaded candlestick csv files and convert to Pandas parquet format
 
-``` bash
-# Download and verify the candlestick data for the first time
-python cli.py bhds get_aws_candle usdt_futures 1h BTCUSDT ETHUSDT LTCUSDT
-python cli.py bhds verify_all_candle usdt_futures 1h
+```bash
+# Convert usdt perpetual
+$PY cli.py bhds convert_aws_candle_csv usdt_futures 1h 1m
 
-# Download and verify the candlestick data for the second time, in case some files are missing
-python cli.py bhds get_aws_candle usdt_futures 1h BTCUSDT ETHUSDT LTCUSDT
-python cli.py bhds verify_all_candle usdt_futures 1h
+# Convert coin perpetual
+$PY cli.py bhds convert_aws_candle_csv coin_futures 1h 1m
 
-# Convert and merge into a single Feather file
-python cli.py bhds convert_aws_candle_csv usdt_futures 1h
+# Convert usdt spot
+$PY cli.py bhds convert_aws_candle_csv spot 1h 1m
 ```
 
-After the download procedure has successfully finished, the directory structure under `$CRYPTO_BASE_DIR` should look like:
+### Download aggtrades for recent days and verify checksum
+
+```bash
+python cli.py bhds get_aws_aggtrades usdt_futures --recent=30 BTCUSDT ETHUSDT
+python cli.py bhds verify_aws_aggtrades usdt_futures
+```
+
+After the download procedure has successfully finished, the structure under `$CRYPTO_BASE_DIR` should look like:
 
 ```
-.
+CRYPTO_BASE_DIR
 ├── binance_data
 │   ├── aws_data
 │   │   └── data
@@ -89,7 +82,7 @@ After the download procedure has successfully finished, the directory structure 
 │   │                       │   └── 1h  [4641 entries exceeds filelimit, not opening dir]
 │   │                       └── LTCUSDT
 │   │                           └── 1h  [4614 entries exceeds filelimit, not opening dir]
-│   └── candle_feather
+│   └── candle_parquet
 │       └── usdt_futures
 │           └── 1h
 │               ├── BTCUSDT.fea
