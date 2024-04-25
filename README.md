@@ -71,6 +71,7 @@ After the download procedure has successfully finished, the structure under `$CR
 
 ```
 CRYPTO_BASE_DIR
+.
 └── binance_data
     ├── aws_data
     │   └── data
@@ -81,13 +82,20 @@ CRYPTO_BASE_DIR
     │       │   └── um
     │       │       └── daily
     │       │           ├── aggTrades
-    │       │           │   ├── BTCUSDT  [93 entries exceeds filelimit, not opening dir]
-    │       │           │   └── ETHUSDT  [93 entries exceeds filelimit, not opening dir]
+    │       │           │   ├── BTCUSDT  [96 entries exceeds filelimit, not opening dir]
+    │       │           │   └── ETHUSDT  [96 entries exceeds filelimit, not opening dir]
     │       │           └── klines  [297 entries exceeds filelimit, not opening dir]
     │       └── spot
     │           └── daily
     │               └── klines  [440 entries exceeds filelimit, not opening dir]
     └── candle_parquet
-        └── coin_futures
-            └── 1h  [46 entries exceeds filelimit, not opening dir]
+        ├── coin_futures
+        │   ├── 1h  [46 entries exceeds filelimit, not opening dir]
+        │   └── 1m  [46 entries exceeds filelimit, not opening dir]
+        ├── spot
+        │   ├── 1h  [440 entries exceeds filelimit, not opening dir]
+        │   └── 1m  [439 entries exceeds filelimit, not opening dir]
+        └── usdt_futures
+            ├── 1h  [297 entries exceeds filelimit, not opening dir]
+            └── 1m  [296 entries exceeds filelimit, not opening dir]
 ```
