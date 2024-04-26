@@ -1,5 +1,6 @@
 {
   "spot": {
+    "BCCUSDT": [[null, "2018-11-15 17:00:00+00:00", "BCC1USDT"], ["2018-11-20 02:00:00+00:00", null, "BCCUSDT"]],
     "BNXUSDT": [[null, "2023-02-16 03:00:00+00:00", "BNX1USDT"], ["2023-02-22 08:00:00+00:00", null, "BNXUSDT"]], 
     "BTCSTUSDT": [[null, "2021-03-15 07:00:00+00:00", "BTCST1USDT"], ["2021-03-19 07:00:00+00:00", null, "BTCSTUSDT"]], 
     "COCOSUSDT": [[null, "2021-01-19 02:00:00+00:00", "COCOS1USDT"], ["2021-01-23 02:00:00+00:00", null, "COCOSUSDT"]], 
