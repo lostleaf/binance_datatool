@@ -122,6 +122,8 @@ def fix_candle(source, type_, time_interval):
             output_path = os.path.join(output_dir, f'{symbol_new}.pqt')
             logging.warning('Split %s %s - %s to %s', symbol, begin_time, end_time, output_path)
             df_split = df.loc[begin_time:end_time]
+            if len(df_split) == 0:
+                continue
             df_split = _fill_gap(df_split, delta, symbol_new)
             df_split.to_parquet(output_path, compression='zstd')
 
