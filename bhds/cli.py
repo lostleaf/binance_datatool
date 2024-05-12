@@ -1,7 +1,7 @@
 import asyncio
 
 from .aws_candle import (convert_aws_candle_csv, get_aws_all_coin_perpetual, get_aws_all_usdt_perpetual,
-                         get_aws_all_usdt_spot, get_aws_candle, verify_aws_candle)
+                         get_aws_all_usdt_spot, get_aws_candle, verify_aws_candle, download_aws_missing_from_api)
 from .aws_trades import get_aws_aggtrades, verify_aws_aggtrades
 from .compare import compare_aws_quantclass_candle
 from .exchange_info import update_exchange_info
@@ -65,7 +65,7 @@ class Bhds:
 
     def convert_aws_candle_csv(self, typ, *time_intervals):
         """
-        Converts and merges downloaded candlestick data into Pandas Feather format.
+        Converts and merges downloaded candlestick data into Pandas Parquet format.
         """
         for time_interval in time_intervals:
             convert_aws_candle_csv(typ, time_interval)
@@ -100,3 +100,10 @@ class Bhds:
         Get exchange info from Binance api and update local json configs
         """
         asyncio.run(update_exchange_info(typ))
+
+    def download_aws_missing_candle(self, typ, *time_intervals):
+        """
+        Download aws missing candlestick data from api
+        """
+        for time_interval in time_intervals:
+            asyncio.run(download_aws_missing_from_api(typ, time_interval))

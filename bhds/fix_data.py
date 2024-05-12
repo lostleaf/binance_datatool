@@ -87,7 +87,8 @@ def _fill_gap(df: pd.DataFrame, delta: pd.Timedelta, symbol: str) -> pd.DataFram
     df['low'] = df['low'].fillna(df['close'])
 
     # Fill Vwaps with open
-    df['avg_price_1m'] = df['avg_price_1m'].fillna(df['open'])
+    if 'avg_price_1m' in df.columns:
+        df['avg_price_1m'] = df['avg_price_1m'].fillna(df['open'])
 
     # Fill volumes with 0
     df['volume'] = df['volume'].fillna(0)
@@ -110,6 +111,7 @@ def fix_candle(source, type_, time_interval):
     def _split_and_fill(symbol):
         candle_path = os.path.join(input_dir, f'{symbol}.pqt')
         df = pd.read_parquet(candle_path)
+        df = df[df['volume'] > 0]
 
         if symbol not in Config.BINANCE_CANDLE_SPLITS[type_]:
             output_path = os.path.join(output_dir, f'{symbol}.pqt')

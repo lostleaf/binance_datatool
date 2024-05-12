@@ -1,6 +1,9 @@
 import asyncio
 import logging
+from itertools import islice
+
 import aiohttp
+
 
 def create_aiohttp_session(timeout_sec):
     timeout = aiohttp.ClientTimeout(total=timeout_sec)
@@ -24,3 +27,8 @@ async def async_retry_getter(func, max_times=5, **kwargs):
             sleep_seconds *= 2
 
 
+def batched(iterable, n):
+    # batched('ABCDEFG', 3) --> ABC DEF G https://docs.python.org/3/library/itertools.html#itertools-recipes
+    it = iter(iterable)
+    while batch := tuple(islice(it, n)):
+        yield batch

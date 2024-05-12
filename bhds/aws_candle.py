@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import shutil
@@ -9,7 +10,9 @@ import pandas as pd
 from joblib import Parallel, delayed
 
 from config import Config
-from util import convert_interval_to_timedelta
+from fetcher.binance import BinanceFetcher
+from util import convert_interval_to_timedelta, create_aiohttp_session, batched, DEFAULT_TZ
+
 from .aws_util import (aws_batch_list_dir, aws_download_symbol_files, aws_get_candle_dir, aws_list_dir)
 from .checksum import verify_checksum
 
@@ -50,7 +53,7 @@ async def get_aws_all_usdt_spot(time_interval):
     logging.info('Skip leverage tokens %s', lev_symbols)
 
     stables = ('BKRWUSDT', 'USDCUSDT', 'USDPUSDT', 'TUSDUSDT', 'BUSDUSDT', 'FDUSDUSDT', 'DAIUSDT', 'EURUSDT', 'GBPUSDT',
-               'USBPUSDT', 'SUSDUSDT', 'PAXGUSDT')
+               'USBPUSDT', 'SUSDUSDT', 'PAXGUSDT', 'AEURUSDT')
     logging.info('Skip stable coins %s', stables)
     symbols = sorted(set(symbols) - set(lev_symbols) - set(stables))
     logging.info('Download %s', symbols)
@@ -165,6 +168,12 @@ def convert_aws_candle_csv(type_, time_interval):
     def convert_symbol(symbol, paths):
         dfs = [_read_aws_futures_candle_csv(p) for p in paths]
         df = pd.concat(dfs)
+        symbol_api_dir = os.path.join(Config.BINANCE_DATA_DIR, 'api_data', type_, time_interval, symbol)
+        if os.path.exists(symbol_api_dir):
+            symbol_api_paths = glob(os.path.join(symbol_api_dir, '*.pqt'))
+            dfs = [pd.read_parquet(p) for p in symbol_api_paths]
+            dfs.append(df)
+            df = pd.concat(dfs)
         df.sort_values('candle_begin_time', inplace=True, ignore_index=True)
         df.drop_duplicates('candle_begin_time', keep='last', inplace=True, ignore_index=True)
         df['candle_end_time'] = df['candle_begin_time'] + delta
@@ -173,3 +182,85 @@ def convert_aws_candle_csv(type_, time_interval):
         df.to_parquet(output_path, compression='zstd')
 
     Parallel(n_jobs=Config.N_JOBS, verbose=1)(delayed(convert_symbol)(s, ps) for s, ps in sym_paths.items())
+
+
+def _get_aws_candle_missing_dts(dir_path, splits, symbol_api_dir):
+    paths = sorted(glob(os.path.join(dir_path, '*.zip')))
+    dts = [os.path.splitext(os.path.basename(p))[0] for p in paths]
+    dts = {dt.split('-', 2)[-1].replace('-', '') for dt in dts}
+    dt_start, dt_end = min(dts), max(dts)
+
+    segs = []
+    if splits is not None:
+        for st, en, _ in splits:
+            if st is None:
+                st = dt_start
+            if en is None:
+                en = dt_end
+            st = pd.to_datetime(st).strftime('%Y%m%d')
+            en = pd.to_datetime(en).strftime('%Y%m%d')
+            segs.append((st, en))
+    else:
+        segs = [(dt_start, dt_end)]
+
+    missings = set()
+    for dt_start, dt_end in segs:
+        dt_range = {x.strftime('%Y%m%d') for x in pd.date_range(dt_start, dt_end)}
+        missings = missings.union(dt_range - dts)
+
+    if os.path.exists(symbol_api_dir):
+        downloaded_dts = {p.replace('.pqt', '') for p in os.listdir(symbol_api_dir)}
+        missings = missings - downloaded_dts
+
+    return sorted(missings)
+
+
+async def download_aws_missing_from_api(type_, time_interval):
+    _aws_dir = os.path.join(
+        Config.BINANCE_DATA_DIR,
+        'aws_data',
+        aws_get_candle_dir(type_, '*', time_interval, local=True),
+    )
+    symbol_aws_dirs = glob(_aws_dir)
+    api_dir = os.path.join(Config.BINANCE_DATA_DIR, 'api_data', type_, time_interval)
+    if not os.path.exists(api_dir):
+        logging.warning('%s not exists, creating', api_dir)
+        os.makedirs(api_dir)
+
+    tasks = []
+    for symbol_aws_dir in symbol_aws_dirs:
+        symbol = Path(symbol_aws_dir).parts[-2]
+        splits = Config.BINANCE_CANDLE_SPLITS[type_].get(symbol, None)
+        symbol_api_dir = os.path.join(api_dir, symbol)
+        missings = _get_aws_candle_missing_dts(symbol_aws_dir, splits, symbol_api_dir)
+        if missings:
+            logging.info('%s missing dts %s', symbol, missings)
+        for dt in missings:
+            tasks.append((symbol, dt))
+
+    async with create_aiohttp_session(30) as session:
+        fetcher = BinanceFetcher(type_, session)
+        for task_batch in batched(tasks, 10):
+            timestamp, weight = await fetcher.market_api.aioreq_time_and_weight()
+            server_ts = pd.to_datetime(timestamp, unit='ms', utc=True).tz_convert(DEFAULT_TZ)
+            logging.info('Server time %s, weight used %d, from %s to %s', server_ts, weight, task_batch[0],
+                         task_batch[-1])
+            if weight > fetcher.MAX_MINUTE_WEIGHT * 0.9:
+                await asyncio.sleep(60)
+            download_tasks = []
+            for symbol, dt in task_batch:
+                start_ts = pd.to_datetime(dt)
+                end_ts = start_ts + pd.Timedelta(hours=23, minutes=59, seconds=59)
+
+                download_tasks.append(
+                    fetcher.get_candle(symbol,
+                                       time_interval,
+                                       startTime=start_ts.value // 1000000,
+                                       endTime=end_ts.value // 1000000))
+            results = await asyncio.gather(*download_tasks)
+            for (symbol, dt), df_market in zip(task_batch, results):
+                symbol_dir = os.path.join(api_dir, symbol)
+                if not os.path.exists(symbol_dir):
+                    os.makedirs(symbol_dir)
+                output_dir = os.path.join(symbol_dir, f'{dt}.pqt')
+                df_market.to_parquet(output_dir)

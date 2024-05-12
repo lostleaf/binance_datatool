@@ -1,7 +1,9 @@
-from util import async_retry_getter
 from decimal import Decimal
 
-from api.binance import BinanceMarketCMDapi, BinanceMarketSpotApi, BinanceMarketUMFapi, BinanceBaseMarketApi
+import pandas as pd
+
+from api.binance import create_binance_market_api
+from util import async_retry_getter
 
 
 def _get_from_filters(filters, filter_type, field_name):
@@ -54,23 +56,23 @@ def _parse_spot_syminfo(info):
 
 class BinanceFetcher:
 
-    TYPE_LIST = [
-        (BinanceMarketUMFapi, 'usdt_futures', _parse_usdt_futures_syminfo),
-        (BinanceMarketCMDapi, 'coin_futures', _parse_coin_futures_syminfo),
-        (BinanceMarketSpotApi, 'spot', _parse_spot_syminfo),
-    ]
+    TYPE_MAP = {
+        'usdt_futures': _parse_usdt_futures_syminfo,
+        'coin_futures': _parse_coin_futures_syminfo,
+        'spot': _parse_spot_syminfo,
+    }
 
-    def __init__(self, market_api: BinanceBaseMarketApi):
-        self.market_api = market_api
+    MAX_MINUTE_WEIGHT = 2400
+
+    def __init__(self, type_, session):
+        self.trade_type = type_
+        self.market_api = create_binance_market_api(type_, session)
         self.trade_type = None
 
-        for api_cls, trade_type, parse_func in self.TYPE_LIST:
-            if isinstance(self.market_api, api_cls):
-                self.trade_type = trade_type
-                self.syminfo_parse_func = parse_func
-
-        if self.trade_type is None:
-            raise ValueError(f'Market Api {str(type(market_api))} not supported')
+        if type_ in self.TYPE_MAP:
+            self.syminfo_parse_func = self.TYPE_MAP[type_]
+        else:
+            raise ValueError(f'Type {type_} not supported')
 
     async def get_exchange_info(self):
         """
@@ -81,3 +83,28 @@ class BinanceFetcher:
         for info in exg_info['symbols']:
             results[info['symbol']] = self.syminfo_parse_func(info)
         return results
+
+    async def get_candle(self, symbol, interval, **kwargs) -> pd.DataFrame:
+        '''
+        Parse return values of /klines API and convert to pd.DataFrame
+        '''
+        data = await async_retry_getter(self.market_api.aioreq_klines, symbol=symbol, interval=interval, **kwargs)
+        columns = [
+            'candle_begin_time',
+            'open',
+            'high',
+            'low',
+            'close',
+            'volume',
+            'close_time',
+            'quote_volume',
+            'trade_num',
+            'taker_buy_base_asset_volume',
+            'taker_buy_quote_asset_volume',
+            'ignore',
+        ]
+        df = pd.DataFrame(data, columns=columns, dtype=float)
+        df['candle_begin_time'] = pd.to_datetime(df['candle_begin_time'], unit='ms', utc=True)
+        df['close_time'] = pd.to_datetime(df['close_time'], unit='ms', utc=True)
+        df.drop(columns='ignore', inplace=True)
+        return df

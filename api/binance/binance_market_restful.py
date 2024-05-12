@@ -8,7 +8,9 @@ from abc import ABC, abstractmethod
 
 from .basics import BinanceBaseApi
 
+
 class BinanceBaseMarketApi(ABC, BinanceBaseApi):
+
     @abstractmethod
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
         pass
@@ -154,3 +156,12 @@ class BinanceMarketSpotApi(BinanceBaseMarketApi):
         """
         url = f'{self.PREFIX}/v3/exchangeInfo'
         return await self._aio_get(url, None)
+
+
+def create_binance_market_api(type_, session) -> BinanceBaseMarketApi:
+    if type_ == 'spot':
+        return BinanceMarketSpotApi(session)
+    elif type_ == 'usdt_futures':
+        return BinanceMarketUMFapi(session)
+    elif type_ == 'coin_futures':
+        return BinanceMarketCMDapi(session)
