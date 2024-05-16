@@ -3,7 +3,7 @@
 Useful services for cryptocurrency quant trading.
 
 Currently, the services included are:
-- BHDS: Binance Historical Data Service. BHDS downloads historical market data from Binance AWS data center and market data api, and converts raw data into Pandas Parquet format.
+- [BHDS](#bhds): Binance Historical Data Service. BHDS downloads historical market data from Binance AWS data center and market data api, and converts raw data into Pandas Parquet format.
 
 ## Dependencies
 
@@ -45,6 +45,19 @@ python cli.py bhds verify_aws_candle coin_futures 1h
 python cli.py bhds get_aws_all_usdt_spot 1h
 # Verify 1H spot candle data and delete corrupted
 python cli.py bhds verify_aws_candle spot 1h
+```
+
+### Download missing candlestick data from market data api
+
+```bash
+# Download usdt perpetual missing 1H candlestick data from market data api 
+python cli.py bhds download_aws_missing_candle usdt_futures 1h
+
+# Download spot missing 1H candlestick data from market data api
+python cli.py bhds download_aws_missing_candle spot 1h
+
+# Download coin perpetual missing 1H candlestick data from market data api
+python cli.py bhds download_aws_missing_candle coin_futures 1h
 ```
 
 ### Merge downloaded candlestick csv files and convert to Pandas Parquet format
