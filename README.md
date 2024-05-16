@@ -73,6 +73,19 @@ python cli.py bhds convert_aws_candle_csv coin_futures 1h
 python cli.py bhds convert_aws_candle_csv spot 1h
 ```
 
+### Split candlestick and fill gaps
+
+```bash
+# Split 1H usdt perpetual candlestick and fill gaps
+python cli.py bhds fix_candle aws usdt_futures 1h
+
+# Split 1H spot candlestick and fill gaps
+python cli.py bhds fix_candle aws spot 1h
+
+# Split 1H coin perpetual candlestick and fill gaps
+python cli.py bhds fix_candle aws coin_futures 1h
+```
+
 ### Download aggtrades for recent days and verify checksum
 
 ```bash
