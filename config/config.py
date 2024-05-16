@@ -14,6 +14,7 @@ class CFG:
         'coin_futures': os.path.join(_CUR_DIR, 'binance_exginfo_coin_futures.json'),
         'usdt_futures': os.path.join(_CUR_DIR, 'binance_exginfo_usdt_futures.json')
     }
+    N_JOBS = int(os.getenv('CRYPTO_NJOBS', os.cpu_count() - 1))
 
     @property
     def BINANCE_CANDLE_SPLITS(self):
@@ -31,10 +32,7 @@ class CFG:
 
         return self._get_with_cache('BINANCE_EXGINFO', _load)
 
-    N_JOBS = int(os.getenv('CRYPTO_NJOBS', os.cpu_count() - 1))
-
     _CACHE = dict()
-
     def _get_with_cache(self, key, _load):
         if key not in self._CACHE:
             self._CACHE[key] = _load()

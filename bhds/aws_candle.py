@@ -230,7 +230,9 @@ async def download_aws_missing_from_api(type_, time_interval):
     tasks = []
     for symbol_aws_dir in symbol_aws_dirs:
         symbol = Path(symbol_aws_dir).parts[-2]
-        splits = Config.BINANCE_CANDLE_SPLITS[type_].get(symbol, None)
+        splits = None
+        if type_ in Config.BINANCE_CANDLE_SPLITS:
+            splits = Config.BINANCE_CANDLE_SPLITS[type_].get(symbol, None)
         symbol_api_dir = os.path.join(api_dir, symbol)
         missings = _get_aws_candle_missing_dts(symbol_aws_dir, splits, symbol_api_dir)
         if missings:
