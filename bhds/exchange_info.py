@@ -32,8 +32,7 @@ def _get_info(x):
 
 async def update_exchange_info(type_):
     async with create_aiohttp_session(BINANCE_TIMEOUT_SEC) as session:
-        market_api = TYPE_API_MAP[type_](session)
-        fetcher = BinanceFetcher(market_api)
+        fetcher = BinanceFetcher(type_, session)
         logging.info('Update exchange info for Binance %s', fetcher.trade_type)
         exg_info = await fetcher.get_exchange_info()
 

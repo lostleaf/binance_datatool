@@ -1420,7 +1420,7 @@
     "min_notional_value": "5"
   },
   "AEVOUSDT": {
-    "price_tick": "0.001",
+    "price_tick": "0.0001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
@@ -1455,7 +1455,7 @@
     "min_notional_value": "5"
   },
   "ENAUSDT": {
-    "price_tick": "0.001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -1475,7 +1475,7 @@
     "min_notional_value": "5"
   },
   "TNSRUSDT": {
-    "price_tick": "0.001",
+    "price_tick": "0.0001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
@@ -1500,7 +1500,7 @@
     "min_notional_value": "5"
   },
   "OMNIUSDT": {
-    "price_tick": "0.01",
+    "price_tick": "0.001",
     "lot_size": "0.01",
     "min_notional_value": "5"
   },
@@ -1517,6 +1517,46 @@
   "FILUSDC": {
     "price_tick": "0.001",
     "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "MATICUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "TIAUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BOMEUSDC": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "REZUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ENAUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ETHFIUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "1000BONKUSDC": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BBUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
     "min_notional_value": "5"
   }
 }

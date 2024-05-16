@@ -67,7 +67,6 @@ class BinanceFetcher:
     def __init__(self, type_, session):
         self.trade_type = type_
         self.market_api = create_binance_market_api(type_, session)
-        self.trade_type = None
 
         if type_ in self.TYPE_MAP:
             self.syminfo_parse_func = self.TYPE_MAP[type_]
