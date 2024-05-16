@@ -74,9 +74,9 @@ def _fill_gap(df: pd.DataFrame, delta: pd.Timedelta, symbol: str) -> pd.DataFram
     # Merge with benchmark
     df = pd.merge(left=benchmark, right=df, on='candle_begin_time', how='left', sort=True, indicator=True)
 
-    df_left_only = df[df['_merge'] == 'left_only']
-    if len(df_left_only) > 0:
-        logging.warning('%s has %d missings', symbol, len(df_left_only))
+    # df_left_only = df[df['_merge'] == 'left_only']
+    # if len(df_left_only) > 0:
+    #     logging.warning('%s has %d missings', symbol, len(df_left_only))
 
     df.drop(columns=['_merge'], inplace=True)
 
@@ -103,9 +103,20 @@ def _fill_gap(df: pd.DataFrame, delta: pd.Timedelta, symbol: str) -> pd.DataFram
 
 
 def fix_candle(source, type_, time_interval):
+    logging.info('Fix candles for %s %s %s', source, type_, time_interval)
+
     input_dir = _get_input_dir(source, type_, time_interval)
-    symbols = get_filtered_symbols(input_dir)
+    logging.info('Input dir %s', input_dir)
+
     output_dir = _create_fixed_output_dir(input_dir)
+    logging.info('Output dir %s', output_dir)
+
+    if type_ == 'coin_futures':
+        symbols = sorted(os.path.splitext(x)[0] for x in os.listdir(input_dir))
+    else:
+        symbols = get_filtered_symbols(input_dir)
+    logging.info('Symbols %s', symbols)
+
     delta = convert_interval_to_timedelta(time_interval)
 
     def _split_and_fill(symbol):
@@ -113,7 +124,7 @@ def fix_candle(source, type_, time_interval):
         df = pd.read_parquet(candle_path)
         df = df[df['volume'] > 0]
 
-        if symbol not in Config.BINANCE_CANDLE_SPLITS[type_]:
+        if type_ not in Config.BINANCE_CANDLE_SPLITS or symbol not in Config.BINANCE_CANDLE_SPLITS[type_]:
             output_path = os.path.join(output_dir, f'{symbol}.pqt')
             df_fixed = _fill_gap(df, delta, symbol)
             df_fixed.to_parquet(output_path, compression='zstd')
