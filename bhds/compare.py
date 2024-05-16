@@ -9,16 +9,16 @@ from config import Config
 def compare_aws_quantclass_candle(type_, time_interval, symbol):
     logging.info('Compare AWS with Quantclass candlestick %s %s %s', type_, time_interval, symbol)
 
-    path_aws = os.path.join(Config.BINANCE_DATA_DIR, 'candle_feather', type_, time_interval, f'{symbol}.fea')
+    path_aws = os.path.join(Config.BINANCE_DATA_DIR, 'candle_parquet_fixed', type_, time_interval, f'{symbol}.pqt')
     logging.info('Path %s AWS', path_aws)
 
-    path_qtc = os.path.join(Config.BINANCE_QUANTCLASS_DIR, 'candle_feather', type_, time_interval, f'{symbol}.fea')
+    path_qtc = os.path.join(Config.BINANCE_QUANTCLASS_DIR, 'candle_parquet_fixed', type_, time_interval, f'{symbol}.pqt')
     logging.info('Path %s Quantclass', path_qtc)
 
-    df_aws = pd.read_feather(path_aws)
+    df_aws = pd.read_parquet(path_aws)
     logging.info('Time %s -- %s AWS', df_aws['candle_begin_time'].min(), df_aws['candle_begin_time'].max())
 
-    df_qtc = pd.read_feather(path_qtc)
+    df_qtc = pd.read_parquet(path_qtc)
     logging.info('Time %s -- %s Quantclass', df_qtc['candle_begin_time'].min(), df_qtc['candle_begin_time'].max())
 
     begin_ts = max(df_aws['candle_begin_time'].min(), df_qtc['candle_begin_time'].min())
