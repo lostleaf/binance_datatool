@@ -3,9 +3,9 @@
 Useful services for cryptocurrency quant trading.
 
 Currently, the services included are:
-- BHDS: Binance Historical Data Service.
+- BHDS: Binance Historical Data Service. BHDS downloads historical market data from Binance AWS data center and market data api, and converts raw data into Pandas Parquet format.
 
-## Prerequisites
+## Dependencies
 
 Please refer to the `environment.yml` file for the setup of the conda environment.
 
