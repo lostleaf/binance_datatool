@@ -76,6 +76,8 @@ python cli.py bhds convert_aws_candle_csv spot 1h
 
 ### Split Candlestick Data and Fill Gaps
 
+Split the delisted and relisted symbols like LUNA
+
 ```bash
 # Split 1-hour USDT perpetual candlestick data and fill gaps
 python cli.py bhds fix_candle aws usdt_futures 1h
