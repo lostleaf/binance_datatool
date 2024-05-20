@@ -13208,5 +13208,50 @@
     "price_tick": "0.01",
     "lot_size": "0.00001",
     "min_notional_value": "10"
+  },
+  "NOTUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "NOTBNB": {
+    "price_tick": "0.00000001",
+    "lot_size": "1",
+    "min_notional_value": "0.01"
+  },
+  "NOTFDUSD": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "NOTTRY": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "10"
+  },
+  "ARKMUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ARUSDC": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "BBUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "CRVUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "PEOPLEUSDC": {
+    "price_tick": "0.00001",
+    "lot_size": "0.1",
+    "min_notional_value": "1"
   }
 }
