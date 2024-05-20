@@ -1,6 +1,6 @@
-# Crypto Toolbox
+# Binance DataTool
 
-Comprehensive services for cryptocurrency quantitative trading.
+Comprehensive data services for Binance quantitative trading.
 
 The suite currently includes:
 - [BHDS](#bhds): Binance Historical Data Service. BHDS retrieves historical market data from the Binance AWS data center and the market data API, transforming raw data into the Pandas Parquet format.
