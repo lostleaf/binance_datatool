@@ -62,8 +62,6 @@ class BinanceFetcher:
         'spot': _parse_spot_syminfo,
     }
 
-    MAX_MINUTE_WEIGHT = 2400
-
     def __init__(self, type_, session):
         self.trade_type = type_
         self.market_api = create_binance_market_api(type_, session)
@@ -72,6 +70,9 @@ class BinanceFetcher:
             self.syminfo_parse_func = self.TYPE_MAP[type_]
         else:
             raise ValueError(f'Type {type_} not supported')
+
+    def get_api_limits(self) -> tuple[int, int]:
+        return self.market_api.MAX_MINUTE_WEIGHT, self.market_api.WEIGHT_EFFICIENT_ONCE_CANDLES
 
     async def get_exchange_info(self):
         """

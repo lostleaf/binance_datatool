@@ -247,7 +247,8 @@ async def download_aws_missing_from_api(type_, time_interval):
             server_ts = pd.to_datetime(timestamp, unit='ms', utc=True).tz_convert(DEFAULT_TZ)
             logging.info('Server time %s, weight used %d, from %s to %s', server_ts, weight, task_batch[0],
                          task_batch[-1])
-            if weight > fetcher.MAX_MINUTE_WEIGHT * 0.9:
+            max_minute_weight, _ = fetcher.get_api_limits()
+            if weight > max_minute_weight * 0.9:
                 await asyncio.sleep(60)
             download_tasks = []
             for symbol, dt in task_batch:

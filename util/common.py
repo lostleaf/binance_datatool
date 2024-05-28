@@ -52,3 +52,25 @@ def get_loop():
             return loop
         else:
             raise
+
+
+STABLECOINS = {
+    'BKRWUSDT', 'USDCUSDT', 'USDPUSDT', 'TUSDUSDT', 'BUSDUSDT', 'FDUSDUSDT', 'DAIUSDT', 'EURUSDT', 'GBPUSDT',
+    'USBPUSDT', 'SUSDUSDT', 'PAXGUSDT', 'AEURUSDT', 'USDSUSDT', 'USDSBUSDT'
+}
+
+
+def is_leverage_token(x: str):
+    if x.endswith(('UPUSDT', 'DOWNUSDT', 'BEARUSDT', 'BULLUSDT')) and x != 'JUPUSDT':
+        return True
+    return False
+
+
+def filter_symbols(symbols):
+    lev_symbols = {x for x in symbols if is_leverage_token(x)}
+    not_usdt_symbols = {x for x in symbols if not x.endswith('USDT')}
+
+    excludes = set.union(not_usdt_symbols, lev_symbols, STABLECOINS).intersection(symbols)
+
+    symbols_filtered = sorted(set(symbols) - excludes)
+    return symbols_filtered

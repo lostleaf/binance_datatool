@@ -7,13 +7,20 @@ import pandas as pd
 from util.time import now_time
 
 
-class CandleFeatherManager:
+class CandleFileManager:
 
-    def __init__(self, base_dir):
+    def __init__(self, base_dir, save_type):
         '''
         初始化，设定读写根目录
         '''
         self.base_dir = base_dir
+        self.save_type = save_type
+        if save_type == 'feather':
+            self.ext = 'fea'
+        elif save_type == 'parquet':
+            self.ext = 'pqt'
+        else:
+            raise ValueError(f'Save type {save_type} not supported, can only accept feather and parquet')
 
     def clear_all(self):
         '''
@@ -33,13 +40,24 @@ class CandleFeatherManager:
         file_path = os.path.join(self.base_dir, name)
         return file_path
 
+    def format_data_file_path(self, symbol):
+        name = f'{symbol}.{self.ext}'
+        file_path = os.path.join(self.base_dir, name)
+        return file_path
+
+    def save_data_file(self, symbol, df: pd.DataFrame):
+        df_path = self.format_data_file_path(symbol)
+        if self.save_type == 'feather':
+            df = df.reset_index(drop=True)
+            df.to_feather(df_path)
+        elif self.save_type == 'parquet':
+            df.to_parquet(df_path)
+
     def set_candle(self, symbol, run_time, df: pd.DataFrame):
         '''
         设置K线，首先将新的K线 DataFrame 写入 Feather，然后删除旧 ready file，并生成新 ready file
         '''
-        df_path = os.path.join(self.base_dir, f'{symbol}.fea')
-        df = df.reset_index(drop=True)
-        df.to_feather(df_path)
+        self.save_data_file(symbol, df)
 
         old_ready_file_paths = glob(os.path.join(self.base_dir, f'{symbol}_*.ready'))
         for p in old_ready_file_paths:
@@ -78,23 +96,27 @@ class CandleFeatherManager:
         '''
         读取 symbol 对应的 K线
         '''
-        return pd.read_feather(os.path.join(self.base_dir, f'{symbol}.fea'))
+        df_path = self.format_data_file_path(symbol)
+        if self.save_type == 'feather':
+            return pd.read_feather(df_path)
+        elif self.save_type == 'parquet':
+            return pd.read_parquet(df_path)
 
     def has_symbol(self, symbol) -> bool:
         '''
-        检查某 symbol Feather 文件是否存在
+        检查某 symbol 数据文件是否存在
         '''
-        p = os.path.join(self.base_dir, f'{symbol}.fea')
-        return os.path.exists(p)
+        df_path = self.format_data_file_path(symbol)
+        return os.path.exists(df_path)
 
     def remove_symbol(self, symbol):
         '''
-        移除 symbol，包括删除对应的 Feather 文件和 ready file
+        移除 symbol，包括删除对应的数据文件和 ready file
         '''
         old_ready_file_paths = glob(os.path.join(self.base_dir, f'{symbol}_*.ready'))
         for p in old_ready_file_paths:
             os.remove(p)
-        df_path = os.path.join(self.base_dir, f'{symbol}.fea')
+        df_path = self.format_data_file_path(symbol)
         if os.path.exists(df_path):
             os.remove(df_path)
 
@@ -102,5 +124,5 @@ class CandleFeatherManager:
         '''
         获取当前所有 symbol
         '''
-        paths = glob(os.path.join(self.base_dir, '*.fea'))
-        return [os.path.basename(p).rstrip('.fea') for p in paths]
+        paths = glob(os.path.join(self.base_dir, f'*.{self.ext}'))
+        return [os.path.splitext(os.path.basename(p))[0] for p in paths]

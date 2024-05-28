@@ -4,155 +4,27 @@ import os
 from itertools import islice
 
 import pandas as pd
+from candle_manager import CandleFileManager
+from market_api import BinanceMarketApi
 
-from candle_manager import CandleFeatherManager
-from market_api import BinanceMarketApi, BinanceUsdtFutureMarketApi
-from util import async_sleep_until_run_time, next_run_time, parse_interval_str, DEFAULT_TZ
-from util.time import now_time
+from util import (DEFAULT_TZ, async_sleep_until_run_time, batched, next_run_time, parse_interval_str, now_time)
 
-
-def batched(iterable, n):
-    # batched('ABCDEFG', 3) --> ABC DEF G https://docs.python.org/3/library/itertools.html#itertools-recipes
-    it = iter(iterable)
-    while batch := tuple(islice(it, n)):
-        yield batch
-
-
-class TradingUsdtSwapFilter:
-
-    def __init__(self, keep_symbols=None):
-        self.keep_symbols = set(keep_symbols) if keep_symbols else None
-
-    @classmethod
-    def is_trading_usdt_swap(cls, x):
-        '''
-        筛选出所有USDT本位的，正在被交易的(TRADING)，永续合约（PERPETUAL）
-        '''
-        return x['quote_asset'] == 'USDT' and x['status'] == 'TRADING' and x['contract_type'] == 'PERPETUAL'
-
-    def __call__(self, syminfo: dict) -> list:
-        symbols = [info['symbol'] for info in syminfo.values() if self.is_trading_usdt_swap(info)]
-        if self.keep_symbols is not None:  # 如有白名单，则只保留白名单内的
-            symbols = [sym for sym in symbols if sym in self.keep_symbols]
-        return symbols
-
-
-class TradingCoinSwapFilter:
-
-    def __init__(self, keep_symbols=None):
-        self.keep_symbols = set(keep_symbols) if keep_symbols else None
-
-    @classmethod
-    def is_trading_coin_swap(cls, x):
-        '''
-        筛选出所有币本位的，正在被交易的(TRADING)，永续合约（PERPETUAL）
-        '''
-        return x['quote_asset'] == 'USD' and x['status'] == 'TRADING' and x['contract_type'] == 'PERPETUAL'
-
-    def __call__(self, syminfo: dict) -> list:
-        symbols = [info['symbol'] for info in syminfo.values() if self.is_trading_coin_swap(info)]
-        if self.keep_symbols is not None:  # 如有白名单，则只保留白名单内的
-            symbols = [sym for sym in symbols if sym in self.keep_symbols]
-        return symbols
-
-class TradingUsdtSpotFilter:
-
-    def __init__(self, keep_symbols=None):
-        self.keep_symbols = set(keep_symbols) if keep_symbols else None
-
-    @classmethod
-    def is_trading_usdt_spot(cls, x):
-        '''
-        筛选出所有USDT本位的，正在被交易的(TRADING)，现货（Spot）
-        '''
-        return x['quote_asset'] == 'USDT' and x['status'] == 'TRADING' and not x['base_asset'].endswith(('UP', 'DOWN', 'BEAR', 'BULL'))
-
-    def __call__(self, syminfo: dict) -> list:
-        symbols = [info['symbol'] for info in syminfo.values() if self.is_trading_usdt_spot(info)]
-        if self.keep_symbols is not None:  # 如有白名单，则只保留白名单内的
-            symbols = [sym for sym in symbols if sym in self.keep_symbols]
-        return symbols
 
 class Crawler:
 
     def __init__(self, interval, exginfo_mgr, candle_mgr, market_api, symbol_filter, fetch_funding_rate, num_candles):
-        '''
-        interval: K线周期
-        exginfo_mgr: 用于管理 exchange info（合约交易规则）的 CandleFeatherManager
-        candle_mgr: 用于管理 K线的 CandleFeatherManager
-        market_api: BinanceMarketApi 的子类，用于请求币本位或 USDT 本位合约公有 API
-        symbol_filter: 用于过滤出 symbol
 
-        初始化阶段，exginfo_mgr 和 candle_mgr，会清空历史数据并建立数据目录
-        '''
         self.interval = interval
         self.market_api: BinanceMarketApi = market_api
-        self.candle_mgr: CandleFeatherManager = candle_mgr
-        self.exginfo_mgr: CandleFeatherManager = exginfo_mgr
+        self.candle_mgr: CandleFileManager = candle_mgr
+        self.exginfo_mgr: CandleFileManager = exginfo_mgr
         self.symbol_filter = symbol_filter
         self.fetch_funding_rate = fetch_funding_rate
         self.num_candles = num_candles
         self.exginfo_mgr.clear_all()
         self.candle_mgr.clear_all()
 
-    async def init_history(self):
-        '''
-        初始化历史阶段 init_history
-        '''
 
-        # 1. 通过调用 self.market_api.get_syminfo 获取所有交易的 symbol, 并根据 symbol_filter 过滤出我们想要的 symbol
-        syminfo = await self.market_api.get_syminfo()
-        all_symbols: list = self.symbol_filter(syminfo)
-        limit = self.market_api.WEIGHT_EFFICIENT_ONCE_CANDLES
-        cnt = 0
-        last_begin_time = dict()
-        interval_delta = parse_interval_str(self.interval)
-
-        # 2. 循环分批初始化每个 symbol 历史数据
-        while all_symbols:
-            # 2.1 获取权重和服务器时间，若使用权重到达临界点，sleep 到下一分钟
-            server_time, weight = await self.market_api.get_timestamp_and_weight()
-            if weight > self.market_api.MAX_MINUTE_WEIGHT * 0.9:
-                await async_sleep_until_run_time(next_run_time('1m'))
-                continue
-
-            # 2.2 每批获取还未获取完毕的 80 个 symbol，预计消耗权重 160
-            fetch_symbols = all_symbols[:80]
-            cnt += 1
-            logging.info('Round %d, Server time: %s, Used weight: %d, Symbol num %d, %s - %s', cnt, str(server_time),
-                         weight, len(all_symbols), fetch_symbols[0], fetch_symbols[-1])
-
-            tasks = []
-            for symbol in fetch_symbols:
-                # 默认还没有被获取过
-                end_timestamp = None
-
-                # 已经获取过，接着上次比上次已经获取过更旧的 limit 根
-                if symbol in last_begin_time:
-                    end_timestamp = (last_begin_time[symbol] - interval_delta).value // 1000000
-
-                tasks.append(self.fetch_and_save_history_candle(symbol, end_timestamp))
-
-            results = await asyncio.gather(*tasks)
-
-            # 2.3 更新 symbol 状态
-            round_finished_symbols = []
-            for symbol, (not_enough, begin_time, num) in zip(fetch_symbols, results):
-                last_begin_time[symbol] = begin_time
-
-                # 如果已经获取了足够的 K 线，或 K 线已不足（标的上市时间过短），则不需要继续获取
-                if num >= self.num_candles or not_enough:
-                    all_symbols.remove(symbol)
-                    if num < self.num_candles:
-                        logging.warn('%s finished not enough, candle num: %d', symbol, num)
-                    else:
-                        round_finished_symbols.append(symbol)
-
-            if round_finished_symbols:
-                logging.info('%s finished', str(round_finished_symbols))
-
-        server_time, weight = await self.market_api.get_timestamp_and_weight()
-        logging.info(f'Init history finished, Server time:, {server_time}, Used weight: {weight}')
 
     async def fetch_and_save_history_candle(self, symbol, end_timestamp):
 

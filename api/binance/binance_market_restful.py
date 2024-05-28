@@ -6,7 +6,7 @@ API keys are not required here
 from typing import Tuple
 from abc import ABC, abstractmethod
 
-from .basics import BinanceBaseApi
+from .restful_basics import BinanceBaseApi
 
 
 class BinanceBaseMarketApi(ABC, BinanceBaseApi):
@@ -30,6 +30,8 @@ class BinanceMarketUMFapi(BinanceBaseMarketApi):
     """
 
     PREFIX = 'https://fapi.binance.com/fapi'
+    WEIGHT_EFFICIENT_ONCE_CANDLES = 499
+    MAX_MINUTE_WEIGHT = 2400
 
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
         """
@@ -84,6 +86,8 @@ class BinanceMarketCMDapi(BinanceBaseMarketApi):
     """
 
     PREFIX = 'https://dapi.binance.com/dapi'
+    WEIGHT_EFFICIENT_ONCE_CANDLES = 499
+    MAX_MINUTE_WEIGHT = 2400
 
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
         """
@@ -131,6 +135,8 @@ class BinanceMarketSpotApi(BinanceBaseMarketApi):
     """
 
     PREFIX = 'https://api.binance.com/api'
+    WEIGHT_EFFICIENT_ONCE_CANDLES = 1000
+    MAX_MINUTE_WEIGHT = 6000
 
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
         """

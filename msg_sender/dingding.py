@@ -26,13 +26,14 @@ def retry_getter(func, retry_times=5, sleep_seconds=1, default=None, raise_err=T
 
 class DingDingSender:
 
-    def __init__(self, api_info, aiohttp_session):
-        self.api_info = api_info
+    def __init__(self, aiohttp_session, secret, access_token):
+        self.secret = secret
+        self.access_token = access_token
         self.session: aiohttp.ClientSession = aiohttp_session
 
-    def generate_post_url(self, channel_info):
-        secret = channel_info['secret']
-        access_token = channel_info['access_token']
+    def generate_post_url(self):
+        secret = self.secret
+        access_token = self.access_token
         timestamp = str(round(time.time() * 1000))
         secret_enc = secret.encode('utf-8')
         string_to_sign = '{}\n{}'.format(timestamp, secret)
@@ -42,8 +43,8 @@ class DingDingSender:
         url = f'https://oapi.dingtalk.com/robot/send?access_token={access_token}&timestamp={timestamp}&sign={sign}'
         return url
 
-    async def send_message(self, msg, channel):
-        post_url = self.generate_post_url(self.api_info[channel])
+    async def send_message(self, msg):
+        post_url = self.generate_post_url()
         headers = {"Content-Type": "application/json", "Charset": "UTF-8"}
         req_json_str = json.dumps({"msgtype": "text", "text": {"content": msg}})
         await async_retry_getter(lambda: self.session.post(url=post_url, data=req_json_str, headers=headers))

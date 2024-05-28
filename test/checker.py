@@ -5,7 +5,7 @@ import sys
 import json
 import os
 import pandas as pd
-from dingding import DingDingSender
+from msg_sender.dingding import DingDingSender
 from market_api import BinanceUsdtFutureMarketApi, BinanceCoinFutureMarketApi
 from util import async_sleep_until_run_time, create_aiohttp_session, next_run_time
 from candle_manager import CandleFeatherManager
