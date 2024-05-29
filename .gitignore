@@ -3,3 +3,4 @@ sync.sh
 .DS_Store
 .vscode
 example/*/config.json
+example/*/*_*m

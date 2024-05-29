@@ -1,6 +1,14 @@
 {
     "interval": "5m",
-    "http_timeout_sec": 3,
+    "http_timeout_sec": 6,
     "candle_close_timeout_sec": 12,
-    "trade_type": "coin_swap"
+    "trade_type": "coin_perp",
+    "funding_rate": true,
+    "num_candles": 1000,
+    "dingding": {
+        "error": {
+            "access_token": "f06...",
+            "secret": "SEC439..."
+        }
+    }
 }
