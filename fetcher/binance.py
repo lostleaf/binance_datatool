@@ -113,10 +113,15 @@ class BinanceFetcher:
             'taker_buy_quote_asset_volume',
             'ignore',
         ]
-        df = pd.DataFrame(data, columns=columns, dtype=float)
-        df['candle_begin_time'] = pd.to_datetime(df['candle_begin_time'], unit='ms', utc=True)
-        df['close_time'] = pd.to_datetime(df['close_time'], unit='ms', utc=True)
+        df = pd.DataFrame(data, columns=columns)
         df.drop(columns='ignore', inplace=True)
+        df['candle_begin_time'] = pd.to_datetime(df['candle_begin_time'].astype('int64'), unit='ms', utc=True)
+        df['close_time'] = pd.to_datetime(df['close_time'].astype('int64'), unit='ms', utc=True)
+        for col in [
+                'open', 'high', 'low', 'close', 'volume', 'quote_volume', 'trade_num', 'taker_buy_base_asset_volume',
+                'taker_buy_quote_asset_volume'
+        ]:
+            df[col] = df[col].astype(float)
         return df
 
     async def get_funding_rate(self) -> pd.DataFrame:
