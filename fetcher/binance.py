@@ -63,6 +63,11 @@ class BinanceFetcher:
     }
 
     def __init__(self, type_, session):
+        if type_ == 'usdt_swap' or type_ == 'usdt_perp':
+            type_ = 'usdt_futures'
+        if type_ == 'coin_swap' or type_ == 'coin_perp':
+            type_ = 'coin_futures'
+
         self.trade_type = type_
         self.market_api = create_binance_market_api(type_, session)
 
@@ -74,7 +79,12 @@ class BinanceFetcher:
     def get_api_limits(self) -> tuple[int, int]:
         return self.market_api.MAX_MINUTE_WEIGHT, self.market_api.WEIGHT_EFFICIENT_ONCE_CANDLES
 
-    async def get_exchange_info(self):
+    async def get_time_and_weight(self) -> tuple[pd.Timestamp, int]:
+        server_timestamp, weight = await self.market_api.aioreq_time_and_weight()
+        server_timestamp = pd.to_datetime(server_timestamp, unit='ms', utc=True)
+        return server_timestamp, weight
+
+    async def get_exchange_info(self) -> dict[str, dict]:
         """
         Parse trading rules from return values of /exchangeinfo API
         """
@@ -107,4 +117,16 @@ class BinanceFetcher:
         df['candle_begin_time'] = pd.to_datetime(df['candle_begin_time'], unit='ms', utc=True)
         df['close_time'] = pd.to_datetime(df['close_time'], unit='ms', utc=True)
         df.drop(columns='ignore', inplace=True)
+        return df
+
+    async def get_funding_rate(self) -> pd.DataFrame:
+        if self.trade_type == 'spot':
+            raise RuntimeError('Cannot request funding rate for spot')
+        data = await self.market_api.aioreq_premium_index()
+        # 如果 lastFundingRate 不能转换为浮点数，则转换为 nan
+        data = [{
+            'symbol': d['symbol'],
+            'fundingRate': pd.to_numeric(d['lastFundingRate'], errors='coerce')
+        } for d in data]
+        df = pd.DataFrame.from_records(data)
         return df

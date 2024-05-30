@@ -114,12 +114,12 @@ class BinanceMarketCMDapi(BinanceBaseMarketApi):
         url = f'{self.PREFIX}/v1/exchangeInfo'
         return await self._aio_get(url, None)
 
-    async def aioreq_premium_index(self) -> list:
+    async def aioreq_premium_index(self, **kwargs) -> list:
         """
         Get Mark Price and Funding Rate
         """
         url = f'{self.PREFIX}/v1/premiumIndex'
-        return await self._aio_get(url)
+        return await self._aio_get(url, kwargs)
 
     async def aioreq_funding_rate(self, **kwargs):
         """

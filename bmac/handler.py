@@ -1,12 +1,12 @@
-import aiohttp
 import os
+
+import aiohttp
 
 from fetcher import BinanceFetcher
 from msg_sender import DingDingSender
 
+from .candle_manager import CandleFileManager
 from .filter_symbol import create_symbol_filter
-
-from candle_manager import CandleFileManager
 
 
 class BmacHandler:
@@ -26,17 +26,18 @@ class BmacHandler:
         self.http_timeout_sec = int(cfg['http_timeout_sec'])
         self.candle_close_timeout_sec = int(cfg['candle_close_timeout_sec'])
         self.trade_type = cfg['trade_type']
-        self.keep_symbols = cfg.get('keep_symbols', None)
         self.fetch_funding_rate = cfg.get('funding_rate', False)
         self.num_candles = cfg['num_candles']
-        self.symbol_filter = create_symbol_filter(self.trade_type)
-        
+
+        self.keep_symbols = cfg.get('keep_symbols', None)
+        self.symbol_filter = create_symbol_filter(self.trade_type, self.keep_symbols)
+
         save_type = cfg.get('save_type', 'parquet')
         candle_dir = os.path.join(base_dir, f'{self.trade_type}_{self.interval}')
         self.candle_mgr = CandleFileManager(candle_dir, save_type)
         exginfo_dir = os.path.join(base_dir, f'exginfo_{self.interval}')
         self.exginfo_mgr = CandleFileManager(exginfo_dir, save_type)
-        
+
         self.dingding = cfg.get('dingding', None)
         self.senders = None
         self.fetcher: BinanceFetcher = None
