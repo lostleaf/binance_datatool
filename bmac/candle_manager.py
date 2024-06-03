@@ -1,7 +1,7 @@
 import os
 import shutil
 from glob import glob
-
+import time
 import pandas as pd
 
 from util.time import now_time
@@ -98,7 +98,8 @@ class CandleFileManager:
         '''
         df_path = self.format_data_file_path(symbol)
         if self.save_type == 'feather':
-            return pd.read_feather(df_path)
+            df = pd.read_feather(df_path)
+            return df
         elif self.save_type == 'parquet':
             return pd.read_parquet(df_path)
 

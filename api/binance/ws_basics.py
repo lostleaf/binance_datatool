@@ -1,12 +1,12 @@
 import asyncio
 import gzip
-import json
 import logging
 from enum import Enum
 from random import random
 from socket import gaierror
 from typing import Optional
 
+import orjson
 import websockets as ws
 from websockets.exceptions import ConnectionClosedError
 
@@ -25,7 +25,7 @@ class ReconnectingWebsocket:
     MAX_RECONNECTS = 5
     MAX_RECONNECT_SECONDS = 60
     MIN_RECONNECT_WAIT = 0.1
-    TIMEOUT = 10
+    TIMEOUT = 60
     NO_MESSAGE_RECONNECT_TIMEOUT = 60
     MAX_QUEUE_SIZE = 100
 
@@ -102,7 +102,7 @@ class ReconnectingWebsocket:
             except (ValueError, OSError):
                 return None
         try:
-            return json.loads(evt)
+            return orjson.loads(evt)
         except ValueError:
             self._log.debug(f'error parsing evt json:{evt}')
             return None
@@ -170,13 +170,7 @@ class ReconnectingWebsocket:
             raise BinanceWebsocketUnableToConnect
 
     async def recv(self):
-        res = None
-        while not res:
-            try:
-                res = await asyncio.wait_for(self._queue.get(), timeout=self.TIMEOUT)
-            except asyncio.TimeoutError:
-                self._log.debug(f"no message in {self.TIMEOUT} seconds")
-        return res
+        return await asyncio.wait_for(self._queue.get(), timeout=self.TIMEOUT)
 
     async def _wait_for_reconnect(self):
         while self.ws_state != WSListenerState.STREAMING and self.ws_state != WSListenerState.EXITING:

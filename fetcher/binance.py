@@ -3,7 +3,7 @@ from decimal import Decimal
 import pandas as pd
 
 from api.binance import create_binance_market_api
-from util import async_retry_getter
+from util import async_retry_getter, convert_interval_to_timedelta
 
 
 def _get_from_filters(filters, filter_type, field_name):
@@ -63,11 +63,6 @@ class BinanceFetcher:
     }
 
     def __init__(self, type_, session):
-        if type_ == 'usdt_swap' or type_ == 'usdt_perp':
-            type_ = 'usdt_futures'
-        if type_ == 'coin_swap' or type_ == 'coin_perp':
-            type_ = 'coin_futures'
-
         self.trade_type = type_
         self.market_api = create_binance_market_api(type_, session)
 
@@ -100,28 +95,20 @@ class BinanceFetcher:
         '''
         data = await async_retry_getter(self.market_api.aioreq_klines, symbol=symbol, interval=interval, **kwargs)
         columns = [
-            'candle_begin_time',
-            'open',
-            'high',
-            'low',
-            'close',
-            'volume',
-            'close_time',
-            'quote_volume',
-            'trade_num',
-            'taker_buy_base_asset_volume',
-            'taker_buy_quote_asset_volume',
-            'ignore',
+            'candle_begin_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_volume', 'trade_num',
+            'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
         ]
         df = pd.DataFrame(data, columns=columns)
-        df.drop(columns='ignore', inplace=True)
+        df.drop(columns=['ignore', 'close_time'], inplace=True)
         df['candle_begin_time'] = pd.to_datetime(df['candle_begin_time'].astype('int64'), unit='ms', utc=True)
-        df['close_time'] = pd.to_datetime(df['close_time'].astype('int64'), unit='ms', utc=True)
         for col in [
                 'open', 'high', 'low', 'close', 'volume', 'quote_volume', 'trade_num', 'taker_buy_base_asset_volume',
                 'taker_buy_quote_asset_volume'
         ]:
             df[col] = df[col].astype(float)
+
+        df['candle_end_time'] = df['candle_begin_time'] + convert_interval_to_timedelta(interval)
+        df.set_index('candle_end_time', inplace=True)
         return df
 
     async def get_funding_rate(self) -> pd.DataFrame:
