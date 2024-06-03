@@ -1,7 +1,5 @@
 {
     "interval": "5m",
-    "http_timeout_sec": 6,
-    "candle_close_timeout_sec": 12,
     "trade_type": "coin_perp",
     "funding_rate": true,
     "num_candles": 1000,

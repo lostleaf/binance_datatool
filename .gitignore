@@ -2,5 +2,5 @@ sync.sh
 *.pyc
 .DS_Store
 .vscode
-example/*/config.json
-example/*/*_*m
+bmac_example/*/config.json
+bmac_example/*/*_*m
