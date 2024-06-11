@@ -94,5 +94,5 @@ class CandleListener:
             if symbol in self.symbols:
                 self.symbols.remove(symbol)
 
-    def req_reconnect(self):
+    def reconnect(self):
         self.req_reconnect = True

@@ -283,7 +283,7 @@ async def update_exginfo(handler: BmacHandler, fetcher: BinanceFetcher, senders:
     # 5. Listener 重启重新订阅
     for group_id in changed_groups:
         listener: CandleListener = listeners[group_id]
-        listener.req_reconnect()
+        listener.reconnect()
 
     # 6. 最后对停止交易的和新的 symbol 会发送钉钉警告
     if len(msg):
