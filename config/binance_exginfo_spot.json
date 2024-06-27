@@ -1655,7 +1655,7 @@
     "min_notional_value": "0.01"
   },
   "XRPBNB": {
-    "price_tick": "0.000001",
+    "price_tick": "0.0000001",
     "lot_size": "1",
     "min_notional_value": "0.01"
   },
@@ -2130,7 +2130,7 @@
     "min_notional_value": "10"
   },
   "TRXXRP": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "0.1",
     "min_notional_value": "10"
   },
@@ -2360,7 +2360,7 @@
     "min_notional_value": "0.0001"
   },
   "FETUSDT": {
-    "price_tick": "0.0001",
+    "price_tick": "0.001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
@@ -2792,7 +2792,7 @@
   "DOGEUSDT": {
     "price_tick": "0.00001",
     "lot_size": "1",
-    "min_notional_value": "5"
+    "min_notional_value": "1"
   },
   "DOGEPAX": {
     "price_tick": "0.0000001",
@@ -2802,7 +2802,7 @@
   "DOGEUSDC": {
     "price_tick": "0.00001",
     "lot_size": "1",
-    "min_notional_value": "5"
+    "min_notional_value": "1"
   },
   "DUSKBNB": {
     "price_tick": "0.00001",
@@ -3045,7 +3045,7 @@
     "min_notional_value": "0.0001"
   },
   "CHZUSDT": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -3110,7 +3110,7 @@
     "min_notional_value": "5"
   },
   "RENUSDT": {
-    "price_tick": "0.000001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -3195,7 +3195,7 @@
     "min_notional_value": "0.0001"
   },
   "STXUSDT": {
-    "price_tick": "0.0001",
+    "price_tick": "0.001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
@@ -3430,7 +3430,7 @@
     "min_notional_value": "10"
   },
   "XRPTRY": {
-    "price_tick": "0.001",
+    "price_tick": "0.01",
     "lot_size": "1",
     "min_notional_value": "10"
   },
@@ -3990,7 +3990,7 @@
     "min_notional_value": "10"
   },
   "ARDRUSDT": {
-    "price_tick": "0.0001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -4871,7 +4871,7 @@
   },
   "TRBBTC": {
     "price_tick": "0.0000001",
-    "lot_size": "0.01",
+    "lot_size": "0.001",
     "min_notional_value": "0.0001"
   },
   "TRBBUSD": {
@@ -4881,7 +4881,7 @@
   },
   "TRBUSDT": {
     "price_tick": "0.01",
-    "lot_size": "0.01",
+    "lot_size": "0.001",
     "min_notional_value": "5"
   },
   "ETHNGN": {
@@ -5240,7 +5240,7 @@
     "min_notional_value": "0.0001"
   },
   "SUNUSDT": {
-    "price_tick": "0.000001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -5375,7 +5375,7 @@
     "min_notional_value": "0.0001"
   },
   "UTKUSDT": {
-    "price_tick": "0.0001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -6030,7 +6030,7 @@
     "min_notional_value": "100"
   },
   "TRXTRY": {
-    "price_tick": "0.0001",
+    "price_tick": "0.001",
     "lot_size": "1",
     "min_notional_value": "10"
   },
@@ -6220,7 +6220,7 @@
     "min_notional_value": "10"
   },
   "TRUUSDT": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -6312,7 +6312,7 @@
   "DOGEEUR": {
     "price_tick": "0.00001",
     "lot_size": "1",
-    "min_notional_value": "5"
+    "min_notional_value": "1"
   },
   "DOGETRY": {
     "price_tick": "0.001",
@@ -6416,7 +6416,7 @@
   },
   "FRONTBTC": {
     "price_tick": "0.00000001",
-    "lot_size": "1",
+    "lot_size": "0.1",
     "min_notional_value": "0.0001"
   },
   "EASYBTC": {
@@ -6621,7 +6621,7 @@
   },
   "PONDUSDT": {
     "price_tick": "0.00001",
-    "lot_size": "0.01",
+    "lot_size": "1",
     "min_notional_value": "5"
   },
   "DEGOBTC": {
@@ -6680,7 +6680,7 @@
     "min_notional_value": "5"
   },
   "CHZEUR": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -6711,7 +6711,7 @@
   },
   "LINAUSDT": {
     "price_tick": "0.000001",
-    "lot_size": "0.01",
+    "lot_size": "1",
     "min_notional_value": "5"
   },
   "ADARUB": {
@@ -7280,7 +7280,7 @@
     "min_notional_value": "5"
   },
   "SHIBTRY": {
-    "price_tick": "0.00000001",
+    "price_tick": "0.0000001",
     "lot_size": "1",
     "min_notional_value": "10"
   },
@@ -8300,8 +8300,8 @@
     "min_notional_value": "10"
   },
   "FRONTUSDT": {
-    "price_tick": "0.0001",
-    "lot_size": "1",
+    "price_tick": "0.001",
+    "lot_size": "0.1",
     "min_notional_value": "5"
   },
   "CVPUSDT": {
@@ -8835,7 +8835,7 @@
     "min_notional_value": "0.001"
   },
   "JASMYUSDT": {
-    "price_tick": "0.000001",
+    "price_tick": "0.00001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
@@ -9915,7 +9915,7 @@
     "min_notional_value": "0.001"
   },
   "JASMYTRY": {
-    "price_tick": "0.0001",
+    "price_tick": "0.001",
     "lot_size": "1",
     "min_notional_value": "10"
   },
@@ -10621,7 +10621,7 @@
   },
   "PHBUSDT": {
     "price_tick": "0.0001",
-    "lot_size": "1",
+    "lot_size": "0.1",
     "min_notional_value": "5"
   },
   "VITEBUSD": {
@@ -10700,7 +10700,7 @@
     "min_notional_value": "5"
   },
   "FETTRY": {
-    "price_tick": "0.001",
+    "price_tick": "0.01",
     "lot_size": "0.1",
     "min_notional_value": "10"
   },
@@ -10710,7 +10710,7 @@
     "min_notional_value": "10"
   },
   "AGIXUSDT": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -10780,12 +10780,12 @@
     "min_notional_value": "10"
   },
   "STXTRY": {
-    "price_tick": "0.001",
+    "price_tick": "0.01",
     "lot_size": "0.1",
     "min_notional_value": "10"
   },
   "USTCUSDT": {
-    "price_tick": "0.00000001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -10825,7 +10825,7 @@
     "min_notional_value": "0.01"
   },
   "IDUSDT": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -10840,7 +10840,7 @@
     "min_notional_value": "5"
   },
   "AGIXTRY": {
-    "price_tick": "0.001",
+    "price_tick": "0.01",
     "lot_size": "1",
     "min_notional_value": "10"
   },
@@ -10875,7 +10875,7 @@
     "min_notional_value": "5"
   },
   "IDTRY": {
-    "price_tick": "0.001",
+    "price_tick": "0.01",
     "lot_size": "1",
     "min_notional_value": "10"
   },
@@ -10965,14 +10965,14 @@
     "min_notional_value": "20"
   },
   "USDTARS": {
-    "price_tick": "0.1",
+    "price_tick": "1",
     "lot_size": "1",
     "min_notional_value": "2000"
   },
   "DOGETUSD": {
     "price_tick": "0.00001",
     "lot_size": "1",
-    "min_notional_value": "5"
+    "min_notional_value": "1"
   },
   "WBTCUSDT": {
     "price_tick": "0.01",
@@ -10980,7 +10980,7 @@
     "min_notional_value": "5"
   },
   "EDUUSDT": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -11215,28 +11215,28 @@
     "min_notional_value": "5"
   },
   "ARKMUSDT": {
-    "price_tick": "0.0001",
-    "lot_size": "1",
+    "price_tick": "0.001",
+    "lot_size": "0.1",
     "min_notional_value": "5"
   },
   "ARKMTUSD": {
-    "price_tick": "0.0001",
-    "lot_size": "1",
+    "price_tick": "0.001",
+    "lot_size": "0.1",
     "min_notional_value": "5"
   },
   "ARKMTRY": {
-    "price_tick": "0.001",
-    "lot_size": "1",
+    "price_tick": "0.01",
+    "lot_size": "0.1",
     "min_notional_value": "10"
   },
   "ARKMBNB": {
-    "price_tick": "0.0000001",
-    "lot_size": "1",
+    "price_tick": "0.000001",
+    "lot_size": "0.1",
     "min_notional_value": "0.01"
   },
   "ARKMBTC": {
     "price_tick": "0.00000001",
-    "lot_size": "1",
+    "lot_size": "0.1",
     "min_notional_value": "0.0001"
   },
   "WBETHUSDT": {
@@ -11315,7 +11315,7 @@
     "min_notional_value": "100"
   },
   "AMPTRY": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "10"
   },
@@ -11457,7 +11457,7 @@
   "DOGEFDUSD": {
     "price_tick": "0.00001",
     "lot_size": "1",
-    "min_notional_value": "5"
+    "min_notional_value": "1"
   },
   "CYBERETH": {
     "price_tick": "0.000001",
@@ -11505,8 +11505,8 @@
     "min_notional_value": "10"
   },
   "FRONTTRY": {
-    "price_tick": "0.001",
-    "lot_size": "1",
+    "price_tick": "0.01",
+    "lot_size": "0.1",
     "min_notional_value": "10"
   },
   "SUIFDUSD": {
@@ -11561,7 +11561,7 @@
   },
   "TRBTRY": {
     "price_tick": "1",
-    "lot_size": "0.01",
+    "lot_size": "0.001",
     "min_notional_value": "10"
   },
   "ATOMFDUSD": {
@@ -11630,7 +11630,7 @@
     "min_notional_value": "0.0001"
   },
   "TIAUSDT": {
-    "price_tick": "0.01",
+    "price_tick": "0.001",
     "lot_size": "0.01",
     "min_notional_value": "5"
   },
@@ -11685,7 +11685,7 @@
     "min_notional_value": "5"
   },
   "FETFDUSD": {
-    "price_tick": "0.0001",
+    "price_tick": "0.001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
@@ -11730,7 +11730,7 @@
     "min_notional_value": "1"
   },
   "BEAMXUSDT": {
-    "price_tick": "0.000001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -11770,7 +11770,7 @@
     "min_notional_value": "5"
   },
   "TIATUSD": {
-    "price_tick": "0.01",
+    "price_tick": "0.001",
     "lot_size": "0.01",
     "min_notional_value": "5"
   },
@@ -11840,12 +11840,12 @@
     "min_notional_value": "5"
   },
   "USTCFDUSD": {
-    "price_tick": "0.00000001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
   "USTCTRY": {
-    "price_tick": "0.001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "10"
   },
@@ -11855,7 +11855,7 @@
     "min_notional_value": "10"
   },
   "VANRYUSDT": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -12086,32 +12086,32 @@
   },
   "AIBTC": {
     "price_tick": "0.00000001",
-    "lot_size": "1",
+    "lot_size": "0.1",
     "min_notional_value": "0.0001"
   },
   "AIUSDT": {
     "price_tick": "0.001",
-    "lot_size": "1",
+    "lot_size": "0.1",
     "min_notional_value": "5"
   },
   "AIBNB": {
     "price_tick": "0.000001",
-    "lot_size": "1",
+    "lot_size": "0.1",
     "min_notional_value": "0.01"
   },
   "AIFDUSD": {
     "price_tick": "0.001",
-    "lot_size": "1",
+    "lot_size": "0.1",
     "min_notional_value": "5"
   },
   "AITUSD": {
     "price_tick": "0.001",
-    "lot_size": "1",
+    "lot_size": "0.1",
     "min_notional_value": "5"
   },
   "AITRY": {
     "price_tick": "0.01",
-    "lot_size": "1",
+    "lot_size": "0.1",
     "min_notional_value": "10"
   },
   "ICPFDUSD": {
@@ -12140,7 +12140,7 @@
     "min_notional_value": "5"
   },
   "XAIBNB": {
-    "price_tick": "0.00000001",
+    "price_tick": "0.000001",
     "lot_size": "0.1",
     "min_notional_value": "0.01"
   },
@@ -12155,7 +12155,7 @@
     "min_notional_value": "5"
   },
   "XAITRY": {
-    "price_tick": "0.001",
+    "price_tick": "0.01",
     "lot_size": "0.1",
     "min_notional_value": "10"
   },
@@ -12165,12 +12165,12 @@
     "min_notional_value": "10"
   },
   "STXFDUSD": {
-    "price_tick": "0.0001",
+    "price_tick": "0.001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
   "TIAFDUSD": {
-    "price_tick": "0.01",
+    "price_tick": "0.001",
     "lot_size": "0.01",
     "min_notional_value": "5"
   },
@@ -12215,12 +12215,12 @@
     "min_notional_value": "5"
   },
   "TIAUSDC": {
-    "price_tick": "0.01",
+    "price_tick": "0.001",
     "lot_size": "0.01",
     "min_notional_value": "5"
   },
   "CHZFDUSD": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -12235,22 +12235,22 @@
     "min_notional_value": "0.0001"
   },
   "ALTUSDT": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
   "ALTBNB": {
-    "price_tick": "0.00000001",
+    "price_tick": "0.0000001",
     "lot_size": "1",
     "min_notional_value": "0.01"
   },
   "ALTFDUSD": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
   "ALTTRY": {
-    "price_tick": "0.001",
+    "price_tick": "0.01",
     "lot_size": "1",
     "min_notional_value": "10"
   },
@@ -12280,7 +12280,7 @@
     "min_notional_value": "10"
   },
   "ALTUSDC": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -12542,12 +12542,12 @@
   "WIFUSDT": {
     "price_tick": "0.0001",
     "lot_size": "0.01",
-    "min_notional_value": "5"
+    "min_notional_value": "1"
   },
   "WIFFDUSD": {
     "price_tick": "0.0001",
     "lot_size": "0.01",
-    "min_notional_value": "5"
+    "min_notional_value": "1"
   },
   "WIFTRY": {
     "price_tick": "0.01",
@@ -12555,7 +12555,7 @@
     "min_notional_value": "10"
   },
   "AGIXFDUSD": {
-    "price_tick": "0.00001",
+    "price_tick": "0.0001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -12660,7 +12660,7 @@
     "min_notional_value": "10"
   },
   "FETUSDC": {
-    "price_tick": "0.0001",
+    "price_tick": "0.001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
@@ -12687,12 +12687,12 @@
   "BOMEUSDT": {
     "price_tick": "0.000001",
     "lot_size": "1",
-    "min_notional_value": "5"
+    "min_notional_value": "1"
   },
   "BOMEFDUSD": {
     "price_tick": "0.000001",
     "lot_size": "1",
-    "min_notional_value": "5"
+    "min_notional_value": "1"
   },
   "ETHFIBTC": {
     "price_tick": "0.00000001",
@@ -12725,8 +12725,8 @@
     "min_notional_value": "10"
   },
   "ARKMFDUSD": {
-    "price_tick": "0.0001",
-    "lot_size": "1",
+    "price_tick": "0.001",
+    "lot_size": "0.1",
     "min_notional_value": "5"
   },
   "CRVTRY": {
@@ -12825,7 +12825,7 @@
     "min_notional_value": "0.0001"
   },
   "WUSDT": {
-    "price_tick": "0.001",
+    "price_tick": "0.0001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
@@ -12842,7 +12842,7 @@
   "BOMEUSDC": {
     "price_tick": "0.000001",
     "lot_size": "1",
-    "min_notional_value": "5"
+    "min_notional_value": "1"
   },
   "JTOUSDC": {
     "price_tick": "0.001",
@@ -12852,7 +12852,7 @@
   "WIFUSDC": {
     "price_tick": "0.0001",
     "lot_size": "0.01",
-    "min_notional_value": "5"
+    "min_notional_value": "1"
   },
   "TNSRBTC": {
     "price_tick": "0.00000001",
@@ -13015,7 +13015,7 @@
     "min_notional_value": "10"
   },
   "STXUSDC": {
-    "price_tick": "0.0001",
+    "price_tick": "0.001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
@@ -13125,8 +13125,8 @@
     "min_notional_value": "10"
   },
   "FRONTUSDC": {
-    "price_tick": "0.0001",
-    "lot_size": "1",
+    "price_tick": "0.001",
+    "lot_size": "0.1",
     "min_notional_value": "5"
   },
   "PEOPLETRY": {
@@ -13136,7 +13136,7 @@
   },
   "TRBUSDC": {
     "price_tick": "0.01",
-    "lot_size": "0.01",
+    "lot_size": "0.001",
     "min_notional_value": "5"
   },
   "BNX1USDT": {
@@ -13210,7 +13210,7 @@
     "min_notional_value": "10"
   },
   "NOTUSDT": {
-    "price_tick": "0.000001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -13220,7 +13220,7 @@
     "min_notional_value": "0.01"
   },
   "NOTFDUSD": {
-    "price_tick": "0.000001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -13231,7 +13231,7 @@
   },
   "ARKMUSDC": {
     "price_tick": "0.0001",
-    "lot_size": "1",
+    "lot_size": "0.1",
     "min_notional_value": "5"
   },
   "ARUSDC": {
@@ -13253,5 +13253,195 @@
     "price_tick": "0.00001",
     "lot_size": "0.1",
     "min_notional_value": "1"
+  },
+  "ARFDUSD": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "ENAEUR": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "PEPEEUR": {
+    "price_tick": "0.00000001",
+    "lot_size": "1",
+    "min_notional_value": "1"
+  },
+  "REZUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "TRBFDUSD": {
+    "price_tick": "0.01",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "USDCTRY": {
+    "price_tick": "0.01",
+    "lot_size": "1",
+    "min_notional_value": "10"
+  },
+  "BTCMXN": {
+    "price_tick": "1",
+    "lot_size": "0.000001",
+    "min_notional_value": "150"
+  },
+  "XRPMXN": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "150"
+  },
+  "ENSUSDC": {
+    "price_tick": "0.01",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "LDOUSDC": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "NOTUSDC": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "NEARBRL": {
+    "price_tick": "0.01",
+    "lot_size": "0.1",
+    "min_notional_value": "10"
+  },
+  "HIGHTRY": {
+    "price_tick": "0.1",
+    "lot_size": "0.01",
+    "min_notional_value": "10"
+  },
+  "PEOPLEFDUSD": {
+    "price_tick": "0.00001",
+    "lot_size": "0.1",
+    "min_notional_value": "1"
+  },
+  "TNSRUSDC": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "USDTCOP": {
+    "price_tick": "1",
+    "lot_size": "1",
+    "min_notional_value": "4000"
+  },
+  "IOBTC": {
+    "price_tick": "0.00000001",
+    "lot_size": "0.01",
+    "min_notional_value": "0.0001"
+  },
+  "IOUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "IOBNB": {
+    "price_tick": "0.000001",
+    "lot_size": "0.01",
+    "min_notional_value": "0.01"
+  },
+  "IOFDUSD": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "IOTRY": {
+    "price_tick": "0.01",
+    "lot_size": "0.01",
+    "min_notional_value": "10"
+  },
+  "NOTBRL": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "10"
+  },
+  "TRUTRY": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "10"
+  },
+  "WIFEUR": {
+    "price_tick": "0.0001",
+    "lot_size": "0.01",
+    "min_notional_value": "1"
+  },
+  "ZKBTC": {
+    "price_tick": "0.00000001",
+    "lot_size": "0.1",
+    "min_notional_value": "0.0001"
+  },
+  "ZKUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ZKFDUSD": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ZKTRY": {
+    "price_tick": "0.01",
+    "lot_size": "0.1",
+    "min_notional_value": "10"
+  },
+  "LISTAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "LISTABNB": {
+    "price_tick": "0.0000001",
+    "lot_size": "0.1",
+    "min_notional_value": "0.01"
+  },
+  "LISTAFDUSD": {
+    "price_tick": "0.0001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "LISTATRY": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "10"
+  },
+  "ZROBTC": {
+    "price_tick": "0.00000001",
+    "lot_size": "0.01",
+    "min_notional_value": "0.0001"
+  },
+  "ZROUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "ZROFDUSD": {
+    "price_tick": "0.001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "ZROTRY": {
+    "price_tick": "0.01",
+    "lot_size": "0.01",
+    "min_notional_value": "10"
+  },
+  "LISTABRL": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "10"
+  },
+  "BAKETRY": {
+    "price_tick": "0.01",
+    "lot_size": "1",
+    "min_notional_value": "10"
   }
 }

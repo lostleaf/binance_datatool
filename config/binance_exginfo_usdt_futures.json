@@ -240,7 +240,7 @@
     "min_notional_value": "5"
   },
   "EGLDUSDT": {
-    "price_tick": "0.01",
+    "price_tick": "0.001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
@@ -285,7 +285,7 @@
     "min_notional_value": "5"
   },
   "ENJUSDT": {
-    "price_tick": "0.0001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -330,7 +330,7 @@
     "min_notional_value": "5"
   },
   "LRCUSDT": {
-    "price_tick": "0.0001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -655,7 +655,7 @@
     "min_notional_value": "5"
   },
   "GMTUSDT": {
-    "price_tick": "0.0001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -1345,7 +1345,7 @@
     "min_notional_value": "5"
   },
   "DYMUSDT": {
-    "price_tick": "0.001",
+    "price_tick": "0.0001",
     "lot_size": "0.1",
     "min_notional_value": "5"
   },
@@ -1535,7 +1535,7 @@
     "min_notional_value": "5"
   },
   "REZUSDT": {
-    "price_tick": "0.0001",
+    "price_tick": "0.00001",
     "lot_size": "1",
     "min_notional_value": "5"
   },
@@ -1562,6 +1562,36 @@
   "NOTUSDT": {
     "price_tick": "0.000001",
     "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "TURBOUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "IOUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "ZKUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "MEWUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "LISTAUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "ZROUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
     "min_notional_value": "5"
   }
 }
