@@ -46,14 +46,20 @@ async def update_exchange_info(type_):
     if type_.endswith('_futures'):
         exg_info = {k: v for k, v in exg_info.items() if v['contract_type'] == 'PERPETUAL'}
 
-    info = {symbol: _get_info(x) for symbol, x in exg_info.items()}
+    info_new = {symbol: _get_info(x) for symbol, x in exg_info.items()}
     extra_info = read_extra_exginfo(type_)
-    info.update(extra_info)
+    info_new.update(extra_info)
 
     output_dir = os.path.join(Config.BINANCE_DATA_DIR, 'exginfo')
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    output_path = os.path.join(output_dir, f'{type_}.json')
-    logging.info('Output exchange info to %s', output_path)
+    os.makedirs(output_dir, exist_ok=True)
 
+    output_path = os.path.join(output_dir, f'{type_}.json')
+    if os.path.exists(output_path):
+        logging.info('Load existing exchange info %s', output_path)
+        info: dict = json.load(open(output_path, 'r'))
+        info.update(info_new)
+    else:
+        info = info_new
+    
+    logging.info('Output exchange info to %s', output_path)
     json.dump(info, open(output_path, 'w'), indent=2)
