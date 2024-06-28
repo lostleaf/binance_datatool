@@ -16,6 +16,7 @@ from util import convert_interval_to_timedelta, create_aiohttp_session, batched,
 from .aws_util import (aws_batch_list_dir, aws_download_symbol_files, aws_get_candle_dir, aws_list_dir)
 from .checksum import verify_checksum
 
+from .util import read_candle_splits
 
 async def get_aws_candle(type_, time_interval, symbols):
     symbol_to_dpath = {sym: aws_get_candle_dir(type_, sym, time_interval) for sym in symbols}
@@ -231,8 +232,9 @@ async def download_aws_missing_from_api(type_, time_interval):
     for symbol_aws_dir in symbol_aws_dirs:
         symbol = Path(symbol_aws_dir).parts[-2]
         splits = None
-        if type_ in Config.BINANCE_CANDLE_SPLITS:
-            splits = Config.BINANCE_CANDLE_SPLITS[type_].get(symbol, None)
+        binance_candle_splits = read_candle_splits()
+        if type_ in binance_candle_splits:
+            splits = binance_candle_splits[type_].get(symbol, None)
         symbol_api_dir = os.path.join(api_dir, symbol)
         missings = _get_aws_candle_missing_dts(symbol_aws_dir, splits, symbol_api_dir)
         if missings:

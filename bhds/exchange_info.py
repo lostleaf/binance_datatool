@@ -30,7 +30,7 @@ def _get_info(x):
 
 
 def read_extra_exginfo(type_):
-    p = os.path.join(Config.BHDS_EXTRA_DIR, f'{type_}.json')
+    p = os.path.join(Config.BHDS_EXTRA_EXGINFO_DIR, f'{type_}.json')
     logging.info('Read extra exginfo %s', p)
     if os.path.exists(p):
         return json.load(open(p))

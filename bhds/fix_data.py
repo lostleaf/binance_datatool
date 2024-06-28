@@ -10,6 +10,7 @@ from config import Config
 from util import convert_interval_to_timedelta
 
 from .filter_symbol import get_filtered_symbols
+from .util import read_candle_splits
 
 
 def check(df, symbol, hours_threshold):
@@ -124,13 +125,15 @@ def fix_candle(source, type_, time_interval):
         df = pd.read_parquet(candle_path)
         df = df[df['volume'] > 0]
 
-        if type_ not in Config.BINANCE_CANDLE_SPLITS or symbol not in Config.BINANCE_CANDLE_SPLITS[type_]:
+        binance_candle_splits = read_candle_splits()
+
+        if type_ not in binance_candle_splits or symbol not in binance_candle_splits[type_]:
             output_path = os.path.join(output_dir, f'{symbol}.pqt')
             df_fixed = _fill_gap(df, delta, symbol)
             df_fixed.to_parquet(output_path, compression='zstd')
             return
 
-        splits = Config.BINANCE_CANDLE_SPLITS[type_][symbol]
+        splits = binance_candle_splits[type_][symbol]
         for begin_time, end_time, symbol_new in splits:
             output_path = os.path.join(output_dir, f'{symbol_new}.pqt')
             logging.warning('Split %s %s - %s to %s', symbol, begin_time, end_time, output_path)
