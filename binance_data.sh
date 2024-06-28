@@ -18,6 +18,8 @@ done
 
 for trade_type in "${trade_types[@]}"
 do 
+    # Update latest exchange info
+    $PY cli.py bhds update_exchange_info $trade_type
     # Download missing 1H candlestick data from market data api 
     $PY cli.py bhds download_aws_missing_candle $trade_type 1h
     # Convert 1H candlestick data to Pandas Parquet
