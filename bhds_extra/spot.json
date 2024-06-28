@@ -1,0 +1,72 @@
+{
+  "BNX1USDT": {
+    "price_tick": "0.1",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "BTCST1USDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "COCOS1USDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "CVC1USDT": {
+    "price_tick": "0.00001",
+    "lot_size": "0.00001",
+    "min_notional_value": "5"
+  },
+  "DREP1USDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "FTT1USDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "KEY1USDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "LUNA1USDT": {
+    "price_tick": "0.00001",
+    "lot_size": "0.00001",
+    "min_notional_value": "5"
+  },
+  "QUICK1USDT": {
+    "price_tick": "0.1",
+    "lot_size": "0.001",
+    "min_notional_value": "5"
+  },
+  "STRAX1USDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.0001",
+    "min_notional_value": "5"
+  },
+  "SUN1USDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.0001",
+    "min_notional_value": "5"
+  },
+  "VEN1USDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "VIDT1USDT": {
+    "price_tick": "0.0001",
+    "lot_size": "0.00001",
+    "min_notional_value": "5"
+  },
+  "BCC1USDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.00001",
+    "min_notional_value": "10"
+  }
+}

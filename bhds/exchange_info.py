@@ -4,8 +4,7 @@ import os
 
 # import simplejson
 
-from api.binance import (BinanceMarketCMDapi, BinanceMarketSpotApi,
-                         BinanceMarketUMFapi)
+from api.binance import (BinanceMarketCMDapi, BinanceMarketSpotApi, BinanceMarketUMFapi)
 from config import Config
 from fetcher import BinanceFetcher
 from util import create_aiohttp_session, remove_exponent
@@ -30,6 +29,14 @@ def _get_info(x):
     return i
 
 
+def read_extra_exginfo(type_):
+    p = os.path.join(Config.BHDS_EXTRA_DIR, f'{type_}.json')
+    logging.info('Read extra exginfo %s', p)
+    if os.path.exists(p):
+        return json.load(open(p))
+    return dict()
+
+
 async def update_exchange_info(type_):
     async with create_aiohttp_session(BINANCE_TIMEOUT_SEC) as session:
         fetcher = BinanceFetcher(type_, session)
@@ -38,11 +45,15 @@ async def update_exchange_info(type_):
 
     if type_.endswith('_futures'):
         exg_info = {k: v for k, v in exg_info.items() if v['contract_type'] == 'PERPETUAL'}
-    info_new = {symbol: _get_info(x) for symbol, x in exg_info.items()}
 
-    if os.path.exists(Config.BINANCE_EXGINFO_PATH[type_]):
-        info: dict = Config.BINANCE_EXGINFO[type_]
-        info.update(info_new)
-    else:
-        info = info_new
-    json.dump(info, open(Config.BINANCE_EXGINFO_PATH[type_], 'w'), indent=2)
+    info = {symbol: _get_info(x) for symbol, x in exg_info.items()}
+    extra_info = read_extra_exginfo(type_)
+    info.update(extra_info)
+
+    output_dir = os.path.join(Config.BINANCE_DATA_DIR, 'exg_info')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_path = os.path.join(output_dir, f'{type_}.json')
+    logging.info('Output exchange info to %s', output_path)
+
+    json.dump(info, open(output_path, 'w'), indent=2)
