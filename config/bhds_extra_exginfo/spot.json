@@ -68,5 +68,10 @@
     "price_tick": "0.01",
     "lot_size": "0.00001",
     "min_notional_value": "10"
+  },
+  "NBTUSDT": {
+    "lot_size": "1",
+    "min_notional_value": "5",
+    "price_tick": "0.00001"
   }
 }

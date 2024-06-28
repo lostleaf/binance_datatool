@@ -78,5 +78,55 @@
     "price_tick": "0.1",
     "lot_size": "0.001",
     "min_notional_value": "5"
+  },
+  "ANTUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "AUDIOUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "BLUEBIRDUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "BTSUSDT": {
+    "price_tick": "0.00001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "COCOSUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "0.1",
+    "min_notional_value": "5"
+  },
+  "FOOTBALLUSDT": {
+    "price_tick": "0.01",
+    "lot_size": "0.01",
+    "min_notional_value": "5"
+  },
+  "HNTUSDT": {
+    "price_tick": "0.001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "MBLUSDT": {
+    "price_tick": "0.000001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "SRMUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
+  },
+  "TOMOUSDT": {
+    "price_tick": "0.0001",
+    "lot_size": "1",
+    "min_notional_value": "5"
   }
 }
