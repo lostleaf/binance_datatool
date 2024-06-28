@@ -24,3 +24,5 @@ dependencies:
       - tzdata==2024.1
       - xmltodict==0.13.0
       - yarl==1.9.4
+      - orjson==3.10.3
+      - websockets==12.0
