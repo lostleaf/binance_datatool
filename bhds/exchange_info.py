@@ -50,7 +50,7 @@ async def update_exchange_info(type_):
     extra_info = read_extra_exginfo(type_)
     info.update(extra_info)
 
-    output_dir = os.path.join(Config.BINANCE_DATA_DIR, 'exg_info')
+    output_dir = os.path.join(Config.BINANCE_DATA_DIR, 'exginfo')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     output_path = os.path.join(output_dir, f'{type_}.json')
