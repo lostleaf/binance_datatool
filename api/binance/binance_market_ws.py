@@ -35,6 +35,7 @@ def get_coin_futures_kline_socket(symbols, time_inteval):
     path = '/'.join(channels)
     return get_coin_futures_socket(path)
 
+
 def get_usdt_futures_kline_socket(symbols, time_inteval):
     channels = [f'{s.lower()}@kline_{time_inteval}' for s in symbols]
     path = '/'.join(channels)

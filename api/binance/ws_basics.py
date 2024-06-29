@@ -1,12 +1,12 @@
 import asyncio
 import gzip
+import json
 import logging
 from enum import Enum
 from random import random
 from socket import gaierror
 from typing import Optional
 
-import orjson
 import websockets as ws
 from websockets.exceptions import ConnectionClosedError
 
@@ -102,7 +102,7 @@ class ReconnectingWebsocket:
             except (ValueError, OSError):
                 return None
         try:
-            return orjson.loads(evt)
+            return json.loads(evt)
         except ValueError:
             self._log.debug(f'error parsing evt json:{evt}')
             return None
