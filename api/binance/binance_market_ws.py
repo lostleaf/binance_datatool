@@ -1,42 +1,45 @@
-from typing import Optional
 from .ws_basics import ReconnectingWebsocket
 
-STREAM_URL = 'wss://stream.binance.com:9443/'
-FSTREAM_URL = 'wss://fstream.binance.com/'
-DSTREAM_URL = 'wss://dstream.binance.com/'
-VSTREAM_URL = 'wss://vstream.binance.com/'
+# 现货 WS Base Url
+SPOT_STREAM_URL = 'wss://stream.binance.com:9443/'
+
+# U 本位合约 WS Base Url
+USDT_FUTURES_FSTREAM_URL = 'wss://fstream.binance.com/'
+
+# 币本位合约 WS Base Url
+COIN_FUTURES_DSTREAM_URL = 'wss://dstream.binance.com/'
 
 
-def _get_socket(path: str,
-                stream_url: Optional[str] = None,
-                prefix: str = 'ws/',
-                is_binary: bool = False) -> ReconnectingWebsocket:
-    conn = ReconnectingWebsocket(
-        path=path,
-        url=stream_url,
-        prefix=prefix,
-        is_binary=is_binary,
+def get_coin_futures_multi_candlesticks_socket(symbols, time_inteval):
+    """
+    返回币本位合约单周期多个 symbol K 线 websocket 连接
+    """
+    channels = [f'{s.lower()}@kline_{time_inteval}' for s in symbols]
+    return ReconnectingWebsocket(
+        path='/'.join(channels),
+        url=COIN_FUTURES_DSTREAM_URL,
+        prefix='stream?streams=',
     )
-    return conn
 
 
-def get_usdt_futures_socket(path: str, prefix: str = 'stream?streams='):
-    stream_url = FSTREAM_URL
-    return _get_socket(path, stream_url, prefix)
-
-
-def get_coin_futures_socket(path: str, prefix: str = 'stream?streams='):
-    stream_url = DSTREAM_URL
-    return _get_socket(path, stream_url, prefix)
-
-
-def get_coin_futures_kline_socket(symbols, time_inteval):
+def get_usdt_futures_multi_candlesticks_socket(symbols, time_inteval):
+    """
+    返回 U 本位合约单周期多个 symbol K 线 websocket 连接
+    """
     channels = [f'{s.lower()}@kline_{time_inteval}' for s in symbols]
-    path = '/'.join(channels)
-    return get_coin_futures_socket(path)
+    return ReconnectingWebsocket(
+        path='/'.join(channels),
+        url=USDT_FUTURES_FSTREAM_URL,
+        prefix='stream?streams=',
+    )
 
-
-def get_usdt_futures_kline_socket(symbols, time_inteval):
+def get_spot_multi_candlesticks_socket(symbols, time_inteval):
+    """
+    返回现货单周期多个 symbol K 线 websocket 连接
+    """
     channels = [f'{s.lower()}@kline_{time_inteval}' for s in symbols]
-    path = '/'.join(channels)
-    return get_usdt_futures_socket(path)
+    return ReconnectingWebsocket(
+        path='/'.join(channels),
+        url=SPOT_STREAM_URL,
+        prefix='stream?streams=',
+    )
