@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 export PY=~/anaconda3/envs/crypto/bin/python
 
-trade_types=( "spot" "usdt_futures" "coin_futures" )
+trade_types=("spot" "usdt_futures" "coin_futures")
 
 for i in 1 2
 do
