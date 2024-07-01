@@ -16,11 +16,11 @@ class BmacHandler:
         self.interval = cfg['interval']
         # 标的类型，可以是 'spot'/'usdt_spot', 'usdt_perp'/'usdt_swap', 'coin_perp'/'coin_swap'
         self.trade_type = cfg['trade_type']
-        # 保留 K 线数量
-        self.num_candles = cfg['num_candles']
 
         # 可选参数
 
+        # 保留 K 线数量, 默认1500
+        self.num_candles = cfg.get('num_candles', 1500)
         # 是否获取资金费率，默认否
         self.fetch_funding_rate = cfg.get('funding_rate', False)
         # http 超时时间，默认 5 秒
@@ -50,6 +50,7 @@ class BmacHandler:
         self.exginfo_mgr = CandleFileManager(exginfo_dir, save_type)
 
         self.trade_type = normalize_trade_type(self.trade_type)
+
 
 def normalize_trade_type(ty):
     if ty == 'usdt_spot':
