@@ -1,0 +1,19 @@
+{
+    "interval": "5m",
+    "trade_type": "usdt_perp",
+
+    "num_candles": 2000,
+    "funding_rate": true,
+    "http_timeout_sec": 5,
+    "candle_close_timeout_sec": 15,
+    "save_type": "parquet",
+    
+    "num_rest_fetchers": 8,
+    "num_socket_listeners": 8,
+    "dingding": {
+        "error": {
+            "access_token": "f06e5.....",
+            "secret": "SEC439...."        
+        }
+    }
+}

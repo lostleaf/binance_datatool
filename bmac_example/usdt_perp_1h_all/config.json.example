@@ -2,7 +2,7 @@
     "interval": "1h",
     "trade_type": "usdt_perp",
     "funding_rate": true,
-    "num_candles": 10000,
+    "num_candles": 2000,
     "dingding": {
         "error": {
             "access_token": "f06e5.....",
