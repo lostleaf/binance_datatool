@@ -25,3 +25,4 @@ dependencies:
       - xmltodict==0.13.0
       - yarl==1.9.4
       - websockets==12.0
+      - colorama==0.4.6
