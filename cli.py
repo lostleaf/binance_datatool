@@ -5,8 +5,6 @@ import fire
 from bhds.cli import Bhds
 from bmac.cli import Bmac
 
-logging.basicConfig(format='%(asctime)s (%(levelname)s) - %(message)s', level=logging.INFO, datefmt='%Y%m%d %H:%M:%S')
-
 
 class Task:
 
