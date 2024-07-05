@@ -3,9 +3,8 @@ import logging
 
 import pandas as pd
 
-from api.binance.binance_market_ws import (get_coin_futures_multi_candlesticks_socket,
-                                           get_spot_multi_candlesticks_socket,
-                                           get_usdt_futures_multi_candlesticks_socket)
+from api.binance import (get_coin_futures_multi_candlesticks_socket, get_spot_multi_candlesticks_socket,
+                         get_usdt_futures_multi_candlesticks_socket)
 from util import convert_interval_to_timedelta
 from util.time import now_time
 
