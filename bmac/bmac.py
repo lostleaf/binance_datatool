@@ -344,10 +344,14 @@ async def restful_candle_fetcher(handler: BmacHandler, fetcher: BinanceFetcher, 
         })
 
 
-def create_listeners(trade_type, time_interval, symbols, n_groups, main_que) -> list[CandleListener]:
-    groups = [[] for i in range(n_groups)]
+def create_listeners(handler: BmacHandler, symbols, main_que) -> list[CandleListener]:
+    trade_type = handler.trade_type
+    time_interval = handler.interval
+    n_listeners = handler.num_socket_listeners
+    
+    groups = [[] for i in range(n_listeners)]
     for sym in symbols:
-        group_id = hash(sym) % n_groups
+        group_id = hash(sym) % n_listeners
         groups[group_id].append(sym)
 
     for idx, grp in enumerate(groups):
@@ -372,7 +376,7 @@ async def update_candle(handler: BmacHandler, session: aiohttp.ClientSession, la
     ]
 
     symbols = handler.candle_mgr.get_all_symbols()
-    listeners = create_listeners(handler.trade_type, handler.interval, symbols, handler.num_socket_listeners, main_que)
+    listeners = create_listeners(handler, symbols, main_que)
     listen_tasks = [l.start_listen() for l in listeners]
 
     alarm_task = period_alarm(handler, main_que)
