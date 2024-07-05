@@ -1,5 +1,7 @@
 import os
 
+from util import get_logger
+
 from .candle_manager import CandleFileManager
 from .filter_symbol import create_symbol_filter
 
@@ -50,6 +52,7 @@ class BmacHandler:
         self.exginfo_mgr = CandleFileManager(exginfo_dir, save_type)
 
         self.trade_type = normalize_trade_type(self.trade_type)
+        self.logger = get_logger('Bmac')
 
 
 def normalize_trade_type(ty):

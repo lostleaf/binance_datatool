@@ -1,7 +1,7 @@
 import asyncio
 import json
-import logging
 import os
+
 import aiohttp
 import pandas as pd
 
@@ -13,8 +13,6 @@ from util import (DEFAULT_TZ, async_sleep_until_run_time, convert_interval_to_ti
 from .candle_listener import CandleListener
 from .candle_manager import CandleFileManager
 from .handler import BmacHandler
-
-logging.basicConfig(format='%(asctime)s (%(levelname)s) - %(message)s', level=logging.INFO, datefmt='%Y%m%d %H:%M:%S')
 
 
 def init_conns(handler: BmacHandler,
@@ -62,10 +60,10 @@ async def init_history(handler: BmacHandler, session: aiohttp.ClientSession):
         await asyncio.sleep(t)
 
     # 0. 清除所有历史数据
-    logging.info('Candle data dir %s, initializing', candle_mgr.base_dir)
+    handler.logger.info('Candle data dir %s, initializing', candle_mgr.base_dir)
     candle_mgr.clear_all()
 
-    logging.info('Exchange info data dir %s, initializing', exginfo_mgr.base_dir)
+    handler.logger.info('Exchange info data dir %s, initializing', exginfo_mgr.base_dir)
     exginfo_mgr.clear_all()
 
     # 1. 通过调用 fetcher.get_exchange_info 获取所有交易的 symbol, 并根据 symbol_filter 过滤出我们想要的 symbol
@@ -90,9 +88,9 @@ async def init_history(handler: BmacHandler, session: aiohttp.ClientSession):
         # 2.2 每批获取还未获取完毕的 80 个 symbol，预计消耗权重 160
         fetch_symbols = symbols_trading[:80]
         cnt += 1
-        logging.info('Round %d, Server time: %s, Used weight: %d, Symbol num %d, %s - %s', cnt,
-                     str(server_time.tz_convert(DEFAULT_TZ)), weight, len(symbols_trading), fetch_symbols[0],
-                     fetch_symbols[-1])
+        handler.logger.info('Round %d, Server time: %s, Used weight: %d, Symbol num %d, %s - %s', cnt,
+                            str(server_time.tz_convert(DEFAULT_TZ)), weight, len(symbols_trading), fetch_symbols[0],
+                            fetch_symbols[-1])
 
         tasks = []
         for symbol in fetch_symbols:
@@ -118,16 +116,16 @@ async def init_history(handler: BmacHandler, session: aiohttp.ClientSession):
                 df = candle_mgr.read_candle(symbol)
                 symbols_trading.remove(symbol)
                 if num < handler.num_candles:
-                    logging.warn('%s finished not enough, candle num: %d', symbol, num)
+                    handler.logger.warn('%s finished not enough, candle num: %d', symbol, num)
                 else:
                     round_finished_symbols.append(symbol)
 
         if round_finished_symbols:
-            logging.info('%s finished', str(round_finished_symbols))
+            handler.logger.info('%s finished', str(round_finished_symbols))
 
     server_time, weight = await fetcher.get_time_and_weight()
-    logging.info('Init history finished, Server time: %s, Used weight: %d', str(server_time.tz_convert(DEFAULT_TZ)),
-                 weight)
+    handler.logger.info('Init history finished, Server time: %s, Used weight: %d',
+                        str(server_time.tz_convert(DEFAULT_TZ)), weight)
     return run_time
 
 
@@ -135,7 +133,7 @@ async def period_alarm(handler: BmacHandler, main_que: asyncio.Queue):
     while True:
         # 计算出 self.interval 周期下次运行时间 run_time, 并 sleep 到 run_time
         run_time = next_run_time(handler.interval)
-        logging.info(f'Next candle update run at {run_time}')
+        handler.logger.info(f'Next candle update run at {run_time}')
         await async_sleep_until_run_time(run_time)
 
         req = {'type': 'update_exginfo', 'run_time': run_time}
@@ -170,14 +168,15 @@ def check_candle(handler: BmacHandler, rest_que: asyncio.Queue, run_time, report
 
     if not_readys:
         if report:
-            logging.warning('Symbols not ready for runtime %s %s', run_time, str(not_readys))
+            handler.logger.warning('Symbols not ready for runtime %s %s', run_time, str(not_readys))
             for symbol in not_readys:
                 rest_que.put_nowait({'run_time': run_time, 'symbol': symbol})
         else:
-            logging.info('Run time %s, %d/%d symbols ready', run_time, len(symbols) - len(not_readys), len(symbols))
+            handler.logger.info('Run time %s, %d/%d symbols ready', run_time,
+                                len(symbols) - len(not_readys), len(symbols))
         return False
 
-    logging.info('Run time %s, all symbols ready', run_time)
+    handler.logger.info('Run time %s, all symbols ready', run_time)
     return True
 
 
@@ -214,10 +213,10 @@ async def dispatcher(handler: BmacHandler, fetcher: BinanceFetcher, senders: dic
         run_time = req['run_time']
         req_type = req['type']
         if req_type == 'update_exginfo':
-            logging.info('Update exchange infos %s', run_time)
+            handler.logger.info('Update exchange infos %s', run_time)
             await update_exginfo(handler, fetcher, senders, listeners, run_time)
         elif req_type == 'update_funding_fee':
-            logging.info('Update funding fees %s', run_time)
+            handler.logger.info('Update funding fees %s', run_time)
             await update_funding_fee(handler, fetcher, run_time)
         elif req_type == 'check_candle':
             if last_complete_run_time >= run_time:
@@ -225,12 +224,12 @@ async def dispatcher(handler: BmacHandler, fetcher: BinanceFetcher, senders: dic
             all_ready = check_candle(handler, rest_que, run_time, req['report'])
             if all_ready:
                 last_complete_run_time = run_time
-                logging.info('Last updated %s %s', last[0], last[1])
+                handler.logger.info('Last updated %s %s', last[0], last[1])
         elif req_type == 'candle_data':
             update_candle_data(handler, req['data'], rest_que, req['symbol'], run_time)
             last = req['symbol'], now_time()
         else:
-            logging.warning('Unknown request %s %s', req_type, run_time)
+            handler.logger.warning('Unknown request %s %s', req_type, run_time)
 
 
 async def update_exginfo(handler: BmacHandler, fetcher: BinanceFetcher, senders: dict[str, DingDingSender],
@@ -258,7 +257,7 @@ async def update_exginfo(handler: BmacHandler, fetcher: BinanceFetcher, senders:
 
     # 3. 删除之前有交易，但目前没有交易的 symbol
     if notrading_symbols:
-        logging.info(f'Remove not trading symbols {notrading_symbols}')
+        handler.logger.info(f'Remove not trading symbols {notrading_symbols}')
         msg['not_trading'] = list(notrading_symbols)
         for symbol in notrading_symbols:
             candle_mgr.remove_symbol(symbol)
@@ -269,7 +268,7 @@ async def update_exginfo(handler: BmacHandler, fetcher: BinanceFetcher, senders:
 
     # 4. 添加新上市的 symbol
     if new_symbols:
-        logging.info('Add listening new symbols %s', str(new_symbols))
+        handler.logger.info('Add listening new symbols %s', str(new_symbols))
         msg['new_symbols'] = list(new_symbols)
         for symbol in new_symbols:
             group_id = hash(symbol) % handler.num_socket_listeners
@@ -287,7 +286,7 @@ async def update_exginfo(handler: BmacHandler, fetcher: BinanceFetcher, senders:
         try:
             senders['error'].send_message(msg)
         except Exception as err:
-            logging.error('Failed send message with error %s', str(err))
+            handler.logger.error('Failed send message with error %s', str(err))
 
 
 async def update_funding_fee(handler: BmacHandler, fetcher: BinanceFetcher, run_time):
@@ -320,7 +319,6 @@ async def fetch_recent_closed_candle(handler: BmacHandler, fetcher: BinanceFetch
             break
 
         if now_time() - run_time > pd.Timedelta(seconds=expire_sec):
-            # logging.warning(f'Candle may not closed in {expire_sec}sec {symbol} {interval}')
             break
 
         await asyncio.sleep(1)
@@ -334,7 +332,7 @@ async def restful_candle_fetcher(handler: BmacHandler, fetcher: BinanceFetcher, 
         req = await rest_que.get()
         run_time = req['run_time']
         symbol = req['symbol']
-        logging.warning('Fetch candle with restful API %s %s', symbol, run_time)
+        handler.logger.warning('Fetch candle with restful API %s %s', symbol, run_time)
         df_new, is_closed = await fetch_recent_closed_candle(handler, fetcher, symbol, run_time)
         await main_que.put({
             'type': 'candle_data',
@@ -355,7 +353,7 @@ def create_listeners(trade_type, time_interval, symbols, n_groups, main_que) -> 
     for idx, grp in enumerate(groups):
         num = len(grp)
         if num > 0:
-            logging.info('Listen group %d, %d symbols', idx, num)
+            handler.logger.info('Listen group %d, %d symbols', idx, num)
     listeners = [CandleListener(trade_type, syms_grp, time_interval, main_que) for syms_grp in groups]
     return listeners
 
@@ -390,8 +388,8 @@ async def main(base_dir):
 
     handler = BmacHandler(base_dir, cfg)
 
-    logging.info('interval=%s, type=%s, funding_rate=%r, keep_symbols=%r', handler.interval, handler.trade_type,
-                 handler.fetch_funding_rate, handler.keep_symbols)
+    handler.logger.info('interval=%s, type=%s, funding_rate=%r, keep_symbols=%r', handler.interval, handler.trade_type,
+                        handler.fetch_funding_rate, handler.keep_symbols)
 
     while True:
         try:
@@ -406,7 +404,7 @@ async def main(base_dir):
 
 async def report_error(handler: BmacHandler, e: Exception):
     # 出错则通过钉钉报错
-    logging.error(f'An error occurred {str(e)}')
+    handler.logger.error(f'An error occurred {str(e)}')
     import traceback
     traceback.print_exc()
     if handler.dingding is not None and 'error' in handler.dingding:

@@ -24,11 +24,8 @@ import sys
 import time
 import unicodedata
 from datetime import datetime
-from logging.handlers import TimedRotatingFileHandler
 
 from colorama import Fore, Style, init
-
-from utils.path_kit import get_file_path
 
 init(autoreset=True)
 
@@ -93,6 +90,7 @@ class SimonsFormatter(logging.Formatter):
 
 
 class SimonsConsoleHandler(logging.StreamHandler):
+
     def emit(self, record):
         if record.levelno == logging.DEBUG:
             print(record.msg, flush=True)
@@ -107,7 +105,7 @@ class SimonsConsoleHandler(logging.StreamHandler):
 class SimonsLogger:
     _instance = dict()
 
-    def __new__(cls, name='QuantClassPro'):
+    def __new__(cls, name='Log'):
         if cls._instance.get(name) is None:
             cls._instance[name] = super(SimonsLogger, cls).__new__(cls)
             cls._instance[name]._initialize_logger(name)
@@ -120,14 +118,6 @@ class SimonsLogger:
         # 如果有handlers，就清理掉
         if self.logger.hasHandlers():
             self.logger.handlers.clear()
-
-        # 添加文件输出
-        file_handler = TimedRotatingFileHandler(
-            get_file_path('logs', f"{name.lower()}.log"), when='midnight',
-            interval=1, backupCount=7
-        )
-        file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] - %(message)s"))
-        self.logger.addHandler(file_handler)
 
         # 添加命令行输出
         console_handler = SimonsConsoleHandler(sys.stdout)
@@ -143,7 +133,7 @@ class SimonsLogger:
 # ====================================================================================================
 def get_logger(name=None) -> logging.Logger:
     if name is None:
-        name = 'quantclass'
+        name = 'log'
     return SimonsLogger(name).logger
 
 
@@ -188,4 +178,3 @@ if __name__ == '__main__':
     divider('这个是我做的分割线的功能')
     divider('点点是可以换的', sep='*')
     divider('文字是居中的哦，英文和中文我尽量适配了。。。', sep='-')
-    print('所有的日志都会在 `logs -> quantclasspro.log` 文件中，不会丢失～～～')
