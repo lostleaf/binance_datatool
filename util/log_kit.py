@@ -137,7 +137,7 @@ def get_logger(name=None) -> logging.Logger:
     return SimonsLogger(name).logger
 
 
-def divider(name='', sep='=', _logger=None) -> None:
+def divider(name='', sep='=', logger_=None, display_time=True) -> None:
     """
     画一个带时间戳的横线
     :param name: 中间的名称
@@ -147,7 +147,10 @@ def divider(name='', sep='=', _logger=None) -> None:
     """
     seperator_len = 72
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    middle = f' {name} {now} '
+    if display_time:
+        middle = f' {name} {now} '
+    else:
+        middle = f' {name} '
     middle_width = get_display_width(middle)
     decoration_count = max(4, (seperator_len - middle_width) // 2)
     line = sep * decoration_count + middle + sep * decoration_count
@@ -156,8 +159,8 @@ def divider(name='', sep='=', _logger=None) -> None:
     if get_display_width(line) < seperator_len:
         line += sep
 
-    if _logger:
-        _logger.debug(line)
+    if logger_:
+        logger_.debug(line)
     else:
         logger.debug(line)
     time.sleep(0.05)
