@@ -1,9 +1,10 @@
 # Binance DataTool
 
-Comprehensive data services for Binance quantitative trading.
+Binance DataTool is a Comprehensive data toolbox for Binance quantitative trading, created by lostleaf.eth and contributed by community.
 
 The suite currently includes:
 - [BHDS](#bhds): Binance Historical Data Service. BHDS retrieves historical market data from the [Binance AWS data center](https://data.binance.vision/) and the market data API, transforming raw data into the Pandas Parquet format.
+- BMAC: Binance Marketdata Async Client.
 
 ## Dependencies
 
