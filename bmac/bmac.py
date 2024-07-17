@@ -236,7 +236,7 @@ async def restful_candle_fetcher(handler: BmacHandler, fetcher: BinanceFetcher, 
 
 
 def create_listeners(handler: BmacHandler, symbols, main_que) -> list[CandleListener]:
-    trade_type = handler.trade_type
+    trade_type = handler.api_trade_type
     time_interval = handler.interval
     n_listeners = handler.num_socket_listeners
 
@@ -287,8 +287,9 @@ async def main(base_dir):
     divider('Start Bmac V2', logger_=handler.logger)
 
     # 输出核心配置
-    handler.logger.info('Params: interval=%s, type=%s, num_candles=%r, funding_rate=%r', handler.interval,
-                        handler.trade_type, handler.num_candles, handler.fetch_funding_rate)
+    handler.logger.info('interval=%s, type=%s, num_candles=%r, funding_rate=%r, keep_symbols=%r',
+                        handler.interval, handler.trade_type, handler.num_candles, handler.fetch_funding_rate,
+                        handler.keep_symbols)
 
     while True:
         try:

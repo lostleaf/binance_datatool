@@ -3,7 +3,38 @@ import os
 from util import get_logger
 
 from .candle_manager import CandleFileManager
-from .filter_symbol import create_symbol_filter
+from .filter_symbol import TradingSpotFilter, TradingCoinFuturesFilter, TradingUsdtFuturesFilter
+
+# 交割合约包含 CURRENT_QUARTER(当季合约), NEXT_QUARTER(次季合约)
+DELIVERY_TYPES = ['CURRENT_QUARTER', 'NEXT_QUARTER']
+
+TRADE_TYPE_MAP = {
+    # spot
+    'usdt_spot': (TradingSpotFilter(quote_asset='USDT', keep_stablecoins=False), 'spot'),
+    'usdc_spot': (TradingSpotFilter(quote_asset='USDC', keep_stablecoins=False), 'spot'),
+    'btc_spot': (TradingSpotFilter(quote_asset='BTC', keep_stablecoins=False), 'spot'),
+
+    # usdt_futures
+    'usdt_perp': (TradingUsdtFuturesFilter(quote_asset='USDT', types=['PERPETUAL']), 'usdt_futures'),
+    'usdt_deli': (TradingUsdtFuturesFilter(quote_asset='USDT', types=DELIVERY_TYPES), 'usdt_futures'),
+    'usdc_perp': (TradingUsdtFuturesFilter(quote_asset='USDC', types=['PERPETUAL']), 'usdt_futures'),
+
+    # 仅包含 ETHBTC 永续合约，属于 U 本位合约
+    'btc_perp': (TradingUsdtFuturesFilter(quote_asset='BTC', types=['PERPETUAL']), 'usdt_futures'),
+
+    # 兼容 V1
+    'usdt_swap': (TradingUsdtFuturesFilter(quote_asset='USDT', types=['PERPETUAL']), 'usdt_futures'),
+
+    # coin_futures
+    'coin_perp': (TradingCoinFuturesFilter(types=['PERPETUAL']), 'coin_futures'),
+    'coin_deli': (TradingCoinFuturesFilter(types=DELIVERY_TYPES), 'coin_futures'),
+
+    # 兼容 V1
+    'coin_swap': (TradingCoinFuturesFilter(types=['PERPETUAL']), 'coin_futures'),
+}
+
+# 本地最多保留的 K 线数量
+NUM_CANDLES_MAX_LIMIT = 10000
 
 
 class BmacHandler:
@@ -40,25 +71,25 @@ class BmacHandler:
         # websocket listener 数量
         self.num_socket_listeners = cfg.get('num_socket_listeners', 8)
 
+        if self.trade_type not in TRADE_TYPE_MAP:
+            raise ValueError(f'Trade type {self.trade_type} currently not supported')
+
+        if self.num_candles > NUM_CANDLES_MAX_LIMIT:
+            raise ValueError(f'num_candles {self.num_candles} exceeds max limit of {NUM_CANDLES_MAX_LIMIT}')
+
         # symbol_filter: 用于过滤 symbol 的仿函数
-        self.symbol_filter = create_symbol_filter(self.trade_type, self.keep_symbols)
+        # api_trade_type: API 类型
+        self.symbol_filter, self.api_trade_type = TRADE_TYPE_MAP[self.trade_type]
 
         # candle_mgr: 用于管理 K 线数据的 CandleFileManager
-        candle_dir = os.path.join(base_dir, f'candle_{self.interval}')
+        candle_dir = os.path.join(base_dir, f'{self.trade_type}_{self.interval}')
         self.candle_mgr = CandleFileManager(candle_dir, save_type)
 
         # exginfo_mgr: 用于管理 exchange info(合约交易规则)的 CandleFileManager
         exginfo_dir = os.path.join(base_dir, f'exginfo_{self.interval}')
         self.exginfo_mgr = CandleFileManager(exginfo_dir, save_type)
 
-        self.trade_type = normalize_trade_type(self.trade_type)
         self.logger = get_logger('Bmac')
 
-
-def normalize_trade_type(ty):
-    if ty == 'usdt_spot':
-        return 'spot'
-    if ty in ('coin_perp', 'coin_swap'):
-        return 'coin_futures'
-    if ty in ('usdt_perp', 'usdt_swap'):
-        return 'usdt_futures'
+        if self.keep_symbols is not None:
+            self.keep_symbols = set(self.keep_symbols)

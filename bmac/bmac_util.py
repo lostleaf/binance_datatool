@@ -32,5 +32,5 @@ def bmac_init_conns(handler: BmacHandler,
             access_token = dcfg['access_token']
             secret = dcfg['secret']
             senders[channel_name] = DingDingSender(session, secret, access_token)
-    fetcher = BinanceFetcher(handler.trade_type, session)
+    fetcher = BinanceFetcher(handler.api_trade_type, session)
     return fetcher, senders

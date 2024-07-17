@@ -9,8 +9,7 @@ from joblib import Parallel, delayed
 from config import Config
 from util import convert_interval_to_timedelta
 
-from .filter_symbol import get_filtered_symbols
-from .util import read_candle_splits
+from .bhds_util import get_filtered_symbols, read_candle_splits
 
 
 def check(df, symbol, hours_threshold):

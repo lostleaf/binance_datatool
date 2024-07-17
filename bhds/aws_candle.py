@@ -11,12 +11,12 @@ from joblib import Parallel, delayed
 
 from config import Config
 from fetcher.binance import BinanceFetcher
-from util import convert_interval_to_timedelta, create_aiohttp_session, batched, DEFAULT_TZ
+from util import (DEFAULT_TZ, batched, convert_interval_to_timedelta, create_aiohttp_session)
 
 from .aws_util import (aws_batch_list_dir, aws_download_symbol_files, aws_get_candle_dir, aws_list_dir)
+from .bhds_util import read_candle_splits
 from .checksum import verify_checksum
 
-from .util import read_candle_splits
 
 async def get_aws_candle(type_, time_interval, symbols):
     symbol_to_dpath = {sym: aws_get_candle_dir(type_, sym, time_interval) for sym in symbols}

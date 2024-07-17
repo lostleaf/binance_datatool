@@ -1,75 +1,84 @@
-from util import is_leverage_token, STABLECOINS
+from abc import ABC, abstractmethod
 
-class TradingCoinPerpFilter:
+from util import STABLECOINS
 
-    def __init__(self, keep_symbols=None):
-        self.keep_symbols = set(keep_symbols) if keep_symbols else None
 
-    @classmethod
-    def is_trading_coin_swap(cls, x):
-        '''
-        筛选出所有币本位的，正在被交易的(TRADING)，永续合约（PERPETUAL）
-        '''
-        return x['quote_asset'] == 'USD' and x['status'] == 'TRADING' and x['contract_type'] == 'PERPETUAL'
+class BaseSymbolFilter(ABC):
 
     def __call__(self, syminfo: dict) -> list:
-        symbols = [info['symbol'] for info in syminfo.values() if self.is_trading_coin_swap(info)]
-        if self.keep_symbols is not None:  # 如有白名单，则只保留白名单内的
-            symbols = [sym for sym in symbols if sym in self.keep_symbols]
+        symbols = [info['symbol'] for info in syminfo.values() if self.is_valid(info)]
         return symbols
 
+    @abstractmethod
+    def is_valid(self, x):
+        pass
 
-class TradingUsdtSpotFilter:
 
-    def __init__(self, keep_symbols=None):
-        self.keep_symbols = set(keep_symbols) if keep_symbols else None
+class TradingSpotFilter(BaseSymbolFilter):
 
-    @classmethod
-    def is_trading_usdt_spot(cls, x):
-        '''
-        筛选出所有USDT本位的，正在被交易的(TRADING)，现货(Spot)
-        '''
+    def __init__(self, quote_asset, keep_stablecoins):
+        self.quote_asset = quote_asset
+        self.keep_stablecoins = keep_stablecoins
+
+    def is_valid(self, x):
+
+        # Not valid if is not trading
         if x['status'] != 'TRADING':
             return False
-        if x['quote_asset'] == 'USDT':
+
+        # Not valid if quote_asset mismatches
+        if x['quote_asset'] != self.quote_asset:
             return False
-        if is_leverage_token(x['symbol']):
+
+        # Not valid if is stablecoin and stablecoins are not accepted
+        if x['symbol'] in STABLECOINS and not self.keep_stablecoins:
             return False
-        if x['symbol'] in STABLECOINS:
-            return False
+
         return True
 
-    def __call__(self, syminfo: dict) -> list:
-        symbols = [info['symbol'] for info in syminfo.values() if self.is_trading_usdt_spot(info)]
-        if self.keep_symbols is not None:  # 如有白名单，则只保留白名单内的
-            symbols = [sym for sym in symbols if sym in self.keep_symbols]
-        return symbols
+
+class TradingUsdtFuturesFilter(BaseSymbolFilter):
+
+    def __init__(self, quote_asset, types):
+        self.quote_asset = quote_asset
+
+        self.contract_types = types
+        if isinstance(types, str):
+            self.contract_types = {types}
+
+    def is_valid(self, x):
+
+        # Not valid if is not trading
+        if x['status'] != 'TRADING':
+            return False
+
+        # Not valid if quote_asset mismatches
+        if x['quote_asset'] != self.quote_asset:
+            return False
+
+        # Not valid if contract_type mismatches
+        if x['contract_type'] not in self.contract_types:
+            return False
+
+        return True
 
 
-class TradingUsdtPerpFilter:
+class TradingCoinFuturesFilter(BaseSymbolFilter):
+    # quote_asset of Coin margined Futures are always USD
 
-    def __init__(self, keep_symbols=None):
-        self.keep_symbols = set(keep_symbols) if keep_symbols else None
+    def __init__(self, types):
+        self.contract_types = types
+        if isinstance(types, str):
+            self.contract_types = {types}
 
-    @classmethod
-    def is_trading_usdt_swap(cls, x):
-        '''
-        筛选出所有USDT本位的，正在被交易的(TRADING)，永续合约（PERPETUAL）
-        '''
-        return x['quote_asset'] == 'USDT' and x['status'] == 'TRADING' and x['contract_type'] == 'PERPETUAL'
+    def is_valid(self, x):
 
-    def __call__(self, syminfo: dict) -> list:
-        symbols = [info['symbol'] for info in syminfo.values() if self.is_trading_usdt_swap(info)]
-        if self.keep_symbols is not None:  # 如有白名单，则只保留白名单内的
-            symbols = [sym for sym in symbols if sym in self.keep_symbols]
-        return symbols
+        # Not valid if is not trading
+        if x['status'] != 'TRADING':
+            return False
 
+        # Not valid if contract_type mismatches
+        if x['contract_type'] not in self.contract_types:
+            return False
 
-def create_symbol_filter(trade_type, keep_symbols):
-    if trade_type == 'spot' or trade_type == 'usdt_spot':
-        return TradingUsdtSpotFilter(keep_symbols)
-    if trade_type == 'usdt_swap' or trade_type == 'usdt_perp':
-        return TradingUsdtPerpFilter(keep_symbols)
-    if trade_type == 'coin_swap' or trade_type == 'coin_perp':
-        return TradingCoinPerpFilter(keep_symbols)
-    raise ValueError(f'{trade_type} not supported')
+        return True
