@@ -47,7 +47,7 @@ class BmacHandler:
 
         # K 线周期
         self.interval = cfg['interval']
-        # 标的类型，可以是 'spot'/'usdt_spot', 'usdt_perp'/'usdt_swap', 'coin_perp'/'coin_swap'
+        # 标的类型
         self.trade_type = cfg['trade_type']
 
         # 可选参数
@@ -93,3 +93,7 @@ class BmacHandler:
 
         if self.keep_symbols is not None:
             self.keep_symbols = set(self.keep_symbols)
+
+        if self.api_trade_type == 'spot' and self.fetch_funding_rate:
+            self.fetch_funding_rate = False
+            self.logger.warning('Cannot fetch funding rate for spot, set fetch_funding_rate=False')

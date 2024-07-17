@@ -54,6 +54,8 @@ async def init_history(handler: BmacHandler, session: aiohttp.ClientSession):
     # 1. 通过调用 fetcher.get_exchange_info 获取所有交易的 symbol, 并根据 symbol_filter 过滤出我们想要的 symbol
     exginfo = await fetcher.get_exchange_info()
     symbols_trading: list = sorted(handler.symbol_filter(exginfo))
+    if handler.keep_symbols is not None:
+        symbols_trading = [x for x in symbols_trading if x in handler.keep_symbols]
 
     infos_trading = [info for sym, info in exginfo.items() if sym in symbols_trading]
     df_exginfo = pd.DataFrame.from_records(infos_trading)

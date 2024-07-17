@@ -125,7 +125,6 @@ async def dispatcher(handler: BmacHandler, fetcher: BinanceFetcher, senders: dic
 
 async def update_exginfo(handler: BmacHandler, fetcher: BinanceFetcher, senders: dict[str, DingDingSender],
                          listeners: list[CandleListener], run_time):
-    symbol_filter = handler.symbol_filter
     candle_mgr = handler.candle_mgr
     exginfo_mgr = handler.exginfo_mgr
 
@@ -133,7 +132,9 @@ async def update_exginfo(handler: BmacHandler, fetcher: BinanceFetcher, senders:
     syminfo = await fetcher.get_exchange_info()
 
     # 1. 根据 symbol_filter 过滤 symbol
-    symbols_trading = symbol_filter(syminfo)
+    symbols_trading = handler.symbol_filter(syminfo)
+    if handler.keep_symbols is not None:
+        symbols_trading = [x for x in symbols_trading if x in handler.keep_symbols]
     symbols_last = candle_mgr.get_all_symbols()
     notrading_symbols = set(symbols_last) - set(symbols_trading)
     new_symbols = set(symbols_trading) - set(symbols_last)
