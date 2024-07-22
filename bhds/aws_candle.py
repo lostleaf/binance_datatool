@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 
 from config import Config
 from fetcher.binance import BinanceFetcher
-from util import (DEFAULT_TZ, batched, convert_interval_to_timedelta, create_aiohttp_session)
+from util import (DEFAULT_TZ, batched, convert_interval_to_timedelta, create_aiohttp_session, get_logger)
 
 from .aws_util import (aws_batch_list_dir, aws_download_symbol_files, aws_get_candle_dir, aws_list_dir)
 from .bhds_util import read_candle_splits
@@ -45,19 +45,29 @@ async def get_aws_all_usdt_perpetual(time_interval):
 
 
 async def get_aws_all_usdt_spot(time_interval):
+    logger = get_logger('bhds')
+
     d = aws_get_candle_dir('spot', '', '')[:-2]
+
+    logger.debug(f'Download spot from {d}')
     paths = await aws_list_dir(d)
+
     symbols = [Path(os.path.normpath(p)).parts[-1] for p in paths]
     symbols = [s for s in symbols if s.endswith('USDT')]
+    n_total = len(symbols)
+
 
     lev_symbols = [x for x in symbols if x.endswith(('UPUSDT', 'DOWNUSDT', 'BEARUSDT', 'BULLUSDT')) and x != 'JUPUSDT']
-    logging.info('Skip leverage tokens %s', lev_symbols)
 
     stables = ('BKRWUSDT', 'USDCUSDT', 'USDPUSDT', 'TUSDUSDT', 'BUSDUSDT', 'FDUSDUSDT', 'DAIUSDT', 'EURUSDT', 'GBPUSDT',
                'USBPUSDT', 'SUSDUSDT', 'PAXGUSDT', 'AEURUSDT')
-    logging.info('Skip stable coins %s', stables)
+    
     symbols = sorted(set(symbols) - set(lev_symbols) - set(stables))
-    logging.info('Download %s', symbols)
+    n_download = len(symbols)
+    n_skip = n_total - n_download
+
+    logger.debug('Skip leverage tokens, skip stablecoins')
+    logger.info(f'Total={n_total}, Downlaod={n_download}, Skip={n_skip}')
     await get_aws_candle('spot', time_interval, symbols)
 
 
