@@ -1,7 +1,6 @@
 import asyncio
 import gzip
 import json
-import logging
 from enum import Enum
 from random import random
 from socket import gaierror
@@ -11,7 +10,7 @@ import websockets as ws
 from websockets.exceptions import ConnectionClosedError
 
 from api.binance.exceptions import BinanceWebsocketUnableToConnect
-from util import get_loop
+from util import get_loop, get_logger
 
 
 class WSListenerState(Enum):
@@ -36,7 +35,7 @@ class ReconnectingWebsocket:
                  is_binary: bool = False,
                  exit_coro=None):
         self._loop = get_loop()
-        self._log = logging.getLogger(__name__)
+        self._log = get_logger()
         self._path = path
         self._url = url
         self._exit_coro = exit_coro

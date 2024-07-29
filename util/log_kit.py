@@ -133,7 +133,7 @@ class SimonsLogger:
 # ====================================================================================================
 def get_logger(name=None) -> logging.Logger:
     if name is None:
-        name = 'log'
+        name = 'BinanceDataTool'
     return SimonsLogger(name).logger
 
 

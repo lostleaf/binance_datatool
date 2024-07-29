@@ -1,5 +1,3 @@
-import logging
-
 import fire
 
 from bhds.cli import Bhds

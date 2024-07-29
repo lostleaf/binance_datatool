@@ -1,11 +1,10 @@
 import asyncio
-import logging
 
 import pandas as pd
 
 from api.binance import (get_coin_futures_multi_candlesticks_socket, get_spot_multi_candlesticks_socket,
                          get_usdt_futures_multi_candlesticks_socket)
-from util import convert_interval_to_timedelta
+from util import convert_interval_to_timedelta, get_logger
 from util.time import now_time
 
 
@@ -78,7 +77,7 @@ class CandleListener:
                         res = await socket_conn.recv()
                         self.handle_candle_data(res)
                     except asyncio.TimeoutError:  # 如果长时间未收到数据（默认60秒，正常情况K线每1-2秒推送一次），则退出重新连接
-                        logging.error('Recv candle ws timeout, reconnecting')
+                        get_logger().error('Recv candle ws timeout, reconnecting')
                         break
 
     def handle_candle_data(self, res):

@@ -2,26 +2,12 @@ import base64
 import hashlib
 import hmac
 import json
-import logging
 import time
 from urllib.parse import quote_plus
 
 import aiohttp
 
 from util import async_retry_getter
-
-
-def retry_getter(func, retry_times=5, sleep_seconds=1, default=None, raise_err=True):
-    for i in range(retry_times):
-        try:
-            return func()
-        except Exception as e:
-            logging.warn(f'An error occurred {str(e)}')
-            if i == retry_times - 1 and raise_err:
-                raise e
-            time.sleep(sleep_seconds)
-            sleep_seconds *= 2
-    return
 
 
 class DingDingSender:
