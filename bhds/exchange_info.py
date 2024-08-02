@@ -2,8 +2,6 @@ import json
 import logging
 import os
 
-# import simplejson
-
 from api.binance import (BinanceMarketCMDapi, BinanceMarketSpotApi, BinanceMarketUMFapi)
 from config import Config
 from fetcher import BinanceFetcher
@@ -60,6 +58,6 @@ async def update_exchange_info(type_):
         info.update(info_new)
     else:
         info = info_new
-    
+
     logging.info('Output exchange info to %s', output_path)
     json.dump(info, open(output_path, 'w'), indent=2)

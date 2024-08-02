@@ -1,10 +1,10 @@
 import asyncio
 from datetime import datetime
 
-from api.binance.binance_market_ws import get_usdt_futures_kline_socket, get_coin_futures_kline_socket
+from api.binance.binance_market_ws import (get_coin_futures_kline_socket, get_usdt_futures_kline_socket)
+from bmac.filter_symbol import TradingUsdtFuturesFilter
 from fetcher import BinanceFetcher
 from util import create_aiohttp_session, get_logger
-from bmac.filter_symbol import TradingUsdtFuturesFilter
 
 TRADE_TYPE_MAP = {
     'usdt_futures': get_usdt_futures_kline_socket,

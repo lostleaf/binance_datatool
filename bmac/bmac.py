@@ -288,9 +288,8 @@ async def main(base_dir):
     divider('Start Bmac V2', logger_=handler.logger)
 
     # 输出核心配置
-    handler.logger.info('interval=%s, type=%s, num_candles=%r, funding_rate=%r, keep_symbols=%r',
-                        handler.interval, handler.trade_type, handler.num_candles, handler.fetch_funding_rate,
-                        handler.keep_symbols)
+    handler.logger.info('interval=%s, type=%s, num_candles=%r, funding_rate=%r, keep_symbols=%r', handler.interval,
+                        handler.trade_type, handler.num_candles, handler.fetch_funding_rate, handler.keep_symbols)
 
     while True:
         try:

@@ -56,12 +56,11 @@ async def get_aws_all_usdt_spot(time_interval):
     symbols = [s for s in symbols if s.endswith('USDT')]
     n_total = len(symbols)
 
-
     lev_symbols = [x for x in symbols if x.endswith(('UPUSDT', 'DOWNUSDT', 'BEARUSDT', 'BULLUSDT')) and x != 'JUPUSDT']
 
     stables = ('BKRWUSDT', 'USDCUSDT', 'USDPUSDT', 'TUSDUSDT', 'BUSDUSDT', 'FDUSDUSDT', 'DAIUSDT', 'EURUSDT', 'GBPUSDT',
                'USBPUSDT', 'SUSDUSDT', 'PAXGUSDT', 'AEURUSDT')
-    
+
     symbols = sorted(set(symbols) - set(lev_symbols) - set(stables))
     n_download = len(symbols)
     n_skip = n_total - n_download
