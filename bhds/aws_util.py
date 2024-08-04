@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 import subprocess
 
@@ -7,6 +6,7 @@ import aiohttp
 import xmltodict
 
 from util import async_retry_getter, create_aiohttp_session
+from util.log_kit import get_logger, divider
 
 AWS_TYPE_MAP = {
     'spot': ['data', 'spot'],
@@ -94,13 +94,13 @@ def aws_download_into_folder(paths, output_dir):
 
 
 def aws_download_symbol_files(symbol_to_dpath, symbol_to_lddir, dpath_to_aws_paths):
+    logger = get_logger()
     for symbol, dir_path in symbol_to_dpath.items():
+        
         local_dir = symbol_to_lddir[symbol]
-        logging.info('Download candle from %s', dir_path)
-        logging.info('Local directory %s', local_dir)
 
         if not os.path.exists(local_dir):
-            logging.warning('Local directory not exists, creating')
+            logger.warning('Local directory not exists, creating')
             os.makedirs(local_dir)
 
         aws_paths = dpath_to_aws_paths[dir_path]
@@ -112,7 +112,10 @@ def aws_download_symbol_files(symbol_to_dpath, symbol_to_lddir, dpath_to_aws_pat
             if filename not in local_filenames:
                 missing_file_paths.append(aws_path)
 
-        logging.info('%d files missing, downloading', len(missing_file_paths))
+        divider(f'Download {symbol} files from {dir_path}', sep='-')
+        logger.info(f'Local directory {local_dir}')
 
         if missing_file_paths:
             aws_download_into_folder(missing_file_paths, local_dir)
+
+        logger.ok(f'{len(missing_file_paths)} files downloaded')

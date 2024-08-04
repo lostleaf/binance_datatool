@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 import shutil
 from collections import defaultdict
@@ -11,11 +10,14 @@ from joblib import Parallel, delayed
 
 from config import Config
 from fetcher.binance import BinanceFetcher
-from util import (DEFAULT_TZ, batched, convert_interval_to_timedelta, create_aiohttp_session, get_logger)
+from util import (DEFAULT_TZ, batched, convert_interval_to_timedelta, create_aiohttp_session)
+from util.log_kit import get_logger, divider
 
 from .aws_util import (aws_batch_list_dir, aws_download_symbol_files, aws_get_candle_dir, aws_list_dir)
 from .bhds_util import read_candle_splits
 from .checksum import verify_checksum
+
+logger = get_logger()
 
 
 async def get_aws_candle(type_, time_interval, symbols):
@@ -29,27 +31,41 @@ async def get_aws_candle(type_, time_interval, symbols):
 
 
 async def get_aws_all_coin_perpetual(time_interval):
+    logger = get_logger()
+
     d = aws_get_candle_dir('coin_futures', '', '')[:-2]
+    divider(f'Download spot from {d}', logger_=logger)
+
     paths = await aws_list_dir(d)
     symbols = [Path(os.path.normpath(p)).parts[-1] for p in paths]
     symbols_perp = [s for s in symbols if s.endswith('_PERP')]
+
+    logger.info(f'Download={len(symbols_perp)}')
+
     await get_aws_candle('coin_futures', time_interval, symbols_perp)
 
 
 async def get_aws_all_usdt_perpetual(time_interval):
+    logger = get_logger()
+
     d = aws_get_candle_dir('usdt_futures', '', '')[:-2]
+    divider(f'Download spot from {d}', logger_=logger)
+
     paths = await aws_list_dir(d)
     symbols = [Path(os.path.normpath(p)).parts[-1] for p in paths]
     symbols_perp = [s for s in symbols if s.endswith('USDT')]
+
+    logger.info(f'Download={len(symbols_perp)}')
+
     await get_aws_candle('usdt_futures', time_interval, symbols_perp)
 
 
 async def get_aws_all_usdt_spot(time_interval):
-    logger = get_logger('bhds')
+    logger = get_logger()
 
     d = aws_get_candle_dir('spot', '', '')[:-2]
 
-    logger.debug(f'Download spot from {d}')
+    divider(f'Download spot from {d}', logger_=logger)
     paths = await aws_list_dir(d)
 
     symbols = [Path(os.path.normpath(p)).parts[-1] for p in paths]
@@ -97,7 +113,7 @@ def _verify(data_path):
     try:
         _read_aws_futures_candle_csv(data_path)
     except:
-        logging.error('Cannot read csv %s', data_path)
+        logger.error('Cannot read csv %s', data_path)
         return False
 
     return True
@@ -116,9 +132,11 @@ def verify_aws_candle(type_, time_interval):
 
 
 def verify_candle(type_, symbol, time_interval):
+    logger = get_logger()
     local_dir = os.path.join(Config.BINANCE_DATA_DIR, 'aws_data',
                              aws_get_candle_dir(type_, symbol, time_interval, local=True))
-    logging.info('Local directory %s', local_dir)
+    divider(f'Verify {type_} {symbol} {time_interval}', logger_=logger)
+    logger.info(f'Local directory {local_dir}')
 
     paths = sorted(glob(os.path.join(local_dir, '*.zip')))
     unverified_paths = []
@@ -128,27 +146,31 @@ def verify_candle(type_, symbol, time_interval):
         if not os.path.exists(verify_file):
             unverified_paths.append(p)
 
-    logging.info('Will not verify number of candles')
+    logger.debug('Will not verify number of candles')
 
-    logging.info('%d files to be verified', len(unverified_paths))
+    n_total,n_success = len(unverified_paths), 0
     if not unverified_paths:
+        logger.ok('All files verified')
         return
 
     tasks = [delayed(_verify)(p) for p in unverified_paths]
 
     results = Parallel(n_jobs=Config.N_JOBS)(tasks)
+
     for unverified_path, verify_success in zip(unverified_paths, results):
         if verify_success:
+            n_success += 1
             with open(unverified_path + '.verified', 'w') as fout:
                 fout.write('')
         else:
-            logging.warning('%s failed to verify, deleting', unverified_path)
+            logger.warning('%s failed to verify, deleting', unverified_path)
             if os.path.exists(unverified_path):
                 os.remove(unverified_path)
             checksum_path = unverified_path + '.CHECKSUM'
             if os.path.exists(checksum_path):
                 os.remove(checksum_path)
 
+    logger.ok(f'{n_success}/{n_total} verified')
 
 def convert_aws_candle_csv(type_, time_interval):
     paths = glob(
@@ -165,11 +187,11 @@ def convert_aws_candle_csv(type_, time_interval):
         sym = p.split(os.sep)[-3]
         sym_paths[sym].append(p)
 
-    logging.info('Symbols %s', list(sym_paths.keys()))
+    logger.info('Symbols %s', list(sym_paths.keys()))
 
     odir = os.path.join(Config.BINANCE_DATA_DIR, 'candle_parquet', type_, time_interval)
     if os.path.exists(odir):
-        logging.warning('%s exists, deleting', odir)
+        logger.warning('%s exists, deleting', odir)
         shutil.rmtree(odir)
     os.makedirs(odir)
 
@@ -234,7 +256,7 @@ async def download_aws_missing_from_api(type_, time_interval):
     symbol_aws_dirs = glob(_aws_dir)
     api_dir = os.path.join(Config.BINANCE_DATA_DIR, 'api_data', type_, time_interval)
     if not os.path.exists(api_dir):
-        logging.warning('%s not exists, creating', api_dir)
+        logger.warning('%s not exists, creating', api_dir)
         os.makedirs(api_dir)
 
     tasks = []
@@ -247,7 +269,7 @@ async def download_aws_missing_from_api(type_, time_interval):
         symbol_api_dir = os.path.join(api_dir, symbol)
         missings = _get_aws_candle_missing_dts(symbol_aws_dir, splits, symbol_api_dir)
         if missings:
-            logging.info('%s missing dts %s', symbol, missings)
+            logger.info('%s missing dts %s', symbol, missings)
         for dt in missings:
             tasks.append((symbol, dt))
 
@@ -256,8 +278,8 @@ async def download_aws_missing_from_api(type_, time_interval):
         for task_batch in batched(tasks, 10):
             timestamp, weight = await fetcher.market_api.aioreq_time_and_weight()
             server_ts = pd.to_datetime(timestamp, unit='ms', utc=True).tz_convert(DEFAULT_TZ)
-            logging.info('Server time %s, weight used %d, from %s to %s', server_ts, weight, task_batch[0],
-                         task_batch[-1])
+            logger.info('Server time %s, weight used %d, from %s to %s', server_ts, weight, task_batch[0],
+                        task_batch[-1])
             max_minute_weight, _ = fetcher.get_api_limits()
             if weight > max_minute_weight * 0.9:
                 await asyncio.sleep(60)

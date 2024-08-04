@@ -1,38 +1,39 @@
-import logging
 import os
 
 import pandas as pd
 
 from config import Config
+from util import get_logger
 
+logger = get_logger()
 
 def compare_aws_quantclass_candle(type_, time_interval, symbol):
-    logging.info('Compare AWS with Quantclass candlestick %s %s %s', type_, time_interval, symbol)
+    logger.info('Compare AWS with Quantclass candlestick %s %s %s', type_, time_interval, symbol)
 
     path_aws = os.path.join(Config.BINANCE_DATA_DIR, 'candle_parquet_fixed', type_, time_interval, f'{symbol}.pqt')
-    logging.info('Path %s AWS', path_aws)
+    logger.info('Path %s AWS', path_aws)
 
     path_qtc = os.path.join(Config.BINANCE_QUANTCLASS_DIR, 'candle_parquet_fixed', type_, time_interval, f'{symbol}.pqt')
-    logging.info('Path %s Quantclass', path_qtc)
+    logger.info('Path %s Quantclass', path_qtc)
 
     df_aws = pd.read_parquet(path_aws)
-    logging.info('Time %s -- %s AWS', df_aws['candle_begin_time'].min(), df_aws['candle_begin_time'].max())
+    logger.info('Time %s -- %s AWS', df_aws['candle_begin_time'].min(), df_aws['candle_begin_time'].max())
 
     df_qtc = pd.read_parquet(path_qtc)
-    logging.info('Time %s -- %s Quantclass', df_qtc['candle_begin_time'].min(), df_qtc['candle_begin_time'].max())
+    logger.info('Time %s -- %s Quantclass', df_qtc['candle_begin_time'].min(), df_qtc['candle_begin_time'].max())
 
     begin_ts = max(df_aws['candle_begin_time'].min(), df_qtc['candle_begin_time'].min())
     end_ts = min(df_aws['candle_begin_time'].max(), df_qtc['candle_begin_time'].max())
-    logging.info('Time %s -- %s', begin_ts, end_ts)
+    logger.info('Time %s -- %s', begin_ts, end_ts)
 
     df_aws = df_aws[df_aws['candle_begin_time'].between(begin_ts, end_ts)]
-    logging.info('Trimmed shape %s AWS', df_aws.shape)
+    logger.info('Trimmed shape %s AWS', df_aws.shape)
 
     df_qtc = df_qtc[df_qtc['candle_begin_time'].between(begin_ts, end_ts)]
-    logging.info('Trimmed shape %s Quantclass', df_qtc.shape)
+    logger.info('Trimmed shape %s Quantclass', df_qtc.shape)
 
     ts_intersect = set(df_aws['candle_begin_time']).intersection(set(df_qtc['candle_begin_time']))
-    logging.info('Intersecion num candle_begin_time %s', len(ts_intersect)) 
+    logger.info('Intersecion num candle_begin_time %s', len(ts_intersect)) 
  
     df = df_aws.join(df_qtc.set_index('candle_begin_time'), on='candle_begin_time', rsuffix='_qtc')
 
@@ -46,7 +47,7 @@ def compare_aws_quantclass_candle(type_, time_interval, symbol):
         df['diff'] = (df[c] - df[f'{c}_qtc']).abs()
         max_diff = df['diff'].max()
         diff_num = (df['diff'] > 1e-4).sum()
-        logging.info('Column: %s, max diff %f, diff num %d', c, max_diff, diff_num)
+        logger.info('Column: %s, max diff %f, diff num %d', c, max_diff, diff_num)
         if max_diff > 1e-4:
             error_begin_time = df[df['diff'] == max_diff].iloc[0]['candle_begin_time']
         df.drop(columns='diff', inplace=True)
@@ -56,4 +57,4 @@ def compare_aws_quantclass_candle(type_, time_interval, symbol):
             df_aws.loc[df_aws['candle_begin_time'] == error_begin_time, cols],
             df_qtc.loc[df_qtc['candle_begin_time'] == error_begin_time, cols]
         ])
-        logging.error('%s\n%s', error_begin_time, df_err)
+        logger.error('%s\n%s', error_begin_time, df_err)

@@ -1,4 +1,3 @@
-import logging
 import os
 import shutil
 from collections import defaultdict
@@ -9,7 +8,9 @@ import pandas as pd
 from joblib import Parallel, delayed
 
 from config import Config
-from util import convert_interval_to_timedelta
+from util import convert_interval_to_timedelta, get_logger
+
+logger = get_logger()
 
 
 def _read_quantclass_csv(p):
@@ -19,7 +20,7 @@ def _read_quantclass_csv(p):
 
 
 def convert_quantclass_candle_csv(type_, time_interval):
-    logging.info('Convert quantclass candle %s %s', type_, time_interval)
+    logger.info('Convert quantclass candle %s %s', type_, time_interval)
 
     csv_dir = _get_csv_dir(type_, time_interval)
     output_dir = _create_output_dir(type_, time_interval)
@@ -67,7 +68,7 @@ def _create_output_dir(type_, time_interval):
     output_dir = os.path.join(Config.BINANCE_QUANTCLASS_DIR, dir_name, type_, time_interval)
 
     if os.path.exists(output_dir):  # Remove dir if exists
-        logging.warn(f'Output dir {output_dir} exists, deleting')
+        logger.warn(f'Output dir {output_dir} exists, deleting')
         shutil.rmtree(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     return output_dir
