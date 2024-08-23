@@ -204,11 +204,15 @@ async def fetch_recent_closed_candle(handler: BmacHandler, fetcher: BinanceFetch
     interval = handler.interval
     is_closed = False
     while True:
-        df = await fetcher.get_candle(symbol, interval, limit=99)
+        try:
+            df = await fetcher.get_candle(symbol, interval, limit=99)
 
-        if df['candle_begin_time'].max() >= run_time:
-            is_closed = True
-            break
+            if df['candle_begin_time'].max() >= run_time:
+                is_closed = True
+                break
+        except BinanceAPIException as e:
+            if e.code in err_filter_dict:
+                break
 
         if now_time() - run_time > pd.Timedelta(seconds=expire_sec):
             break
