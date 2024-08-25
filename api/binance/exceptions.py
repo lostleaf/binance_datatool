@@ -1,5 +1,10 @@
 import json
 
+err_filter_dict = {
+    -1121: "Invalid symbol",
+    -1122: "Invalid symbol status",
+}
+
 
 class BinanceRequestException(Exception):
 
