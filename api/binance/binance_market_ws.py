@@ -1,7 +1,7 @@
 from .ws_basics import ReconnectingWebsocket
 
 # 现货 WS Base Url
-SPOT_STREAM_URL = 'wss://stream.binance.com/'
+SPOT_STREAM_URL = 'wss://stream.binance.com:9443/'
 
 # U 本位合约 WS Base Url
 USDT_FUTURES_FSTREAM_URL = 'wss://fstream.binance.com/'
