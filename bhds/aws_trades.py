@@ -10,6 +10,7 @@ from util import get_logger
 
 logger = get_logger()
 
+
 async def get_aws_aggtrades(type_, recent, symbols):
     logger.info('Get AWS aggtrades for %d symbols, %d recent days', len(symbols), recent)
     symbol_to_dpath = {sym: aws_get_aggtrades_dir(type_, sym) for sym in symbols}

@@ -1,7 +1,8 @@
 import asyncio
 
-from .aws_candle import (convert_aws_candle_csv, get_aws_all_coin_perpetual, get_aws_all_usdt_perpetual,
-                         get_aws_all_usdt_spot, get_aws_candle, verify_aws_candle, download_aws_missing_from_api)
+from .aws_candle import (convert_aws_candle_csv, download_aws_missing_from_api, get_aws_all_coin_perpetual,
+                         get_aws_all_usdt_perpetual, get_aws_all_usdt_spot, get_aws_candle, verify_aws_candle)
+from .aws_funding import get_aws_funding, verify_aws_funding
 from .aws_trades import get_aws_aggtrades, verify_aws_aggtrades
 from .compare import compare_aws_quantclass_candle
 from .exchange_info import update_exchange_info
@@ -15,6 +16,18 @@ class Bhds:
 
     Supports types: spot, usdt_futures, coin_futures
     """
+
+    def get_aws_funding(self, typ, *symbols):
+        """
+        Downloads monthly fundingrate data from Binance's AWS data center. All available dates will be downloaded.
+        """
+        asyncio.run(get_aws_funding(typ, symbols))
+
+    def verify_aws_funding(self, typ):
+        """
+        Verifies the integrity of all AWS funding rate data and deletes incorrect data.
+        """
+        verify_aws_funding(typ)
 
     def get_aws_candle(self, typ, time_interval, *symbols):
         """

@@ -50,6 +50,10 @@ def aws_get_aggtrades_dir(type_, symbol, local=False):
     return _get_dir(AWS_TYPE_MAP[type_] + ['daily', 'aggTrades', symbol], local)
 
 
+def aws_get_funding_dir(type_, symbol, local=False):
+    return _get_dir(AWS_TYPE_MAP[type_] + ['monthly', 'fundingRate', symbol], local)
+
+
 async def _aio_get(session: aiohttp.ClientSession, url):
     async with session.get(url) as resp:
         data = await resp.text()
@@ -90,32 +94,32 @@ def aws_download_into_folder(paths, output_dir):
     paths = [DOWNLOAD_URL + p for p in paths]
     cmd = ['aria2c', '-c', '-d', output_dir, '-Z'] + paths
 
-    subprocess.run(cmd)
+    subprocess.run(cmd, capture_output=True, check=True)
 
 
 def aws_download_symbol_files(symbol_to_dpath, symbol_to_lddir, dpath_to_aws_paths):
-    logger = get_logger()
     for symbol, dir_path in symbol_to_dpath.items():
-        
         local_dir = symbol_to_lddir[symbol]
+        aws_fpaths = dpath_to_aws_paths[dir_path]
+        aws_download(local_dir, aws_fpaths)
 
-        if not os.path.exists(local_dir):
-            logger.warning('Local directory not exists, creating')
-            os.makedirs(local_dir)
 
-        aws_paths = dpath_to_aws_paths[dir_path]
-        local_filenames = set(os.listdir(local_dir))
-        missing_file_paths = []
+def aws_download(local_dpath, aws_fpaths):
+    logger = get_logger()
 
-        for aws_path in aws_paths:
-            filename = os.path.basename(aws_path)
-            if filename not in local_filenames:
-                missing_file_paths.append(aws_path)
+    if not os.path.exists(local_dpath):
+        logger.warning('Local directory not exists, creating')
+        os.makedirs(local_dpath)
 
-        divider(f'Download {symbol} files from {dir_path}', sep='-')
-        logger.info(f'Local directory {local_dir}')
+    local_filenames = set(os.listdir(local_dpath))
+    missing_file_paths = []
 
-        if missing_file_paths:
-            aws_download_into_folder(missing_file_paths, local_dir)
+    for aws_path in aws_fpaths:
+        filename = os.path.basename(aws_path)
+        if filename not in local_filenames:
+            missing_file_paths.append(aws_path)
+
+    if missing_file_paths:
+        aws_download_into_folder(missing_file_paths, local_dpath)
 
         logger.ok(f'{len(missing_file_paths)} files downloaded')
