@@ -299,7 +299,18 @@ async def main(base_dir):
         try:
             async with create_aiohttp_session(handler.http_timeout_sec) as session:
                 # 阶段2: 初始化历史数据
-                last_complete_run_time = await init_history(handler, session)
+                init_remedy = True
+                while init_remedy:
+                    last_complete_run_time = await init_history(handler, session)
+                    # 当初始化k线跨越整点时，重新初始化一次，防止数据丢失
+                    now = now_time()
+                    time_cost = now - last_complete_run_time
+                    init_remedy = (pd.Timedelta(handler.interval) <= time_cost)
+                    if init_remedy:
+                        handler.logger.warning(f'initial time cost {time_cost}, '
+                                               f'now is {now.strftime("%Y-%m-%d %H:%M:%S")}, '
+                                               f'do remedy')
+                handler.logger.info('init history done')
 
                 # 阶段3: 更新数据
                 await update_candle(handler, session, last_complete_run_time)
