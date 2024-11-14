@@ -1,4 +1,5 @@
 import os
+import json
 
 from util import get_logger
 
@@ -97,3 +98,6 @@ class BmacHandler:
         if self.api_trade_type == 'spot' and self.fetch_funding_rate:
             self.fetch_funding_rate = False
             self.logger.warning('Cannot fetch funding rate for spot, set fetch_funding_rate=False')
+
+        # 添加 msg_sender 属性
+        self.msg_sender = cfg.get('msg_sender')

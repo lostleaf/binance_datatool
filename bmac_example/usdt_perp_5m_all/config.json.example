@@ -10,10 +10,13 @@
     
     "num_rest_fetchers": 8,
     "num_socket_listeners": 8,
-    "dingding": {
+    
+    "msg_sender": {
+        "type": "wechat_work",
         "error": {
             "access_token": "f06e5.....",
-            "secret": "SEC439...."        
+            "secret": "SEC439....",
+            "webhook_url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"
         }
     }
 }

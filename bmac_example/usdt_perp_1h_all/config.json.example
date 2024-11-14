@@ -3,10 +3,13 @@
     "trade_type": "usdt_perp",
     "funding_rate": true,
     "num_candles": 2000,
-    "dingding": {
+
+    "msg_sender": {
+        "type": "dingding",
         "error": {
             "access_token": "f06e5.....",
-            "secret": "SEC439...."        
+            "secret": "SEC439....",
+            "webhook_url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"
         }
     }
 }

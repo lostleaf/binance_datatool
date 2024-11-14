@@ -34,3 +34,19 @@ class DingDingSender:
         headers = {"Content-Type": "application/json", "Charset": "UTF-8"}
         req_json_str = json.dumps({"msgtype": "text", "text": {"content": msg}})
         await async_retry_getter(lambda: self.session.post(url=post_url, data=req_json_str, headers=headers))
+
+class WechatWorkSender:
+    def __init__(self, aiohttp_session, webhook_url):
+        self.webhook_url = webhook_url
+        self.session: aiohttp.ClientSession = aiohttp_session
+
+    async def send_message(self, msg):
+        headers = {"Content-Type": "application/json", "Charset": "UTF-8"}
+        data = {
+            "msgtype": "text",
+            "text": {
+                "content": msg + '\n' + time.strftime("%Y-%m-%d %H:%M:%S")
+            }
+        }
+        req_json_str = json.dumps(data)
+        await async_retry_getter(lambda: self.session.post(url=self.webhook_url, data=req_json_str, headers=headers))
