@@ -1,2 +1,2 @@
-# bhds
+# BHDS
 Binance Historical Data Service
