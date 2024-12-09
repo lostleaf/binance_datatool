@@ -12,7 +12,7 @@ class CFG:
     BHDS_EXTRA_EXGINFO_DIR = _CUR_DIR / 'bhds_extra_exginfo'
     BHDS_SPLIT_CONFIG_PATH = _CUR_DIR / 'binance_candle_split.json'
 
-    N_JOBS = int(os.getenv('CRYPTO_NJOBS', os.cpu_count() - 1))
+    N_JOBS = int(os.getenv('CRYPTO_NJOBS', os.cpu_count() - 2))
 
 
 Config = CFG()

@@ -34,8 +34,8 @@ def download_aws_klines(
 
 @app.command()
 def download_spot_klines(
-    time_interval: Annotated[
-        str,
+    time_intervals: Annotated[
+        list[str],
         typer.Argument(help="The time interval for the K-lines, e.g., '1m', '5m', '1h'."),
     ],
     quote: Annotated[str, typer.Option(help="The quote currency, e.g., 'USDT', 'USDC', 'BTC'.")] = 'USDT',
@@ -52,13 +52,14 @@ def download_spot_klines(
     '''
     Download Binance spot klines from AWS data center
     '''
-    asyncio.run(aws_kline.download_spot_klines(time_interval, quote, stablecoins, leverage_coins, http_proxy))
+    for time_interval in time_intervals:
+        asyncio.run(aws_kline.download_spot_klines(time_interval, quote, stablecoins, leverage_coins, http_proxy))
 
 
 @app.command()
 def download_um_futures_klines(
-    time_interval: Annotated[
-        str,
+    time_intervals: Annotated[
+        list[str],
         typer.Argument(help="The time interval for the K-lines, e.g., '1m', '5m', '1h'."),
     ],
     quote: Annotated[str, typer.Option(help="The quote currency, e.g., 'USDT', 'USDC', 'BTC'.")] = 'USDT',
@@ -71,13 +72,14 @@ def download_um_futures_klines(
     '''
     Download Binance USDⓈ-M Futures klines from AWS data center
     '''
-    asyncio.run(aws_kline.download_um_futures_klines(time_interval, quote, contract_type, http_proxy))
+    for time_interval in time_intervals:
+        asyncio.run(aws_kline.download_um_futures_klines(time_interval, quote, contract_type, http_proxy))
 
 
 @app.command()
 def download_cm_futures_klines(
-    time_interval: Annotated[
-        str,
+    time_intervals: Annotated[
+        list[str],
         typer.Argument(help="The time interval for the K-lines, e.g., '1m', '5m', '1h'."),
     ],
     contract_type: Annotated[
@@ -89,7 +91,8 @@ def download_cm_futures_klines(
     '''
     Download Binance COIN-M Futures klines from AWS data center
     '''
-    asyncio.run(aws_kline.download_cm_futures_klines(time_interval, contract_type, http_proxy))
+    for time_interval in time_intervals:
+        asyncio.run(aws_kline.download_cm_futures_klines(time_interval, contract_type, http_proxy))
 
 
 @app.command()
@@ -113,15 +116,16 @@ def verify_klines(
 @app.command()
 def verify_klines_all_symbols(
     trade_type: Annotated[TradeType, typer.Argument(help="Type of symbols")],
-    time_interval: Annotated[
-        str,
+    time_intervals: Annotated[
+        list[str],
         typer.Argument(help="The time interval for the K-lines, e.g., '1m', '5m', '1h'."),
     ],
 ):
     '''
     Verify Binance Klines for all symbols with the given trade type and time interval
     '''
-    aws_kline.verify_klines_all_symbols(trade_type, time_interval)
+    for time_interval in time_intervals:
+        aws_kline.verify_klines_all_symbols(trade_type, time_interval)
 
 
 if __name__ == '__main__':

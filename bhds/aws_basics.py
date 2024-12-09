@@ -10,6 +10,7 @@ from config import Config
 from util.log_kit import logger
 from util.network import async_retry_getter
 from constant import TradeType
+
 AWS_TIMEOUT_SEC = 15
 
 PREFIX = 'https://s3-ap-northeast-1.amazonaws.com/data.binance.vision'
@@ -61,7 +62,21 @@ class AwsClient:
         return {p: r for p, r in zip(dir_paths, results)}
 
 
-def aws_download(aws_files, http_proxy):
+def aws_download(aws_files, http_proxy, max_tries=3):
+    for idx in range(1, max_tries + 1):
+        returncode = run_aws_download(aws_files, http_proxy)
+
+        if returncode == 0:
+            logger.ok('Aria2 download successfully')
+            return
+
+        if max_tries == idx:
+            logger.error(f'Aria2 exited with code {returncode}. Please manually run download again')
+        else:
+            logger.warning(f'Aria2 exited with code {returncode}, left_tries={max_tries - idx - 1}. Download again...')
+
+
+def run_aws_download(aws_files, http_proxy):
     local_aws_dir = Path(Config.BINANCE_DATA_DIR) / 'aws_data'
     missing_file_paths = []
 
@@ -72,7 +87,7 @@ def aws_download(aws_files, http_proxy):
 
     if not missing_file_paths:
         logger.ok('All files downloaded, nothing missing')
-        return
+        return 0
 
     logger.debug(f'{len(missing_file_paths)} files to be downloaded')
 
@@ -88,6 +103,6 @@ def aws_download(aws_files, http_proxy):
         if http_proxy is not None:
             cmd.append(f'--all-proxy={http_proxy}')
 
-        subprocess.run(cmd, check=True)
-
-    logger.ok('Download finished')
+        run_result = subprocess.run(cmd)
+        returncode = run_result.returncode
+    return returncode

@@ -19,6 +19,8 @@ from .checksum import verify_checksum
 from .infer_exchange_info import (infer_cm_futures_info, infer_spot_info, infer_um_futures_info)
 from .symbol_filter import CmFuturesFilter, SpotFilter, UmFuturesFilter
 
+from .bhds_util import mp_env_init
+
 
 def get_kline_path_tokens(trade_type: TradeType):
     return [*TYPE_BASE_DIR[trade_type], 'daily', 'klines']
@@ -194,7 +196,8 @@ def verify_klines(trade_type: TradeType, time_interval: str, symbols: List[str])
 
     successes: list[Path] = []
     fails: list[tuple[Path, str]] = []
-    with ProcessPoolExecutor(Config.N_JOBS, mp_context=mp.get_context('spawn')) as exe:
+    with ProcessPoolExecutor(max_workers=Config.N_JOBS, mp_context=mp.get_context('spawn'),
+                             initializer=mp_env_init) as exe:
         tasks = [exe.submit(verify_kline_file, kline_file) for kline_file in unverified_files]
         for task in as_completed(tasks):
             is_success, kline_file, error = task.result()
