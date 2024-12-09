@@ -1,16 +1,27 @@
 import asyncio
+import multiprocessing as mp
 import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from itertools import chain
 from pathlib import Path
 from typing import List, Optional
+from zipfile import ZipFile
 
-from bhds.infer_exchange_info import infer_cm_futures_info, infer_spot_info, infer_um_futures_info
+import polars as pl
+
+from config import Config
+from constant import ContractType, TradeType
 from util.log_kit import divider, logger
 from util.network import create_aiohttp_session
 
 from .aws_basics import (AWS_TIMEOUT_SEC, TYPE_BASE_DIR, AwsClient, aws_download, get_aws_dir)
-from .symbol_filter import SpotFilter, UmFuturesFilter, CmFuturesFilter
-from constant import TradeType, ContractType
+from .checksum import verify_checksum
+from .infer_exchange_info import (infer_cm_futures_info, infer_spot_info, infer_um_futures_info)
+from .symbol_filter import CmFuturesFilter, SpotFilter, UmFuturesFilter
+
+
+def get_kline_path_tokens(trade_type: TradeType):
+    return [*TYPE_BASE_DIR[trade_type], 'daily', 'klines']
 
 
 class AwsDailyKlineClient(AwsClient):
@@ -20,23 +31,23 @@ class AwsDailyKlineClient(AwsClient):
         self.trade_type = trade_type
 
     @property
-    def base_dir(self):
-        return [*TYPE_BASE_DIR[self.trade_type], 'daily', 'klines']
+    def base_dir_tokens(self):
+        return get_kline_path_tokens(self.trade_type)
 
     async def list_symbols(self):
-        aws_dir = get_aws_dir(self.base_dir)
+        aws_dir = get_aws_dir(self.base_dir_tokens)
         paths = await self.list_dir(aws_dir)
         symbols = [Path(os.path.normpath(p)).parts[-1] for p in paths]
         return sorted(symbols)
 
     async def list_kline_files(self, time_interval, symbol):
-        aws_dir = get_aws_dir(self.base_dir + [symbol, time_interval])
+        aws_dir = get_aws_dir(self.base_dir_tokens + [symbol, time_interval])
         return await sorted(self.list_dir(aws_dir))
 
     async def batch_list_kline_files(self, time_interval, symbols):
         tasks = []
         for symbol in symbols:
-            aws_dir = get_aws_dir(self.base_dir + [symbol, time_interval])
+            aws_dir = get_aws_dir(self.base_dir_tokens + [symbol, time_interval])
             tasks.append(self.list_dir(aws_dir))
         results = await asyncio.gather(*tasks)
         return {symbol: list_result for symbol, list_result in zip(symbols, results)}
@@ -110,3 +121,105 @@ async def download_cm_futures_klines(time_interval: str, contract_type: Contract
     exginfo = {k: v for k, v in exginfo.items() if v is not None}
     filtered_symbols = sym_filter(exginfo)
     await download_aws_klines(TradeType.cm_futures, time_interval, filtered_symbols, http_proxy)
+
+
+def read_aws_kline_csv(p):
+    columns = [
+        'candle_begin_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_volume', 'trade_num',
+        'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
+    ]
+    float_columns = [
+        'open', 'high', 'low', 'close', 'volume', 'quote_volume', 'taker_buy_base_asset_volume',
+        'taker_buy_quote_asset_volume'
+    ]
+    with ZipFile(p) as f:
+        filename = f.namelist()[0]
+        lines = f.open(filename).readlines()
+
+        if lines[0].decode().startswith('open_time'):
+            # logger.warning(f'{p} skip header')
+            lines = lines[1:]
+
+        # Use Polars to read the CSV file
+        q = pl.scan_csv(lines, has_header=False, new_columns=columns)
+
+        # Remove useless columns
+        q = q.drop('ignore', 'close_time')
+
+        # Cast column types
+        q = q.with_columns(
+            pl.col(float_columns).cast(pl.Float64),
+            pl.col('trade_num').cast(pl.Int64),
+            pl.col('candle_begin_time').cast(pl.Int64).cast(pl.Datetime('ms')).dt.replace_time_zone('UTC'))
+        df = q.collect()
+
+    return df
+
+
+def verify_kline_file(kline_file: Path):
+    is_success, error = verify_checksum(kline_file)
+
+    if not is_success:
+        return False, kline_file, error
+
+    try:
+        read_aws_kline_csv(kline_file)
+    except:
+        return False, kline_file, 'Csv file is not readable'
+
+    return True, kline_file, None
+
+
+def verify_klines(trade_type: TradeType, time_interval: str, symbols: List[str]):
+    logger.info(f'Start verify klines checksums')
+    logger.debug(f'trade_type={trade_type.value}, time_interval={time_interval}, num_symbols={len(symbols)}, '
+                 f'{symbols[0]} -- {symbols[-1]}')
+    base_dir_tokens = get_kline_path_tokens(trade_type)
+    unverified_files = []
+    for symbol in symbols:
+        sym_dir = Config.BINANCE_DATA_DIR / 'aws_data' / Path(get_aws_dir(base_dir_tokens + [symbol, time_interval]))
+        for kline_file in sym_dir.glob('*.zip'):
+            verify_file = kline_file.parent / (kline_file.name + '.verify')
+            if not verify_file.exists():
+                unverified_files.append(kline_file)
+    unverified_files.sort()
+
+    if not unverified_files:
+        logger.ok('All files verified')
+        return
+
+    logger.debug(f'num_unverified={len(unverified_files)}, n_jobs={Config.N_JOBS}')
+    logger.debug(f'first={unverified_files[0]}')
+    logger.debug(f'last={unverified_files[-1]}')
+
+    successes: list[Path] = []
+    fails: list[tuple[Path, str]] = []
+    with ProcessPoolExecutor(Config.N_JOBS, mp_context=mp.get_context('spawn')) as exe:
+        tasks = [exe.submit(verify_kline_file, kline_file) for kline_file in unverified_files]
+        for task in as_completed(tasks):
+            is_success, kline_file, error = task.result()
+            if is_success:
+                successes.append(kline_file)
+            else:
+                fails.append((kline_file, error))
+
+    for kline_file in successes:
+        verify_file = kline_file.parent / (kline_file.name + '.verify')
+        verify_file.touch()
+
+    for kline_file, error in fails:
+        logger.warning(f'Deleting {kline_file}, {error}')
+        checksum_file = kline_file.parent / (kline_file.name + '.CHECKSUM')
+
+        kline_file.unlink(missing_ok=True)
+        checksum_file.unlink(missing_ok=True)
+
+    logger.ok(f'{len(successes)} verified, {len(fails)} corrupted')
+
+
+def verify_klines_all_symbols(trade_type: TradeType, time_interval: str):
+    divider(f'BHDS verify {trade_type.value} {time_interval} Klines')
+    base_dir_tokens = get_kline_path_tokens(trade_type)
+    kline_dir = Config.BINANCE_DATA_DIR / 'aws_data' / Path(get_aws_dir(base_dir_tokens))
+    symbols = sorted(p.parts[-2] for p in kline_dir.glob(f'*/{time_interval}'))
+    verify_klines(trade_type, time_interval, symbols)
