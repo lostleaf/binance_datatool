@@ -130,10 +130,18 @@ def read_aws_kline_csv(p):
         'candle_begin_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_volume', 'trade_num',
         'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
     ]
-    float_columns = [
-        'open', 'high', 'low', 'close', 'volume', 'quote_volume', 'taker_buy_base_asset_volume',
-        'taker_buy_quote_asset_volume'
-    ]
+    schema = {
+        'candle_begin_time': pl.Int64,
+        'open': pl.Float64,
+        'high': pl.Float64,
+        'low': pl.Float64,
+        'close': pl.Float64,
+        'volume': pl.Float64,
+        'quote_volume': pl.Float64,
+        'trade_num': pl.Int64,
+        'taker_buy_base_asset_volume': pl.Float64,
+        'taker_buy_quote_asset_volume': pl.Float64
+    }
     with ZipFile(p) as f:
         filename = f.namelist()[0]
         lines = f.open(filename).readlines()
@@ -143,16 +151,13 @@ def read_aws_kline_csv(p):
             lines = lines[1:]
 
         # Use Polars to read the CSV file
-        q = pl.scan_csv(lines, has_header=False, new_columns=columns)
+        q = pl.scan_csv(lines, has_header=False, new_columns=columns, schema_overrides=schema)
 
         # Remove useless columns
         q = q.drop('ignore', 'close_time')
 
         # Cast column types
-        q = q.with_columns(
-            pl.col(float_columns).cast(pl.Float64),
-            pl.col('trade_num').cast(pl.Int64),
-            pl.col('candle_begin_time').cast(pl.Int64).cast(pl.Datetime('ms')).dt.replace_time_zone('UTC'))
+        q = q.with_columns(pl.col('candle_begin_time').cast(pl.Datetime('ms')).dt.replace_time_zone('UTC'))
         df = q.collect()
 
     return df
