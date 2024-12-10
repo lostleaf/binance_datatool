@@ -150,15 +150,15 @@ def read_aws_kline_csv(p):
             # logger.warning(f'{p} skip header')
             lines = lines[1:]
 
-        # Use Polars to read the CSV file
-        q = pl.scan_csv(lines, has_header=False, new_columns=columns, schema_overrides=schema)
+    # Use Polars to read the CSV file
+    df_lazy = pl.scan_csv(lines, has_header=False, new_columns=columns, schema_overrides=schema)
 
-        # Remove useless columns
-        q = q.drop('ignore', 'close_time')
+    # Remove useless columns
+    df_lazy = df_lazy.drop('ignore', 'close_time')
 
-        # Cast column types
-        q = q.with_columns(pl.col('candle_begin_time').cast(pl.Datetime('ms')).dt.replace_time_zone('UTC'))
-        df = q.collect()
+    # Cast column types
+    df_lazy = df_lazy.with_columns(pl.col('candle_begin_time').cast(pl.Datetime('ms')).dt.replace_time_zone('UTC'))
+    df = df_lazy.collect()
 
     return df
 
@@ -225,9 +225,14 @@ def verify_klines(trade_type: TradeType, time_interval: str, symbols: List[str])
     logger.ok(f'{len(successes)} verified, {len(fails)} corrupted')
 
 
-def verify_klines_all_symbols(trade_type: TradeType, time_interval: str):
-    divider(f'BHDS verify {trade_type.value} {time_interval} Klines')
+def list_local_kline_symbols(trade_type: TradeType, time_interval: str):
     base_dir_tokens = get_kline_path_tokens(trade_type)
     kline_dir = Config.BINANCE_DATA_DIR / 'aws_data' / Path(get_aws_dir(base_dir_tokens))
     symbols = sorted(p.parts[-2] for p in kline_dir.glob(f'*/{time_interval}'))
+    return symbols
+
+
+def verify_klines_all_symbols(trade_type: TradeType, time_interval: str):
+    divider(f'BHDS verify {trade_type.value} {time_interval} Klines')
+    symbols = list_local_kline_symbols(trade_type, time_interval)
     verify_klines(trade_type, time_interval, symbols)
