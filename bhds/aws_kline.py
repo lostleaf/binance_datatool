@@ -1,63 +1,25 @@
-import asyncio
 import json
 import multiprocessing as mp
-import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from datetime import datetime
 from itertools import chain
 from pathlib import Path
 from typing import List, Optional
-from zipfile import ZipFile
-from zoneinfo import ZoneInfo
 
 import polars as pl
 from dateutil import parser as date_parser
 
+from bhds.aws_basics import AwsDailyKlineClient, get_kline_path_tokens
+from bhds.polars_kline import read_aws_kline_csv
 from config import Config
 from constant import ContractType, TradeType
 from util.log_kit import divider, logger
 from util.network import create_aiohttp_session
 
-from .aws_basics import (AWS_TIMEOUT_SEC, TYPE_BASE_DIR, AwsClient,
-                         aws_download, get_aws_dir)
+from .aws_basics import (AWS_TIMEOUT_SEC, aws_download, get_aws_dir)
 from .bhds_util import mp_env_init
 from .checksum import verify_checksum
-from .infer_exchange_info import (infer_cm_futures_info, infer_spot_info,
-                                  infer_um_futures_info)
+from .infer_exchange_info import (infer_cm_futures_info, infer_spot_info, infer_um_futures_info)
 from .symbol_filter import CmFuturesFilter, SpotFilter, UmFuturesFilter
-
-
-def get_kline_path_tokens(trade_type: TradeType):
-    return [*TYPE_BASE_DIR[trade_type], 'daily', 'klines']
-
-
-class AwsDailyKlineClient(AwsClient):
-
-    def __init__(self, session, http_proxy, trade_type):
-        super().__init__(session, http_proxy)
-        self.trade_type = trade_type
-
-    @property
-    def base_dir_tokens(self):
-        return get_kline_path_tokens(self.trade_type)
-
-    async def list_symbols(self):
-        aws_dir = get_aws_dir(self.base_dir_tokens)
-        paths = await self.list_dir(aws_dir)
-        symbols = [Path(os.path.normpath(p)).parts[-1] for p in paths]
-        return sorted(symbols)
-
-    async def list_kline_files(self, time_interval, symbol):
-        aws_dir = get_aws_dir(self.base_dir_tokens + [symbol, time_interval])
-        return await sorted(self.list_dir(aws_dir))
-
-    async def batch_list_kline_files(self, time_interval, symbols):
-        tasks = []
-        for symbol in symbols:
-            aws_dir = get_aws_dir(self.base_dir_tokens + [symbol, time_interval])
-            tasks.append(self.list_dir(aws_dir))
-        results = await asyncio.gather(*tasks)
-        return {symbol: list_result for symbol, list_result in zip(symbols, results)}
 
 
 async def download_aws_klines(trade_type: TradeType, time_interval: str, symbols: List[str], http_proxy: Optional[str]):
@@ -128,44 +90,6 @@ async def download_cm_futures_klines(time_interval: str, contract_type: Contract
     exginfo = {k: v for k, v in exginfo.items() if v is not None}
     filtered_symbols = sym_filter(exginfo)
     await download_aws_klines(TradeType.cm_futures, time_interval, filtered_symbols, http_proxy)
-
-
-def read_aws_kline_csv(p):
-    columns = [
-        'candle_begin_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_volume', 'trade_num',
-        'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
-    ]
-    schema = {
-        'candle_begin_time': pl.Int64,
-        'open': pl.Float64,
-        'high': pl.Float64,
-        'low': pl.Float64,
-        'close': pl.Float64,
-        'volume': pl.Float64,
-        'quote_volume': pl.Float64,
-        'trade_num': pl.Int64,
-        'taker_buy_base_asset_volume': pl.Float64,
-        'taker_buy_quote_asset_volume': pl.Float64
-    }
-    with ZipFile(p) as f:
-        filename = f.namelist()[0]
-        lines = f.open(filename).readlines()
-
-        if lines[0].decode().startswith('open_time'):
-            # logger.warning(f'{p} skip header')
-            lines = lines[1:]
-
-    # Use Polars to read the CSV file
-    df_lazy = pl.scan_csv(lines, has_header=False, new_columns=columns, schema_overrides=schema)
-
-    # Remove useless columns
-    df_lazy = df_lazy.drop('ignore', 'close_time')
-
-    # Cast column types
-    df_lazy = df_lazy.with_columns(pl.col('candle_begin_time').cast(pl.Datetime('ms')).dt.replace_time_zone('UTC'))
-    df = df_lazy.collect()
-
-    return df
 
 
 def verify_kline_file(kline_file: Path):

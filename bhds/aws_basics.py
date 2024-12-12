@@ -1,4 +1,5 @@
 import asyncio
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -7,9 +8,9 @@ import xmltodict
 from aiohttp import ClientSession
 
 from config import Config
+from constant import TradeType
 from util.log_kit import logger
 from util.network import async_retry_getter
-from constant import TradeType
 
 AWS_TIMEOUT_SEC = 15
 
@@ -26,40 +27,6 @@ TYPE_BASE_DIR = {
 def get_aws_dir(path_tokens):
     # As AWS web path
     return '/'.join(path_tokens) + '/'
-
-
-class AwsClient:
-
-    def __init__(self, session: ClientSession, http_proxy=None):
-        self.session = session
-        self.http_proxy = http_proxy
-
-    async def _aio_get_xml(self, url):
-        async with self.session.get(url, proxy=self.http_proxy) as resp:
-            data = await resp.text()
-
-        return xmltodict.parse(data)
-
-    async def list_dir(self, dir_path):
-        url = f'{PREFIX}?delimiter=/&prefix={dir_path}'
-        base_url = url
-        results = []
-        while True:
-            data = await async_retry_getter(self._aio_get_xml, url=url)
-            xml_data = data['ListBucketResult']
-            if 'CommonPrefixes' in xml_data:
-                results.extend([x['Prefix'] for x in xml_data['CommonPrefixes']])
-            elif 'Contents' in xml_data:
-                results.extend([x['Key'] for x in xml_data['Contents']])
-            if xml_data['IsTruncated'] == 'false':
-                break
-            url = base_url + '&marker=' + xml_data['NextMarker']
-        return results
-
-    async def batch_list_dir(self, dir_paths):
-        tasks = [self.list_dir(p) for p in dir_paths]
-        results = await asyncio.gather(*tasks)
-        return {p: r for p, r in zip(dir_paths, results)}
 
 
 def aws_download(aws_files, http_proxy, max_tries=3):
@@ -106,3 +73,99 @@ def run_aws_download(aws_files, http_proxy):
         run_result = subprocess.run(cmd)
         returncode = run_result.returncode
     return returncode
+
+
+def get_funding_rate_path_tokens(trade_type: TradeType):
+    return [*TYPE_BASE_DIR[trade_type], 'monthly', 'fundingRate']
+
+
+def get_kline_path_tokens(trade_type: TradeType):
+    return [*TYPE_BASE_DIR[trade_type], 'daily', 'klines']
+
+
+class AwsClient:
+
+    def __init__(self, session: ClientSession, http_proxy=None):
+        self.session = session
+        self.http_proxy = http_proxy
+
+    async def _aio_get_xml(self, url):
+        async with self.session.get(url, proxy=self.http_proxy) as resp:
+            data = await resp.text()
+
+        return xmltodict.parse(data)
+
+    async def list_dir(self, dir_path):
+        url = f'{PREFIX}?delimiter=/&prefix={dir_path}'
+        base_url = url
+        results = []
+        while True:
+            data = await async_retry_getter(self._aio_get_xml, url=url)
+            xml_data = data['ListBucketResult']
+            if 'CommonPrefixes' in xml_data:
+                results.extend([x['Prefix'] for x in xml_data['CommonPrefixes']])
+            elif 'Contents' in xml_data:
+                results.extend([x['Key'] for x in xml_data['Contents']])
+            if xml_data['IsTruncated'] == 'false':
+                break
+            url = base_url + '&marker=' + xml_data['NextMarker']
+        return results
+
+    async def batch_list_dir(self, dir_paths):
+        tasks = [self.list_dir(p) for p in dir_paths]
+        results = await asyncio.gather(*tasks)
+        return {p: r for p, r in zip(dir_paths, results)}
+
+
+class AwsMonthlyFundingRateClient(AwsClient):
+
+    def __init__(self, session, http_proxy, trade_type):
+        super().__init__(session, http_proxy)
+        self.trade_type = trade_type
+
+    @property
+    def base_dir_tokens(self):
+        return get_funding_rate_path_tokens(self.trade_type)
+
+    async def list_symbols(self):
+        aws_dir = get_aws_dir(self.base_dir_tokens)
+        paths = await self.list_dir(aws_dir)
+        symbols = [Path(os.path.normpath(p)).parts[-1] for p in paths]
+        return sorted(symbols)
+
+    async def list_funding_rate_files(self, symbol):
+        aws_dir = get_aws_dir(self.base_dir_tokens + [symbol])
+        return sorted(await self.list_dir(aws_dir))
+
+    async def batch_list_funding_rate_files(self, symbols):
+        results = await asyncio.gather(*[self.list_funding_rate_files(symbol) for symbol in symbols])
+        return {symbol: list_result for symbol, list_result in zip(symbols, results)}
+
+
+class AwsDailyKlineClient(AwsClient):
+
+    def __init__(self, session, http_proxy, trade_type):
+        super().__init__(session, http_proxy)
+        self.trade_type = trade_type
+
+    @property
+    def base_dir_tokens(self):
+        return get_kline_path_tokens(self.trade_type)
+
+    async def list_symbols(self):
+        aws_dir = get_aws_dir(self.base_dir_tokens)
+        paths = await self.list_dir(aws_dir)
+        symbols = [Path(os.path.normpath(p)).parts[-1] for p in paths]
+        return sorted(symbols)
+
+    async def list_kline_files(self, time_interval, symbol):
+        aws_dir = get_aws_dir(self.base_dir_tokens + [symbol, time_interval])
+        return await sorted(self.list_dir(aws_dir))
+
+    async def batch_list_kline_files(self, time_interval, symbols):
+        tasks = []
+        for symbol in symbols:
+            aws_dir = get_aws_dir(self.base_dir_tokens + [symbol, time_interval])
+            tasks.append(self.list_dir(aws_dir))
+        results = await asyncio.gather(*tasks)
+        return {symbol: list_result for symbol, list_result in zip(symbols, results)}

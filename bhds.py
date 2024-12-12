@@ -5,7 +5,7 @@ from typing_extensions import Annotated
 
 import typer
 
-from bhds import aws_kline, api_kline
+from bhds import aws_kline, api_kline, aws_funding
 from constant import ContractType, TradeType
 
 app = typer.Typer()
@@ -73,7 +73,7 @@ def download_spot_klines(
     http_proxy: Annotated[Optional[str], typer.Option(help="HTTP proxy address")] = HTTP_PROXY,
 ):
     '''
-    Download Binance spot klines from AWS data center
+    Download Binance spot klines
     '''
     for time_interval in time_intervals:
         asyncio.run(aws_kline.download_spot_klines(time_interval, quote, stablecoins, leverage_coins, http_proxy))
@@ -94,7 +94,7 @@ def download_um_futures_klines(
     http_proxy: Annotated[Optional[str], typer.Option(help="HTTP proxy address")] = HTTP_PROXY,
 ):
     '''
-    Download Binance USDⓈ-M Futures klines from AWS data center
+    Download Binance USDⓈ-M Futures klines
     '''
     for time_interval in time_intervals:
         asyncio.run(aws_kline.download_um_futures_klines(time_interval, quote, contract_type, http_proxy))
@@ -114,7 +114,7 @@ def download_cm_futures_klines(
     http_proxy: Annotated[Optional[str], typer.Option(help="HTTP proxy address")] = HTTP_PROXY,
 ):
     '''
-    Download Binance COIN-M Futures klines from AWS data center
+    Download Binance COIN-M Futures klines
     '''
     for time_interval in time_intervals:
         asyncio.run(aws_kline.download_cm_futures_klines(time_interval, contract_type, http_proxy))
@@ -158,6 +158,52 @@ def verify_klines_all_symbols(
     '''
     for time_interval in time_intervals:
         aws_kline.verify_klines_all_symbols(trade_type, time_interval)
+
+
+@app.command()
+def download_funding_rates(
+    trade_type: Annotated[TradeType, typer.Argument(help="Type of symbols")],
+    symbols: Annotated[
+        list[str],
+        typer.Argument(help="A list of trading symbols, e.g., 'BTCUSDT ETHUSDT'."),
+    ],
+    http_proxy: Annotated[Optional[str], typer.Option(help="HTTP proxy address")] = HTTP_PROXY,
+):
+    '''
+    Download Binance funding rates for specific symbols from AWS data center
+    '''
+    asyncio.run(aws_funding.download_aws_funding_rates(trade_type, symbols, http_proxy))
+
+
+@app.command()
+def download_um_futures_funding_rates(
+    quote: Annotated[str, typer.Option(help="The quote currency, e.g., 'USDT', 'USDC', 'BTC'.")] = 'USDT',
+    contract_type: Annotated[
+        ContractType,
+        typer.Option(help="The type of contract, 'PERPETUAL' or 'DELIVERY'."),
+    ] = ContractType.perpetual,
+    http_proxy: Annotated[Optional[str], typer.Option(help="HTTP proxy address")] = HTTP_PROXY,
+):
+    '''
+    Download Binance USDⓈ-M Futures funding rates
+    '''
+    asyncio.run(aws_funding.download_um_futures_funding_rates(quote, contract_type, http_proxy))
+    # asyncio.run(batch_download_missing_klines(TradeType.um_futures, http_proxy, time_interval))
+
+
+@app.command()
+def download_cm_futures_funding_rates(
+    contract_type: Annotated[
+        ContractType,
+        typer.Option(help="The type of contract, 'PERPETUAL' or 'DELIVERY'."),
+    ] = ContractType.perpetual,
+    http_proxy: Annotated[Optional[str], typer.Option(help="HTTP proxy address")] = HTTP_PROXY,
+):
+    '''
+    Download Binance Coin Futures funding rates
+    '''
+    asyncio.run(aws_funding.download_cm_futures_funding_rates(contract_type, http_proxy))
+    # asyncio.run(batch_download_missing_klines(TradeType.um_futures, http_proxy, time_interval))
 
 
 if __name__ == '__main__':
