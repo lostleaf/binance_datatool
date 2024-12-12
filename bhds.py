@@ -5,7 +5,7 @@ from typing_extensions import Annotated
 
 import typer
 
-from bhds import aws_kline
+from bhds import aws_kline, api_kline
 from constant import ContractType, TradeType
 
 app = typer.Typer()
@@ -33,6 +33,29 @@ def download_aws_klines(
 
 
 @app.command()
+def download_api_klines(
+    trade_type: Annotated[TradeType, typer.Argument(help="Type of symbols")],
+    time_interval: Annotated[
+        str,
+        typer.Argument(help="The time interval for the K-lines, e.g., '1m', '5m', '1h'."),
+    ],
+    symbol: Annotated[
+        str,
+        typer.Argument(help="Trading symbol, e.g., 'BTCUSDT'."),
+    ],
+    dts: Annotated[
+        list[str],
+        typer.Argument(help="A list of trading dates, e.g., '20240101 20240102'."),
+    ],
+    http_proxy: Annotated[Optional[str], typer.Option(help="HTTP proxy address")] = HTTP_PROXY,
+):
+    '''
+    Download Binance klines for specific symbol and dates from Binance Kline API
+    '''
+    asyncio.run(api_kline.download_api_klines(trade_type, time_interval, symbol, dts, http_proxy))
+
+
+@app.command()
 def download_spot_klines(
     time_intervals: Annotated[
         list[str],
@@ -54,6 +77,7 @@ def download_spot_klines(
     '''
     for time_interval in time_intervals:
         asyncio.run(aws_kline.download_spot_klines(time_interval, quote, stablecoins, leverage_coins, http_proxy))
+        asyncio.run(batch_download_missing_klines(TradeType.spot, http_proxy, time_interval))
 
 
 @app.command()
@@ -74,6 +98,7 @@ def download_um_futures_klines(
     '''
     for time_interval in time_intervals:
         asyncio.run(aws_kline.download_um_futures_klines(time_interval, quote, contract_type, http_proxy))
+        asyncio.run(batch_download_missing_klines(TradeType.um_futures, http_proxy, time_interval))
 
 
 @app.command()
@@ -93,6 +118,16 @@ def download_cm_futures_klines(
     '''
     for time_interval in time_intervals:
         asyncio.run(aws_kline.download_cm_futures_klines(time_interval, contract_type, http_proxy))
+        asyncio.run(batch_download_missing_klines(TradeType.cm_futures, http_proxy, time_interval))
+
+
+async def batch_download_missing_klines(trade_type: TradeType, http_proxy, time_interval):
+    symbol_dts_missing = aws_kline.find_kline_missing_dts_all_symbols(trade_type, time_interval)
+    tasks = [
+        api_kline.download_api_klines(trade_type, time_interval, symbol, dts_missing, http_proxy)
+        for symbol, dts_missing in symbol_dts_missing.items()
+    ]
+    await asyncio.gather(*tasks)
 
 
 @app.command()
