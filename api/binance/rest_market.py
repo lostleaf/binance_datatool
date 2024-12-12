@@ -41,7 +41,7 @@ class BinanceMarketUMFapi(BinanceBaseMarketApi):
         Get the current server time and consumed weight
         """
         url = f'{self.PREFIX}/v1/time'
-        async with self.session.get(url) as resp:
+        async with self.session.get(url, proxy=self.http_proxy) as resp:
             weight = int(resp.headers['X-MBX-USED-WEIGHT-1M'])
             timestamp = (await resp.json())['serverTime']
         return timestamp, weight
@@ -98,7 +98,7 @@ class BinanceMarketCMDapi(BinanceBaseMarketApi):
         Get the current server time and consumed weight
         """
         url = f'{self.PREFIX}/v1/time'
-        async with self.session.get(url) as resp:
+        async with self.session.get(url, proxy=self.http_proxy) as resp:
             weight = int(resp.headers['X-MBX-USED-WEIGHT-1M'])
             timestamp = (await resp.json())['serverTime']
         return timestamp, weight
@@ -148,7 +148,7 @@ class BinanceMarketSpotApi(BinanceBaseMarketApi):
         Get the current server time and consumed weight
         """
         url = f'{self.PREFIX}/v3/time'
-        async with self.session.get(url) as resp:
+        async with self.session.get(url, proxy=self.http_proxy) as resp:
             weight = int(resp.headers['X-MBX-USED-WEIGHT-1M'])
             timestamp = (await resp.json())['serverTime']
         return timestamp, weight

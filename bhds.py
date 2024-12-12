@@ -52,7 +52,7 @@ def download_api_klines(
     '''
     Download Binance klines for specific symbol and dates from Binance Kline API
     '''
-    asyncio.run(api_kline.download_api_klines(trade_type, time_interval, symbol, dts, http_proxy))
+    asyncio.run(api_kline.download_api_klines(trade_type, time_interval, symbol, dts, True, http_proxy))
 
 
 @app.command()
@@ -123,11 +123,8 @@ def download_cm_futures_klines(
 
 async def batch_download_missing_klines(trade_type: TradeType, http_proxy, time_interval):
     symbol_dts_missing = aws_kline.find_kline_missing_dts_all_symbols(trade_type, time_interval)
-    tasks = [
-        api_kline.download_api_klines(trade_type, time_interval, symbol, dts_missing, http_proxy)
-        for symbol, dts_missing in symbol_dts_missing.items()
-    ]
-    await asyncio.gather(*tasks)
+    for symbol, dts_missing in symbol_dts_missing.items():
+        await api_kline.download_api_klines(trade_type, time_interval, symbol, dts_missing, False, http_proxy)
 
 
 @app.command()

@@ -133,7 +133,8 @@ class BinanceFetcher:
         '''
         Request and parse return values of /klines API of given date and convert to polars.DataFrame
         '''
-        dt = date_parser.parse(dt).date()
+        if isinstance(dt, str):
+            dt = date_parser.parse(dt).date()
         ts_start = datetime.combine(dt, dtime(0, 0), tzinfo=ZoneInfo('UTC'))
         ts_next = ts_start + timedelta(days=1)
         start_ms = int(ts_start.timestamp()) * 1000
