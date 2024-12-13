@@ -158,15 +158,46 @@ class BinanceFetcher:
         
         return df
 
-    async def get_funding_rate(self) -> pl.DataFrame:
+    async def get_realtime_funding_rate(self) -> pl.DataFrame:
         if self.trade_type == TradeType.spot:
             raise RuntimeError('Cannot request funding rate for spot')
-        data = await self.market_api.aioreq_premium_index()
+        data = await async_retry_getter(self.market_api.aioreq_premium_index)
+        schema = {
+            'nextFundingTime': pl.Int64,
+            'lastFundingRate': pl.Float64,
+            'symbol': str
+        }
+        df = pl.LazyFrame(data, schema_overrides=schema, orient='row')
+        df = df.filter(pl.col('nextFundingTime') > 0)
+        df = df.select(
+            pl.col('nextFundingTime').cast(pl.Datetime('ms')).dt.replace_time_zone('UTC').alias('next_funding_time'),
+            pl.col('symbol'),
+            pl.col('lastFundingRate').alias('funding_rate')
+        )
+        return df.collect()
 
-        # data = [{
-        #     'symbol': d['symbol'],
-        #     'fundingRate': pd.to_numeric(d['lastFundingRate'], errors='coerce')
-        # } for d in data]
+    async def get_hist_funding_rate(self, symbol, **kwargs):
+        '''
+        Parse historical funding rates from /fundingRate
+        '''
+        if self.trade_type == 'spot':
+            raise RuntimeError('Cannot request funding rate for spot')
 
-        df = pl.from_records(data)
-        return df
+        # funding rates 接口限制 500/5mins，失败后等待 75 秒
+        data = await async_retry_getter(self.market_api.aioreq_funding_rate, symbol=symbol, _sleep_seconds=75, **kwargs)
+
+        schema = {
+            'fundingTime': pl.Int64,
+            'fundingRate': pl.Float64,
+            'symbol': str
+        }
+        df = pl.LazyFrame(data, orient='row', schema_overrides=schema)
+
+        candle_begin_time = pl.col('fundingTime') - pl.col('fundingTime') % (60 * 60 * 1000)
+        df = df.select(
+            pl.col('symbol'),
+            candle_begin_time.cast(pl.Datetime('ms')).dt.replace_time_zone('UTC').alias('candle_begin_time'),
+            pl.col('fundingRate').alias('funding_rate')
+        )
+        df = df.sort(['candle_begin_time'])
+        return df.collect()

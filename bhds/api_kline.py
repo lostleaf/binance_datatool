@@ -1,15 +1,14 @@
 import asyncio
 from typing import Optional
 
-from dateutil import parser as date_parser
-from datetime import date
+from config import Config
 from constant import TradeType
 from fetcher.binance import BinanceFetcher
 from util.log_kit import logger
 from util.network import create_aiohttp_session
-from config import Config
 
-API_TIMEOUT_SEC = 15
+from .aws_basics import AWS_TIMEOUT_SEC
+from .bhds_util import convert_date
 
 
 async def _get_kline(fetcher: BinanceFetcher, symbol: str, time_interval: str, dt: str):
@@ -17,15 +16,9 @@ async def _get_kline(fetcher: BinanceFetcher, symbol: str, time_interval: str, d
     return df, dt
 
 
-def convert_date(dt) -> date:
-    if isinstance(dt, str):
-        return date_parser.parse(dt).date()
-    return dt
-
-
 async def download_api_klines(trade_type: TradeType, time_interval: str, symbol: str, dts: list[str], overwrite: bool,
                               http_proxy: Optional[str]):
-    logger.info(f'Start Download {trade_type.value} {symbol} {time_interval} Klines from Binance AWS')
+    logger.info(f'Start Download {trade_type.value} {symbol} {time_interval} Klines from Binance API')
 
     dts = [convert_date(dt) for dt in sorted(dts)]
 
@@ -43,7 +36,7 @@ async def download_api_klines(trade_type: TradeType, time_interval: str, symbol:
                 dts_filtered.append(dt)
         dts = dts_filtered
 
-    async with create_aiohttp_session(API_TIMEOUT_SEC) as session:
+    async with create_aiohttp_session(AWS_TIMEOUT_SEC) as session:
         fetcher = BinanceFetcher(trade_type, session, http_proxy)
         while dts:
             server_ts, weight = await fetcher.get_time_and_weight()

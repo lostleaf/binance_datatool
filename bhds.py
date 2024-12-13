@@ -1,11 +1,12 @@
 import asyncio
 import os
 from typing import Optional
-from typing_extensions import Annotated
 
 import typer
+from typing_extensions import Annotated
 
-from bhds import aws_kline, api_kline, aws_funding
+from bhds import api_funding, api_kline, aws_basics, aws_funding, aws_kline
+from config import Config
 from constant import ContractType, TradeType
 
 app = typer.Typer()
@@ -161,7 +162,7 @@ def verify_klines_all_symbols(
 
 
 @app.command()
-def download_funding_rates(
+def download_aws_funding_rates(
     trade_type: Annotated[TradeType, typer.Argument(help="Type of symbols")],
     symbols: Annotated[
         list[str],
@@ -173,6 +174,21 @@ def download_funding_rates(
     Download Binance funding rates for specific symbols from AWS data center
     '''
     asyncio.run(aws_funding.download_aws_funding_rates(trade_type, symbols, http_proxy))
+
+
+@app.command()
+def download_api_funding_rates(
+    trade_type: Annotated[TradeType, typer.Argument(help="Type of symbols")],
+    symbol: Annotated[
+        str,
+        typer.Argument(help="Trading symbol, e.g., 'BTCUSDT'."),
+    ],
+    http_proxy: Annotated[Optional[str], typer.Option(help="HTTP proxy address")] = HTTP_PROXY,
+):
+    '''
+    Download Binance funding rates for specific symbols from Binance Funding Rates API
+    '''
+    asyncio.run(api_funding.download_api_funding_rates(trade_type, symbol, http_proxy))
 
 
 @app.command()
@@ -188,7 +204,7 @@ def download_um_futures_funding_rates(
     Download Binance USDⓈ-M Futures funding rates
     '''
     asyncio.run(aws_funding.download_um_futures_funding_rates(quote, contract_type, http_proxy))
-    # asyncio.run(batch_download_missing_klines(TradeType.um_futures, http_proxy, time_interval))
+    asyncio.run(batch_download_funding_rates(http_proxy, TradeType.um_futures))
 
 
 @app.command()
@@ -203,8 +219,16 @@ def download_cm_futures_funding_rates(
     Download Binance Coin Futures funding rates
     '''
     asyncio.run(aws_funding.download_cm_futures_funding_rates(contract_type, http_proxy))
-    # asyncio.run(batch_download_missing_klines(TradeType.um_futures, http_proxy, time_interval))
+    asyncio.run(batch_download_funding_rates(http_proxy, TradeType.cm_futures))
 
+
+async def batch_download_funding_rates(http_proxy, trade_type):
+    funding_dir = aws_basics.get_aws_dir(aws_basics.get_funding_rate_path_tokens(trade_type))
+    funding_dir = Config.BINANCE_DATA_DIR / 'aws_data' / funding_dir
+    symbols = sorted(p.stem for p in funding_dir.iterdir())
+    for symbol in symbols:
+        await api_funding.download_api_funding_rates(trade_type, symbol, http_proxy)
+ 
 
 if __name__ == '__main__':
     app()
