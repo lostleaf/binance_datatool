@@ -66,7 +66,7 @@ def run_aws_download(aws_files, http_proxy):
 
         aria_file.close()
 
-        cmd = ['aria2c', '-i', aria_file.name, '-q']
+        cmd = ['aria2c', '-i', aria_file.name, '-j32', '-x4', '-q']
         if http_proxy is not None:
             cmd.append(f'--all-proxy={http_proxy}')
 
