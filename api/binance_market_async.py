@@ -1,17 +1,80 @@
 '''
 Abstractions for Binance market data endpoints
 API keys are not required here
+
+This design references python-binance. (https://github.com/sammchardy/python-binance)
 '''
 
+import json
 from abc import ABC, abstractmethod
 from typing import Tuple
 
+import aiohttp
+
 from constant import TradeType
 
-from .rest_basics import BinanceBaseApi
+
+class BinanceRequestException(Exception):
+
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return 'BinanceRequestException: %s' % self.message
+
+
+class BinanceAPIException(Exception):
+
+    def __init__(self, response, status_code, text):
+        self.code = 0
+        try:
+            json_res = json.loads(text)
+        except ValueError:
+            self.message = 'Invalid JSON error message from Binance: {}'.format(response.text)
+        else:
+            self.code = json_res.get('code')
+            self.message = json_res.get('msg')
+        self.status_code = status_code
+        self.response = response
+        self.request = getattr(response, 'request', None)
+
+    def __str__(self):  # pragma: no cover
+        return 'APIError(code=%s): %s' % (self.code, self.message)
+
+
+class BinanceBaseApi:
+
+    def __init__(self, session: aiohttp.ClientSession, proxy: str) -> None:
+        self.session = session
+        self.proxy = proxy
+
+    async def _handle_response(self, response: aiohttp.ClientResponse):
+        """
+        Internal helper for handling API responses from the Binance server.
+        Raises the appropriate exceptions when necessary; otherwise, returns the response.
+        """
+        if not str(response.status).startswith('2'):
+            raise BinanceAPIException(response, response.status, await response.text())
+        try:
+            return await response.json()
+        except ValueError:
+            txt = await response.text()
+            raise BinanceRequestException(f'Invalid Response: {txt}')
+
+    async def _aio_get(self, url, params):
+        if params is None:
+            params = {}
+        async with self.session.get(url, params=params, proxy=self.proxy) as resp:
+            return await self._handle_response(resp)
+
+    async def _aio_post(self, url, params):
+        async with self.session.post(url, data=params, proxy=self.proxy) as resp:
+            return await self._handle_response(resp)
 
 
 class BinanceBaseMarketApi(ABC, BinanceBaseApi):
+    WEIGHT_EFFICIENT_ONCE_CANDLES = 1000
+    MAX_MINUTE_WEIGHT = 6000
 
     @abstractmethod
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
@@ -25,6 +88,9 @@ class BinanceBaseMarketApi(ABC, BinanceBaseApi):
     async def aioreq_exchange_info(self) -> dict:
         pass
 
+    async def aioreq_premium_index(self, **kwargs) -> list:
+        raise NotImplementedError
+
 
 class BinanceMarketUMFapi(BinanceBaseMarketApi):
     """
@@ -33,7 +99,6 @@ class BinanceMarketUMFapi(BinanceBaseMarketApi):
 
     PREFIX = 'https://fapi.binance.com/fapi'
     WEIGHT_EFFICIENT_ONCE_CANDLES = 499
-    MAX_ONCE_CANDLES = 1500
     MAX_MINUTE_WEIGHT = 2400
 
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
@@ -41,7 +106,7 @@ class BinanceMarketUMFapi(BinanceBaseMarketApi):
         Get the current server time and consumed weight
         """
         url = f'{self.PREFIX}/v1/time'
-        async with self.session.get(url, proxy=self.http_proxy) as resp:
+        async with self.session.get(url, proxy=self.proxy) as resp:
             weight = int(resp.headers['X-MBX-USED-WEIGHT-1M'])
             timestamp = (await resp.json())['serverTime']
         return timestamp, weight
@@ -90,7 +155,6 @@ class BinanceMarketCMDapi(BinanceBaseMarketApi):
 
     PREFIX = 'https://dapi.binance.com/dapi'
     WEIGHT_EFFICIENT_ONCE_CANDLES = 499
-    MAX_ONCE_CANDLES = 1500
     MAX_MINUTE_WEIGHT = 2400
 
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
@@ -98,7 +162,7 @@ class BinanceMarketCMDapi(BinanceBaseMarketApi):
         Get the current server time and consumed weight
         """
         url = f'{self.PREFIX}/v1/time'
-        async with self.session.get(url, proxy=self.http_proxy) as resp:
+        async with self.session.get(url, proxy=self.proxy) as resp:
             weight = int(resp.headers['X-MBX-USED-WEIGHT-1M'])
             timestamp = (await resp.json())['serverTime']
         return timestamp, weight
@@ -140,7 +204,6 @@ class BinanceMarketSpotApi(BinanceBaseMarketApi):
 
     PREFIX = 'https://api.binance.com/api'
     WEIGHT_EFFICIENT_ONCE_CANDLES = 1000
-    MAX_ONCE_CANDLES = 1000
     MAX_MINUTE_WEIGHT = 6000
 
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
@@ -148,7 +211,7 @@ class BinanceMarketSpotApi(BinanceBaseMarketApi):
         Get the current server time and consumed weight
         """
         url = f'{self.PREFIX}/v3/time'
-        async with self.session.get(url, proxy=self.http_proxy) as resp:
+        async with self.session.get(url, proxy=self.proxy) as resp:
             weight = int(resp.headers['X-MBX-USED-WEIGHT-1M'])
             timestamp = (await resp.json())['serverTime']
         return timestamp, weight
