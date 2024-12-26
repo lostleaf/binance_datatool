@@ -5,20 +5,19 @@ import aiohttp
 from .log_kit import logger
 
 
-async def async_retry_getter(func, max_times=5, **kwargs):
-    sleep_seconds = 1
+async def async_retry_getter(func, _max_times=5, _sleep_seconds=1, **kwargs):
+
     while True:
         try:
             return await func(**kwargs)
         except Exception as e:
-            if max_times == 0:
+            if _max_times == 0:
+                logger.exception('Error occurred, 0 times retry left')
                 raise e
-            else:
-                logger.warning('Error occurred, %s, %d times retry left', repr(e), max_times)
 
-            await asyncio.sleep(sleep_seconds)
-            max_times -= 1
-            sleep_seconds *= 2
+            await asyncio.sleep(_sleep_seconds)
+            _max_times -= 1
+            _sleep_seconds *= 2
 
 
 def create_aiohttp_session(timeout_sec):

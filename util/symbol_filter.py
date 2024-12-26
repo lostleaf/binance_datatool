@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
-from constant import ContractType
+from config.config import ContractType
+from util.infer_exginfo import infer_cm_futures_info, infer_spot_info, infer_um_futures_info
 
 STABLECOINS = {
     'BKRW', 'USDC', 'USDP', 'TUSD', 'BUSD', 'FDUSD', 'DAI', 'EUR', 'GBP', 'USBP', 'SUSD', 'PAXG', 'AEUR', 'USDS',
@@ -91,8 +92,27 @@ class CmFuturesFilter(BaseSymbolFilter):
         return True
 
 
-def create_symbol_filter(filter_name, params) -> BaseSymbolFilter:
-    if filter_name not in globals():
-        raise ValueError(f'{filter_name} is not supported')
-    cls = globals()[filter_name]
-    return cls(**params)
+def filter_um_futures_symbols(quote, contract_type, symbols):
+    sym_filter = UmFuturesFilter(quote_asset=quote, contract_type=contract_type)
+    exginfo = {symbol: infer_um_futures_info(symbol) for symbol in symbols}
+    exginfo = {k: v for k, v in exginfo.items() if v is not None}
+    filtered_symbols = sym_filter(exginfo)
+    return filtered_symbols
+
+
+def filter_cm_futures_symbols(contract_type, symbols):
+    sym_filter = CmFuturesFilter(contract_type=contract_type)
+    exginfo = {symbol: infer_cm_futures_info(symbol) for symbol in symbols}
+    exginfo = {k: v for k, v in exginfo.items() if v is not None}
+    filtered_symbols = sym_filter(exginfo)
+    return filtered_symbols
+
+
+def filter_spot_symbols(quote, keep_stablecoins, keep_leverage_coins, symbols):
+    sym_filter = SpotFilter(quote_asset=quote,
+                            keep_stablecoins=keep_stablecoins,
+                            keep_leverage_coins=keep_leverage_coins)
+    exginfo = {symbol: infer_spot_info(symbol) for symbol in symbols}
+    exginfo = {k: v for k, v in exginfo.items() if v is not None}
+    filtered_symbols = sym_filter(exginfo)
+    return filtered_symbols

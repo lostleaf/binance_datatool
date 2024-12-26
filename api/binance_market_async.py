@@ -11,7 +11,7 @@ from typing import Tuple
 
 import aiohttp
 
-from constant import TradeType
+from config import TradeType
 
 
 class BinanceRequestException(Exception):

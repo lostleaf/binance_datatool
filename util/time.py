@@ -1,4 +1,6 @@
-from datetime import timedelta
+from datetime import date, timedelta
+
+from dateutil import parser as date_parser
 
 
 def convert_interval_to_timedelta(time_interval: str) -> timedelta:
@@ -9,3 +11,9 @@ def convert_interval_to_timedelta(time_interval: str) -> timedelta:
         return timedelta(hours=int(time_interval[:-1]))
 
     raise ValueError('time_interval %s format error', time_interval)
+
+
+def convert_date(dt) -> date:
+    if isinstance(dt, str):
+        return date_parser.parse(dt).date()
+    return dt

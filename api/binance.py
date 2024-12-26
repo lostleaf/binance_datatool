@@ -10,7 +10,7 @@ import polars as pl
 from dateutil import parser as date_parser
 
 from api.binance_market_async import create_binance_market_api
-from constant import TradeType
+from config import TradeType
 from util.network import async_retry_getter
 from util.time import convert_interval_to_timedelta
 

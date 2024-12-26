@@ -1,13 +1,11 @@
 import asyncio
 from typing import Optional
 
-from config import Config
-from constant import TradeType
-from fetcher.binance import BinanceFetcher
+import config
+from config import TradeType
+from api.binance import BinanceFetcher
 from util.log_kit import logger
 from util.network import create_aiohttp_session
-
-from .aws_basics import AWS_TIMEOUT_SEC
 
 
 async def download_api_funding_rates(trade_type: TradeType, symbol: str, http_proxy: Optional[str]):
@@ -16,10 +14,10 @@ async def download_api_funding_rates(trade_type: TradeType, symbol: str, http_pr
     if http_proxy is not None:
         logger.debug(f'Use proxy, http_proxy={http_proxy}')
 
-    async with create_aiohttp_session(AWS_TIMEOUT_SEC) as session:
+    async with create_aiohttp_session(config.HTTP_TIMEOUT_SEC) as session:
         fetcher = BinanceFetcher(trade_type, session, http_proxy)
         df_funding = await fetcher.get_hist_funding_rate(symbol=symbol, limit=1000)
-        funding_dir = Config.BINANCE_DATA_DIR / 'api_data' / 'funding_rate' / trade_type.value
+        funding_dir = config.BINANCE_DATA_DIR / 'api_data' / 'funding_rate' / trade_type.value
         funding_dir.mkdir(parents=True, exist_ok=True)
         output_file = funding_dir / f'{symbol}.pqt'
         df_funding.write_parquet(output_file)

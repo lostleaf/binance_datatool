@@ -1,14 +1,12 @@
 import asyncio
 from typing import Optional
 
-from config import Config
-from constant import TradeType
-from fetcher.binance import BinanceFetcher
+import config
+from config import TradeType
+from api.binance import BinanceFetcher
 from util.log_kit import logger
 from util.network import create_aiohttp_session
-
-from .aws_basics import AWS_TIMEOUT_SEC
-from .bhds_util import convert_date
+from util.time import convert_date
 
 
 async def _get_kline(fetcher: BinanceFetcher, symbol: str, time_interval: str, dt: str):
@@ -30,13 +28,13 @@ async def download_api_klines(trade_type: TradeType, time_interval: str, symbol:
         dts_filtered = []
         for dt in dts:
             filename: str = dt.strftime('%Y%m%d') + '.pqt'
-            kline_dir = Config.BINANCE_DATA_DIR / 'api_data' / 'kline' / trade_type.value / symbol / time_interval
+            kline_dir = config.BINANCE_DATA_DIR / 'api_data' / 'kline' / trade_type.value / symbol / time_interval
             output_file = kline_dir / filename
             if not output_file.exists():
                 dts_filtered.append(dt)
         dts = dts_filtered
 
-    async with create_aiohttp_session(AWS_TIMEOUT_SEC) as session:
+    async with create_aiohttp_session(config.AWS_TIMEOUT_SEC) as session:
         fetcher = BinanceFetcher(trade_type, session, http_proxy)
         while dts:
             server_ts, weight = await fetcher.get_time_and_weight()
@@ -50,7 +48,7 @@ async def download_api_klines(trade_type: TradeType, time_interval: str, symbol:
             for task in asyncio.as_completed(tasks):
                 df, dt = await task
                 filename = dt.strftime('%Y%m%d') + '.pqt'
-                kline_dir = Config.BINANCE_DATA_DIR / 'api_data' / 'kline' / trade_type.value / symbol / time_interval
+                kline_dir = config.BINANCE_DATA_DIR / 'api_data' / 'kline' / trade_type.value / symbol / time_interval
                 kline_dir.mkdir(parents=True, exist_ok=True)
                 output_file = kline_dir / filename
                 df.write_parquet(output_file)

@@ -1,4 +1,4 @@
-from constant import ContractType
+from config.config import ContractType
 
 
 def infer_spot_info(symbol: str):

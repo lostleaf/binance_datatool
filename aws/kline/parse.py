@@ -3,7 +3,7 @@ import polars as pl
 from zipfile import ZipFile
 
 
-def read_aws_kline_csv(p, eager=True):
+def read_csv(csv_file):
     columns = [
         'candle_begin_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_volume', 'trade_num',
         'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
@@ -20,7 +20,7 @@ def read_aws_kline_csv(p, eager=True):
         'taker_buy_base_asset_volume': pl.Float64,
         'taker_buy_quote_asset_volume': pl.Float64
     }
-    with ZipFile(p) as f:
+    with ZipFile(csv_file) as f:
         filename = f.namelist()[0]
         lines = f.open(filename).readlines()
 
@@ -29,24 +29,12 @@ def read_aws_kline_csv(p, eager=True):
             lines = lines[1:]
 
     # Use Polars to read the CSV file
-    df_lazy = pl.scan_csv(lines, has_header=False, new_columns=columns, schema_overrides=schema)
+    ldf = pl.scan_csv(lines, has_header=False, new_columns=columns, schema_overrides=schema)
 
     # Remove useless columns
-    df_lazy = df_lazy.drop('ignore', 'close_time')
+    ldf = ldf.drop('ignore', 'close_time')
 
     # Cast column types
-    df_lazy = df_lazy.with_columns(pl.col('candle_begin_time').cast(pl.Datetime('ms')).dt.replace_time_zone('UTC'))
+    ldf = ldf.with_columns(pl.col('candle_begin_time').cast(pl.Datetime('ms')).dt.replace_time_zone('UTC'))
 
-    if eager:
-        return df_lazy.collect()
-
-    return df_lazy
-
-
-def read_aws_symbol_kline(aws_csv_paths, api_parquet_paths):
-    df_aws = pl.concat(read_aws_kline_csv(p, eager=False) for p in aws_csv_paths)
-    df_api = pl.read_parquet(api_parquet_paths, columns=df_aws.columns)
-
-    df_lazy = pl.concat([df_aws.lazy(), df_api.lazy()])
-    df_lazy = df_lazy.unique('candle_begin_time').sort('candle_begin_time')
-    return df_lazy.collect()
+    return ldf.collect()
