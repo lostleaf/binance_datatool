@@ -27,7 +27,7 @@ async def download_funding_rates(trade_type: TradeType, symbols: list[str], http
 
 async def aws_list_kline_symbols(trade_type: TradeType, http_proxy):
     async with create_aiohttp_session(HTTP_TIMEOUT_SEC) as session:
-        kline_client = AwsFundingRateClient(sesssion=session, trade_type=trade_type, http_proxy=http_proxy)
+        kline_client = AwsFundingRateClient(session=session, trade_type=trade_type, http_proxy=http_proxy)
         symbols = await kline_client.list_symbols()
     return symbols
 
