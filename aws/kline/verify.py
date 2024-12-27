@@ -1,10 +1,11 @@
 from itertools import chain
 from typing import List
 
+from aws.kline.util import local_list_kline_symbols
 import config
 from aws.checksum import get_unverified_aws_data_files, verify_multi_process
 from aws.client_async import AwsKlineClient
-from config import TradeType
+from config import DataFreq, TradeType
 from util.log_kit import divider, logger
 
 
@@ -13,7 +14,7 @@ def verify_klines(trade_type: TradeType, time_interval: str, symbols: List[str])
     logger.debug(f'trade_type={trade_type.value}, time_interval={time_interval}, num_symbols={len(symbols)}, '
                  f'{symbols[0]} -- {symbols[-1]}')
 
-    local_kline_dir = AwsKlineClient.LOCAL_DIR / AwsKlineClient.get_base_dir(trade_type, 'daily')
+    local_kline_dir = AwsKlineClient.LOCAL_DIR / AwsKlineClient.get_base_dir(trade_type, DataFreq.daily)
     unverified_files = sorted(
         chain.from_iterable(
             get_unverified_aws_data_files(local_kline_dir / symbol / time_interval) for symbol in symbols))
@@ -32,12 +33,6 @@ def verify_klines(trade_type: TradeType, time_interval: str, symbols: List[str])
     if num_fail > 0:
         msg += f', deleted {num_fail} corrupted files'
     logger.ok(msg)
-
-
-def local_list_kline_symbols(trade_type: TradeType, time_interval: str):
-    kline_dir = AwsKlineClient.LOCAL_DIR / AwsKlineClient.get_base_dir(trade_type=trade_type, data_freq='daily')
-    symbols = sorted(p.parts[-2] for p in kline_dir.glob(f'*/{time_interval}'))
-    return symbols
 
 
 def verify_type_all_klines(trade_type: TradeType, time_interval: str):

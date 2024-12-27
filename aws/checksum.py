@@ -56,7 +56,7 @@ def verify_aws_data_file(data_file: Path):
     return True
 
 
-def get_unverified_aws_data_files(symbol_dir: Path):
+def get_unverified_aws_data_files(symbol_dir: Path) -> list[Path]:
     unverified_files = []
     for kline_file in symbol_dir.glob('*.zip'):
         verify_file = get_verified_file(kline_file)
@@ -64,6 +64,16 @@ def get_unverified_aws_data_files(symbol_dir: Path):
             unverified_files.append(kline_file)
 
     return unverified_files
+
+
+def get_verified_aws_data_files(symbol_dir: Path) -> list[Path]:
+    verified_files = []
+    for kline_file in symbol_dir.glob('*.zip'):
+        verify_file = get_verified_file(kline_file)
+        if verify_file.exists():
+            verified_files.append(kline_file)
+
+    return verified_files
 
 
 def verify_multi_process(unverified_files):

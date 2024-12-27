@@ -15,6 +15,7 @@ N_JOBS = int(os.getenv('CRYPTO_NJOBS', os.cpu_count() - 2))
 
 HTTP_TIMEOUT_SEC = 15
 
+
 class TradeType(str, Enum):
     spot = 'spot'
     um_futures = 'um_futures'
@@ -24,3 +25,8 @@ class TradeType(str, Enum):
 class ContractType(str, Enum):
     perpetual = 'PERPETUAL'
     delivery = 'DELIVERY'
+
+
+class DataFreq(str, Enum):
+    monthly = 'monthly'
+    daily = 'daily'

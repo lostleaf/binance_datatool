@@ -8,6 +8,7 @@ from typing_extensions import Annotated
 from aws.kline.download import (download_cm_futures_klines, download_klines, download_spot_klines,
                                 download_um_futures_klines)
 from aws.kline.verify import verify_klines, verify_type_all_klines
+from aws.kline.parse import parse_klines, parse_type_all_klines
 from config import ContractType, TradeType
 
 app = typer.Typer()
@@ -124,7 +125,40 @@ def verify_type_all(
     ],
 ):
     '''
-    Verify Binance Klines for all symbols with the given trade type and time interval
+    Verify Binance Klines for all symbols with the given trade type and time intervals
     '''
     for time_interval in time_intervals:
         verify_type_all_klines(trade_type, time_interval)
+
+
+@app.command()
+def parse(
+    trade_type: Annotated[TradeType, typer.Argument(help="Type of symbols")],
+    time_interval: Annotated[
+        str,
+        typer.Argument(help="The time interval for the K-lines, e.g., '1m', '5m', '1h'."),
+    ],
+    symbols: Annotated[
+        list[str],
+        typer.Argument(help="A list of trading symbols, e.g., 'BTCUSDT ETHUSDT'."),
+    ],
+):
+    '''
+    Parse Binance Klines to Polars DataFrame and Save in Parquet Format
+    '''
+    parse_klines(trade_type, time_interval, symbols)
+
+
+@app.command()
+def parse_type_all(
+    trade_type: Annotated[TradeType, typer.Argument(help="Type of symbols")],
+    time_intervals: Annotated[
+        list[str],
+        typer.Argument(help="The time interval for the K-lines, e.g., '1m', '5m', '1h'."),
+    ],
+):
+    '''
+    Parse Binance Klines for all symbols with the given trade type and time intervals
+    '''
+    for time_interval in time_intervals:
+        parse_type_all_klines(trade_type, time_interval)
