@@ -7,6 +7,7 @@ from pathlib import Path, PurePosixPath
 import xmltodict
 from aiohttp import ClientSession
 
+from aws.kline.util import split_into_batches
 import config
 from config import DataFreq, TradeType
 from util.log_kit import logger
@@ -14,19 +15,8 @@ from util.network import async_retry_getter
 
 
 def run_aws_download(download_infos: list[tuple[str, Path]], http_proxy):
-    download_infos_missing: list[tuple[str, Path]] = []
-    for aws_url, local_file in download_infos:
-        if not local_file.exists():
-            download_infos_missing.append((aws_url, local_file))
-
-    if not download_infos_missing:
-        logger.ok('All files downloaded, nothing missing')
-        return 0
-
-    logger.debug(f'{len(download_infos_missing)} files to be downloaded')
-
     with tempfile.NamedTemporaryFile(mode='w', delete_on_close=False, prefix='bhds_') as aria_file:
-        for aws_url, local_file in download_infos_missing:
+        for aws_url, local_file in download_infos:
             aria_file.write(f'{aws_url}\n  dir={local_file.parent}\n')
         aria_file.close()
 
@@ -37,6 +27,14 @@ def run_aws_download(download_infos: list[tuple[str, Path]], http_proxy):
         run_result = subprocess.run(cmd)
         returncode = run_result.returncode
     return returncode
+
+
+def find_missings(download_infos: list[tuple[str, Path]]):
+    download_infos_missing: list[tuple[str, Path]] = []
+    for aws_url, local_file in download_infos:
+        if not local_file.exists():
+            download_infos_missing.append((aws_url, local_file))
+    return download_infos_missing
 
 
 class AwsClient(ABC):
@@ -110,18 +108,25 @@ class AwsClient(ABC):
             aws_url = f'{self.PREFIX}/{str(aws_file)}'
             download_infos.append([aws_url, local_file])
 
-        for idx in range(max_tries):
-            returncode = run_aws_download(download_infos, self.http_proxy)
+        for try_id in range(max_tries):
+            missing_infos = find_missings(download_infos)
 
-            if returncode == 0:
-                logger.ok('Aria2 download successfully')
-                return
+            if not missing_infos:
+                break
 
-            left_tries = max_tries - idx - 1
-            if left_tries == 0:
-                logger.error(f'Aria2 exited with code {returncode}. Please manually run download again')
-            else:
-                logger.warning(f'Aria2 exited with code {returncode}, left_tries={left_tries}. Download again...')
+            logger.info(f'try_id={try_id}, {len(missing_infos)} files to be downloaded')
+
+            batched_infos: list[tuple[str, Path]] = sorted(split_into_batches(missing_infos, 4096))
+            for batch_idx, infos in enumerate(batched_infos, 1):
+                logger.info(f'Download Batch{batch_idx}, '
+                            f'num_files={len(infos)}, '
+                            f'{infos[0][1].name} -- {infos[-1][1].name}')
+                returncode = run_aws_download(infos, self.http_proxy)
+
+                if returncode == 0:
+                    logger.ok(f'Batch{batch_idx}, Aria2 download successfully')
+                else:
+                    logger.error(f'Batch{batch_idx}, Aria2 exited with code {returncode}')
 
 
 class AwsFundingRateClient(AwsClient):

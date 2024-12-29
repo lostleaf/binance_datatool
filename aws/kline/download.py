@@ -2,6 +2,7 @@ from itertools import chain
 from typing import List, Optional
 
 from aws.client_async import AwsKlineClient
+from aws.kline.util import split_into_batches
 from config import HTTP_TIMEOUT_SEC, ContractType, TradeType
 from util.log_kit import divider, logger
 from util.network import create_aiohttp_session
@@ -48,10 +49,11 @@ async def download_spot_klines(time_interval: str, quote: str, keep_stablecoins:
 
     filtered_symbols = filter_spot_symbols(quote, keep_stablecoins, leverage_coins, symbols)
 
-    await download_klines(trade_type=TradeType.spot,
-                          time_interval=time_interval,
-                          symbols=filtered_symbols,
-                          http_proxy=http_proxy)
+    for batched_symbols in split_into_batches(filtered_symbols, 64):
+        await download_klines(trade_type=TradeType.spot,
+                              time_interval=time_interval,
+                              symbols=batched_symbols,
+                              http_proxy=http_proxy)
 
 
 async def download_um_futures_klines(time_interval: str, quote: str, contract_type: ContractType,
@@ -63,10 +65,11 @@ async def download_um_futures_klines(time_interval: str, quote: str, contract_ty
 
     filtered_symbols = filter_um_futures_symbols(quote, contract_type, symbols)
 
-    await download_klines(trade_type=TradeType.um_futures,
-                          time_interval=time_interval,
-                          symbols=filtered_symbols,
-                          http_proxy=http_proxy)
+    for batched_symbols in split_into_batches(filtered_symbols, 64):
+        await download_klines(trade_type=TradeType.um_futures,
+                              time_interval=time_interval,
+                              symbols=batched_symbols,
+                              http_proxy=http_proxy)
 
 
 async def download_cm_futures_klines(time_interval: str, contract_type: ContractType, http_proxy: Optional[str]):
@@ -77,7 +80,8 @@ async def download_cm_futures_klines(time_interval: str, contract_type: Contract
 
     filtered_symbols = filter_cm_futures_symbols(contract_type, symbols)
 
-    await download_klines(trade_type=TradeType.cm_futures,
-                          time_interval=time_interval,
-                          symbols=filtered_symbols,
-                          http_proxy=http_proxy)
+    for batched_symbols in split_into_batches(filtered_symbols, 64):
+        await download_klines(trade_type=TradeType.cm_futures,
+                              time_interval=time_interval,
+                              symbols=batched_symbols,
+                              http_proxy=http_proxy)
