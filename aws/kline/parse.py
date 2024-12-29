@@ -2,6 +2,7 @@ import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import time
 from zipfile import ZipFile
 
 import polars as pl
@@ -111,6 +112,9 @@ def parse_klines(trade_type: TradeType, time_interval: str, symbols: list[str]):
 
     aws_local_kline_dir = AwsKlineClient.LOCAL_DIR / AwsKlineClient.get_base_dir(trade_type, DataFreq.daily)
     parsed_kline_dir = config.BINANCE_DATA_DIR / 'parsed_data' / trade_type.value / 'klines'
+    
+    logger.debug(f'aws_local_kline_dir={aws_local_kline_dir}')
+    logger.debug(f'parsed_kline_dir={parsed_kline_dir}')
 
     with ProcessPoolExecutor(max_workers=config.N_JOBS, mp_context=mp.get_context('spawn'),
                              initializer=mp_env_init) as exe:
@@ -129,6 +133,11 @@ def parse_klines(trade_type: TradeType, time_interval: str, symbols: list[str]):
 
 
 def parse_type_all_klines(trade_type: TradeType, time_interval: str):
-    divider(f'BHDS parse {trade_type.value} {time_interval} Klines')
+    divider(f'BHDS Parse {trade_type.value} {time_interval} Klines')
     symbols = local_list_kline_symbols(trade_type, time_interval)
+
+    t_start = time.perf_counter()
     parse_klines(trade_type, time_interval, symbols)
+    time_elapsed = (time.perf_counter() - t_start) / 60
+
+    logger.ok(f'Finished Parsing {trade_type.value} {time_interval} Klines, Time={time_elapsed:.2f}mins')
