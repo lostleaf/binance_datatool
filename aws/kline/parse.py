@@ -1,8 +1,8 @@
 import multiprocessing as mp
+import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-import time
 from zipfile import ZipFile
 
 import polars as pl
@@ -11,11 +11,11 @@ import config
 from aws.checksum import get_verified_aws_data_files
 from aws.client_async import AwsKlineClient
 from aws.kline.util import local_list_kline_symbols
-from config.config import DataFreq, TradeType
+from config import DataFrequency, TradeType
 from util.concurrent import mp_env_init
-from util.db import PartitionedPolarsDB
 from util.log_kit import divider, logger
 from util.time import convert_date
+from util.ts_manager import TSManager
 
 
 def read_csv(csv_file):
@@ -64,7 +64,7 @@ def get_kline_file_dt(f: Path):
 
 
 def filter_not_parsed_kline_files(aws_symbol_kline_dir, parsed_symbol_kline_dir):
-    db = PartitionedPolarsDB(parsed_symbol_kline_dir, DataFreq.daily)
+    db = PartitionedPolarsDB(parsed_symbol_kline_dir, DataFrequency.daily)
     exist_dts = db.get_exist_partitions()
     verified_kline_files = get_verified_aws_data_files(aws_symbol_kline_dir)
     dt_files = {get_kline_file_dt(f): f for f in verified_kline_files}
@@ -74,7 +74,7 @@ def filter_not_parsed_kline_files(aws_symbol_kline_dir, parsed_symbol_kline_dir)
 
 
 def parse_save_kline(parsed_symbol_kline_dir, kline_file):
-    db = PartitionedPolarsDB(parsed_symbol_kline_dir, DataFreq.daily)
+    db = PartitionedPolarsDB(parsed_symbol_kline_dir, DataFrequency.daily)
     dt = get_kline_file_dt(kline_file)
     df = read_csv(kline_file)
     start = convert_date(dt)
@@ -85,7 +85,7 @@ def parse_save_kline(parsed_symbol_kline_dir, kline_file):
 
 
 def parse_klines(trade_type: TradeType, time_interval: str, symbols: list[str]):
-    aws_local_kline_dir = AwsKlineClient.LOCAL_DIR / AwsKlineClient.get_base_dir(trade_type, DataFreq.daily)
+    aws_local_kline_dir = AwsKlineClient.LOCAL_DIR / AwsKlineClient.get_base_dir(trade_type, DataFrequency.daily)
     parsed_kline_dir = config.BINANCE_DATA_DIR / 'parsed_data' / trade_type.value / 'klines'
 
     with ProcessPoolExecutor(max_workers=config.N_JOBS, mp_context=mp.get_context('spawn'),
@@ -110,9 +110,9 @@ def parse_klines(trade_type: TradeType, time_interval: str, symbols: list[str]):
                  f'n_jobs={config.N_JOBS}, '
                  f'{symbols[0]} -- {symbols[-1]}')
 
-    aws_local_kline_dir = AwsKlineClient.LOCAL_DIR / AwsKlineClient.get_base_dir(trade_type, DataFreq.daily)
+    aws_local_kline_dir = AwsKlineClient.LOCAL_DIR / AwsKlineClient.get_base_dir(trade_type, DataFrequency.daily)
     parsed_kline_dir = config.BINANCE_DATA_DIR / 'parsed_data' / trade_type.value / 'klines'
-    
+
     logger.debug(f'aws_local_kline_dir={aws_local_kline_dir}')
     logger.debug(f'parsed_kline_dir={parsed_kline_dir}')
 

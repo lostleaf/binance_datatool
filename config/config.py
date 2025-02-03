@@ -27,6 +27,18 @@ class ContractType(str, Enum):
     delivery = 'DELIVERY'
 
 
-class DataFreq(str, Enum):
-    monthly = 'monthly'
-    daily = 'daily'
+class DataFrequency(Enum):
+    """
+    数据频率枚举类，用于表示数据的分区类型。
+
+    枚举值：
+        yearly: 年分区，表示数据按年划分。
+        monthly: 月分区，表示数据按月划分。
+        daily: 日分区，表示数据按日划分。
+    """
+    yearly = 'yearly'  # 年分区，表示数据按年划分
+    monthly = 'monthly'  # 月分区，表示数据按月划分
+    daily = 'daily'  # 日分区，表示数据按日划分
+
+
+

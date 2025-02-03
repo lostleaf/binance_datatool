@@ -9,7 +9,7 @@ from aiohttp import ClientSession
 
 from aws.kline.util import split_into_batches
 import config
-from config import DataFreq, TradeType
+from config import DataFrequency, TradeType
 from util.log_kit import logger
 from util.network import async_retry_getter
 
@@ -59,7 +59,7 @@ class AwsClient(ABC):
 
     @classmethod
     @abstractmethod
-    def get_base_dir(self, trade_type: str, data_freq: DataFreq) -> PurePosixPath:
+    def get_base_dir(self, trade_type: TradeType, data_freq: DataFrequency) -> PurePosixPath:
         pass
 
     @abstractmethod
@@ -131,14 +131,14 @@ class AwsClient(ABC):
 
 class AwsFundingRateClient(AwsClient):
 
-    def __init__(self, session, trade_type: TradeType, data_freq: DataFreq = DataFreq.monthly, http_proxy: str = None):
+    def __init__(self, session, trade_type: TradeType, data_freq: DataFrequency = DataFrequency.monthly, http_proxy: str = None):
         self.trade_type = trade_type
 
         base_dir = self.get_base_dir(trade_type, data_freq)
         super().__init__(session, base_dir, http_proxy)
 
     @classmethod
-    def get_base_dir(cls, trade_type: TradeType, data_freq: DataFreq):
+    def get_base_dir(cls, trade_type: TradeType, data_freq: DataFrequency):
         return cls.TYPE_BASE_DIR[trade_type] / data_freq.value / 'fundingRate'
 
     def get_symbol_dir(self, symbol) -> PurePosixPath:
@@ -151,7 +151,7 @@ class AwsKlineClient(AwsClient):
                  session,
                  trade_type: TradeType,
                  time_interval: str,
-                 data_freq: DataFreq = DataFreq.daily,
+                 data_freq: DataFrequency = DataFrequency.daily,
                  http_proxy: str = None):
         self.trade_type = trade_type
         self.time_interval = time_interval
@@ -160,7 +160,7 @@ class AwsKlineClient(AwsClient):
         super().__init__(session, base_dir, http_proxy)
 
     @classmethod
-    def get_base_dir(cls, trade_type, data_freq: DataFreq) -> PurePosixPath:
+    def get_base_dir(cls, trade_type:TradeType, data_freq: DataFrequency) -> PurePosixPath:
         return cls.TYPE_BASE_DIR[trade_type] / data_freq.value / 'klines'
 
     def get_symbol_dir(self, symbol) -> PurePosixPath:
