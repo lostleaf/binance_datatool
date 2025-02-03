@@ -10,7 +10,7 @@ from aiohttp import ClientSession
 from aws.kline.util import split_into_batches
 import config
 from config import DataFrequency, TradeType
-from util.log_kit import logger
+from util.log_kit import logger, divider
 from util.network import async_retry_getter
 
 
@@ -114,7 +114,7 @@ class AwsClient(ABC):
             if not missing_infos:
                 break
 
-            logger.info(f'try_id={try_id}, {len(missing_infos)} files to be downloaded')
+            divider(f'try_id={try_id}, {len(missing_infos)} files to be downloaded', sep='-')
 
             batched_infos: list[tuple[str, Path]] = sorted(split_into_batches(missing_infos, 4096))
             for batch_idx, infos in enumerate(batched_infos, 1):
