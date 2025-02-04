@@ -142,11 +142,12 @@ def parse(
         list[str],
         typer.Argument(help="A list of trading symbols, e.g., 'BTCUSDT ETHUSDT'."),
     ],
+    force_update: bool = False
 ):
     '''
     Parse Binance Klines to Polars DataFrame and Save in Parquet Format
     '''
-    parse_klines(trade_type, time_interval, symbols)
+    parse_klines(trade_type, time_interval, symbols, force_update)
 
 
 @app.command()
@@ -156,9 +157,10 @@ def parse_type_all(
         list[str],
         typer.Argument(help="The time interval for the K-lines, e.g., '1m', '5m', '1h'."),
     ],
+    force_update: bool = False
 ):
     '''
     Parse Binance Klines for all symbols with the given trade type and time intervals
     '''
     for time_interval in time_intervals:
-        parse_type_all_klines(trade_type, time_interval)
+        parse_type_all_klines(trade_type, time_interval, force_update)
