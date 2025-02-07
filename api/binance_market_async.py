@@ -73,8 +73,9 @@ class BinanceBaseApi:
 
 
 class BinanceBaseMarketApi(ABC, BinanceBaseApi):
-    WEIGHT_EFFICIENT_ONCE_CANDLES = 1000
-    MAX_MINUTE_WEIGHT = 6000
+    WEIGHT_EFFICIENT_ONCE_CANDLES = 499
+    MAX_MINUTE_WEIGHT = 2400
+    MAX_ONCE_CANDLES = 1000
 
     @abstractmethod
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
@@ -100,6 +101,7 @@ class BinanceMarketUMFapi(BinanceBaseMarketApi):
     PREFIX = 'https://fapi.binance.com/fapi'
     WEIGHT_EFFICIENT_ONCE_CANDLES = 499
     MAX_MINUTE_WEIGHT = 2400
+    MAX_ONCE_CANDLES = 1500
 
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
         """
@@ -156,6 +158,7 @@ class BinanceMarketCMDapi(BinanceBaseMarketApi):
     PREFIX = 'https://dapi.binance.com/dapi'
     WEIGHT_EFFICIENT_ONCE_CANDLES = 499
     MAX_MINUTE_WEIGHT = 2400
+    MAX_ONCE_CANDLES = 1500
 
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
         """
@@ -205,6 +208,7 @@ class BinanceMarketSpotApi(BinanceBaseMarketApi):
     PREFIX = 'https://api.binance.com/api'
     WEIGHT_EFFICIENT_ONCE_CANDLES = 1000
     MAX_MINUTE_WEIGHT = 6000
+    MAX_ONCE_CANDLES = 1000
 
     async def aioreq_time_and_weight(self) -> Tuple[int, int]:
         """

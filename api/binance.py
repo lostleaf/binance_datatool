@@ -183,7 +183,7 @@ class BinanceFetcher:
         if self.trade_type == 'spot':
             raise RuntimeError('Cannot request funding rate for spot')
 
-        # funding rates 接口限制 500/5mins，失败后等待 75 秒
+        # Wait for 75s after a failure because the rate limit is 500/5mins
         data = await async_retry_getter(self.market_api.aioreq_funding_rate, symbol=symbol, _sleep_seconds=75, **kwargs)
 
         schema = {

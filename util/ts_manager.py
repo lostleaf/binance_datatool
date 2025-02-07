@@ -1,5 +1,5 @@
 import calendar
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal
 
@@ -308,4 +308,8 @@ class TSManager:
         if not dfs:
             return None
 
-        return pl.concat(dfs).sort('dt')
+        df_cnt = pl.concat(dfs).sort('dt')
+        df_dt = pl.DataFrame({'dt': pl.date_range(df_cnt['dt'].min(), df_cnt['dt'].max(), '1D', eager=True)})
+        df_cnt = df_cnt.join(df_dt, on='dt', how='full', maintain_order='right', coalesce=True)
+        df_cnt = df_cnt.with_columns(pl.col('row_count').fill_null(0))
+        return df_cnt
