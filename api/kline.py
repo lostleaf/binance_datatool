@@ -36,7 +36,7 @@ async def api_download_kline(trade_type: TradeType, time_interval: str, sym_dts:
             logger.debug(f'server_time={server_ts}, weight_used={weight}, start={batch[0]}, end={batch[-1]}')
             tasks = [asyncio.create_task(_get_kline(fetcher, sym, time_interval, dt)) for sym, dt in batch]
             max_minute_weight, _ = fetcher.get_api_limits()
-            if weight > max_minute_weight * 0.9:
+            if weight > max_minute_weight - 400:
                 await async_sleep_until_run_time(next_run_time('1m'))
             for task in asyncio.as_completed(tasks):
                 df, symbol, dt = await task
@@ -62,7 +62,7 @@ async def api_download_aws_missing_kline(trade_type: TradeType, time_interval: s
         parsed_symbol_kline_dir = parsed_kline_dir / symbol / time_interval
         ts_mgr = TSManager(parsed_symbol_kline_dir)
         df_cnt = ts_mgr.get_row_count_per_date()
-        expected_num = timedelta(days=1) // convert_interval_to_timedelta(time_interval)
+        expected_num = 1
 
         if df_cnt is None:
             continue
@@ -77,7 +77,6 @@ async def api_download_aws_missing_kline(trade_type: TradeType, time_interval: s
             dts -= dts_exist
 
         sym_dts.extend((symbol, dt) for dt in sorted(dts))
-
     if sym_dts:
         await api_download_kline(trade_type, time_interval, sym_dts, http_proxy)
     else:
