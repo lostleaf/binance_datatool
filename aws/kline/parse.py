@@ -17,6 +17,7 @@ from aws.kline.util import local_list_kline_symbols
 from config import DataFrequency, TradeType
 from util.concurrent import mp_env_init
 from util.log_kit import divider, logger
+from util.time import convert_interval_to_timedelta
 from util.ts_manager import TSManager, get_partition
 
 
@@ -72,9 +73,6 @@ def read_csv(csv_file):
         pl.col('candle_begin_time').cast(pl.Datetime(ts_unit)).dt.replace_time_zone('UTC').dt.cast_time_unit('ms')
     )
 
-    # Only keep klines with volume
-    ldf = ldf.filter(pl.col('volume') > 0)
-
     return ldf.collect()
 
 
@@ -83,7 +81,7 @@ def get_kline_file_dt(f: Path) -> date:
     return date(year=int(tks[0]), month=int(tks[1]), day=int(tks[2]))
 
 
-def run_parse_symbol_kline(aws_symbol_kline_dir: Path, parsed_symbol_kline_dir: Path) -> Path:
+def run_parse_symbol_kline(aws_symbol_kline_dir: Path, parsed_symbol_kline_dir: Path, thres: int) -> Path:
     ts_mgr = TSManager(parsed_symbol_kline_dir)
 
     aws_kline_files = get_verified_aws_data_files(aws_symbol_kline_dir)
@@ -96,7 +94,6 @@ def run_parse_symbol_kline(aws_symbol_kline_dir: Path, parsed_symbol_kline_dir: 
     df_cnt = ts_mgr.get_row_count_per_date()
     enough_dts = set()
     if df_cnt is not None:
-        thres = 1
         df_enough = df_cnt.filter(pl.col('row_count') >= thres)
         enough_dts = set(df_enough['dt'])
 
@@ -123,9 +120,13 @@ def parse_klines(trade_type: TradeType, time_interval: str, symbols: list[str], 
 
     aws_local_kline_dir = AwsKlineClient.LOCAL_DIR / AwsKlineClient.get_base_dir(trade_type, DataFrequency.daily)
     parsed_kline_dir = config.BINANCE_DATA_DIR / 'parsed_data' / trade_type.value / 'klines'
+    
+    thres = timedelta(days=1) // convert_interval_to_timedelta(time_interval)
+    thres = 1
 
     logger.debug(f'aws_local_kline_dir={aws_local_kline_dir}')
     logger.debug(f'parsed_kline_dir={parsed_kline_dir}')
+    logger.debug(f'thres={thres}')
 
     with ProcessPoolExecutor(
         max_workers=config.N_JOBS, mp_context=mp.get_context('spawn'), initializer=mp_env_init
@@ -139,7 +140,7 @@ def parse_klines(trade_type: TradeType, time_interval: str, symbols: list[str], 
             if force_update and parsed_symbol_kline_dir.exists():
                 shutil.rmtree(parsed_symbol_kline_dir)
 
-            task = exe.submit(run_parse_symbol_kline, aws_symbol_kline_dir, parsed_symbol_kline_dir)
+            task = exe.submit(run_parse_symbol_kline, aws_symbol_kline_dir, parsed_symbol_kline_dir, thres)
             tasks.append(task)
         # with tqdm(total=len(tasks), desc="Processing tasks", unit="task") as pbar:
         for future in as_completed(tasks):
