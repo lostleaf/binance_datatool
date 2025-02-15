@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from dateutil import parser as date_parser
 
-DEFAULT_TZ = ZoneInfo('Asia/Shanghai')
+DEFAULT_TZ = ZoneInfo("Asia/Shanghai")
 
 
 def now_time() -> datetime:
@@ -12,13 +12,13 @@ def now_time() -> datetime:
 
 
 def convert_interval_to_timedelta(time_interval: str) -> timedelta:
-    if time_interval.endswith('m') or time_interval.endswith('T'):
+    if time_interval.endswith("m") or time_interval.endswith("T"):
         return timedelta(minutes=int(time_interval[:-1]))
 
-    if time_interval.endswith('H') or time_interval.endswith('h'):
+    if time_interval.endswith("H") or time_interval.endswith("h"):
         return timedelta(hours=int(time_interval[:-1]))
 
-    raise ValueError('time_interval %s format error', time_interval)
+    raise ValueError("time_interval %s format error", time_interval)
 
 
 def convert_date(dt) -> date:
@@ -30,7 +30,7 @@ def convert_date(dt) -> date:
 async def async_sleep_until_run_time(run_time):
     sleep_seconds = (run_time - now_time()).total_seconds()
     await asyncio.sleep(max(0, sleep_seconds - 1))
-    while now_time() < run_time:  # 在靠近目标时间时
+    while now_time() < run_time:
         await asyncio.sleep(0.001)
 
 
