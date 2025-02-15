@@ -1,7 +1,7 @@
 import calendar
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 import polars as pl
 
@@ -22,16 +22,18 @@ def get_partition(dt: datetime, data_freq: DataFrequency) -> str:
     match data_freq:
         case DataFrequency.yearly:
             # Yearly partition: format as YYYY
-            return dt.strftime('%Y')
+            return dt.strftime("%Y")
         case DataFrequency.monthly:
             # Monthly partition: format as YYYYMM
-            return dt.strftime('%Y%m')
+            return dt.strftime("%Y%m")
         case DataFrequency.daily:
             # Daily partition: format as YYYYMMDD
-            return dt.strftime('%Y%m%d')
+            return dt.strftime("%Y%m%d")
 
 
-def get_partition_range(part_start: str, part_end: str, data_freq: DataFrequency) -> list[str]:
+def get_partition_range(
+    part_start: str, part_end: str, data_freq: DataFrequency
+) -> list[str]:
     """
     Generate list of partitions between start and end based on data frequency.
 
@@ -52,12 +54,12 @@ def get_partition_range(part_start: str, part_end: str, data_freq: DataFrequency
         case DataFrequency.monthly:
             # Handle monthly partitions
             date_format = "%Y%m"  # Format: YYYYMM
-            freq = '1mo'  # Monthly interval
+            freq = "1mo"  # Monthly interval
 
         case DataFrequency.daily:
             # Handle daily partitions
             date_format = "%Y%m%d"  # Format: YYYYMMDD
-            freq = '1d'  # Daily interval
+            freq = "1d"  # Daily interval
 
     # Common logic for monthly and daily partitions
     start_date = datetime.strptime(part_start, date_format)
@@ -69,7 +71,9 @@ def get_partition_range(part_start: str, part_end: str, data_freq: DataFrequency
     return [date.strftime(date_format) for date in date_range]
 
 
-def get_partition_start_end(partition_name: str, data_freq: DataFrequency) -> tuple[datetime, datetime]:
+def get_partition_start_end(
+    partition_name: str, data_freq: DataFrequency
+) -> tuple[datetime, datetime]:
     """
     Get start and end datetime of a partition based on its name and frequency.
 
@@ -84,23 +88,59 @@ def get_partition_start_end(partition_name: str, data_freq: DataFrequency) -> tu
 
     if data_freq == DataFrequency.yearly:
         # Yearly partition bounds
-        start = datetime(year=year, month=1, day=1, hour=0, minute=0, second=0, tzinfo=timezone.utc)
-        end = datetime(year=year, month=12, day=31, hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        start = datetime(
+            year=year, month=1, day=1, hour=0, minute=0, second=0, tzinfo=timezone.utc
+        )
+        end = datetime(
+            year=year,
+            month=12,
+            day=31,
+            hour=23,
+            minute=59,
+            second=59,
+            tzinfo=timezone.utc,
+        )
         return start, end
 
     month = int(partition_name[4:6])
 
     if data_freq == DataFrequency.monthly:
         # Monthly partition bounds
-        start = datetime(year=year, month=month, day=1, hour=0, minute=0, second=0, tzinfo=timezone.utc)
+        start = datetime(
+            year=year,
+            month=month,
+            day=1,
+            hour=0,
+            minute=0,
+            second=0,
+            tzinfo=timezone.utc,
+        )
         _, end_day = calendar.monthrange(year, month)
-        end = datetime(year=year, month=month, day=end_day, hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        end = datetime(
+            year=year,
+            month=month,
+            day=end_day,
+            hour=23,
+            minute=59,
+            second=59,
+            tzinfo=timezone.utc,
+        )
         return start, end
 
     # Daily partition bounds
     day = int(partition_name[6:8])
-    start = datetime(year=year, month=month, day=day, hour=0, minute=0, second=0, tzinfo=timezone.utc)
-    end = datetime(year=year, month=month, day=day, hour=23, minute=59, second=59, tzinfo=timezone.utc)
+    start = datetime(
+        year=year, month=month, day=day, hour=0, minute=0, second=0, tzinfo=timezone.utc
+    )
+    end = datetime(
+        year=year,
+        month=month,
+        day=day,
+        hour=23,
+        minute=59,
+        second=59,
+        tzinfo=timezone.utc,
+    )
 
     return start, end
 
@@ -116,10 +156,14 @@ class TSManager:
         time_key (str): Name of the timestamp column, defaults to 'candle_begin_time'.
     """
 
-    def __init__(self,
-                 data_dir: str | Path,
-                 time_key: str = 'candle_begin_time',
-                 data_freq: Literal['daily', 'monthly', 'yearly'] | DataFrequency = DataFrequency.monthly):
+    def __init__(
+        self,
+        data_dir: str | Path,
+        time_key: str = "candle_begin_time",
+        data_freq: (
+            Literal["daily", "monthly", "yearly"] | DataFrequency
+        ) = DataFrequency.monthly,
+    ):
         """
         Initialize time-series data manager.
 
@@ -145,7 +189,7 @@ class TSManager:
         Returns:
             Path: Full path to the data file.
         """
-        filename = f'{partition_name}.pqt'
+        filename = f"{partition_name}.pqt"
         data_file = self.data_dir / filename
         return data_file
 
@@ -197,7 +241,7 @@ class TSManager:
         Returns:
             list[str]: Sorted list of partition names.
         """
-        files = self.data_dir.glob(f'*.pqt')
+        files = self.data_dir.glob(f"*.pqt")
         partition_names = sorted(f.stem for f in files)
         return partition_names
 
@@ -209,14 +253,16 @@ class TSManager:
             pl.DataFrame: Merged data sorted by time column.
         """
         partition_names = self.list_partitions()
-        dfs = [self.read_partition(partition_name) for partition_name in partition_names]
+        dfs = [
+            self.read_partition(partition_name) for partition_name in partition_names
+        ]
         ldfs = [df.lazy() for df in dfs if df is not None]
 
         if not ldfs:
             return None
 
         ldf = pl.concat(ldfs)
-        ldf = ldf.unique(self.time_key, keep='last')
+        ldf = ldf.unique(self.time_key, keep="last")
         ldf = ldf.sort(self.time_key)
         return ldf.collect()
 
@@ -232,7 +278,9 @@ class TSManager:
         df_part = self.read_partition(partition_name)
         if df_part is None:
             return
-        df_part = df_part.filter(pl.col(self.time_key).is_between(dt_start, dt_end, 'left'))
+        df_part = df_part.filter(
+            pl.col(self.time_key).is_between(dt_start, dt_end, "left")
+        )
         self.write_partition(partition_name, df_part)
 
     def trim(self, dt_start: datetime, dt_end: datetime):
@@ -256,7 +304,9 @@ class TSManager:
             df (pl.DataFrame): New data containing updates.
         """
         part_start, part_end = get_partition_start_end(partition_name, self.data_freq)
-        df_update = df.filter(pl.col(self.time_key).is_between(part_start, part_end, 'left'))
+        df_update = df.filter(
+            pl.col(self.time_key).is_between(part_start, part_end, "left")
+        )
 
         if df_update.is_empty():
             return
@@ -267,7 +317,7 @@ class TSManager:
             return
 
         ldf = pl.concat([df_part.lazy(), df_update.lazy()])
-        ldf = ldf.unique(self.time_key, keep='last')
+        ldf = ldf.unique(self.time_key, keep="last")
         ldf = ldf.sort(self.time_key)
         self.write_partition(partition_name, ldf.collect())
 
@@ -287,29 +337,74 @@ class TSManager:
         partition_min = get_partition(dt_min, self.data_freq)
         partition_max = get_partition(dt_max, self.data_freq)
 
-        partitions_update = get_partition_range(partition_min, partition_max, self.data_freq)
+        partitions_update = get_partition_range(
+            partition_min, partition_max, self.data_freq
+        )
 
         for partition_name in partitions_update:
             self.update_partition(partition_name, df)
 
-    def get_partition_row_count_per_date(self, partition_name):
+    def get_partition_row_count_per_date(self, partition_name, exclude_empty):
+        """
+        Get the daily row count for a specific partition.
+
+        Args:
+            partition_name (str): Name of the partition to analyze
+            exclude_empty (bool): If True, excludes records with zero volume before counting
+
+        Returns:
+            polars.DataFrame: DataFrame containing daily row counts with columns:
+                - dt: Date
+                - row_count: Number of rows for that date
+                Returns None if partition cannot be read
+        """
         df = self.read_partition(partition_name)
+
         if df is None:
             return None
-        result = df.group_by(pl.col(self.time_key).dt.date().alias('dt')).agg(row_count=pl.count())
+
+        if exclude_empty:
+            df = df.filter(pl.col("volume") > 0)
+
+        result = df.group_by(pl.col(self.time_key).dt.date().alias("dt")).agg(
+            row_count=pl.count()
+        )
         return result
 
-    def get_row_count_per_date(self):
+    def get_row_count_per_date(self, exclude_empty: bool) -> Optional[pl.DataFrame]:
+        """
+        Get the daily row count across all partitions with continuous date range.
+
+        Args:
+            exclude_empty (bool): If True, excludes records with zero volume before counting
+
+        Returns:
+            polars.DataFrame: DataFrame containing daily row counts with columns:
+                - dt: Date (continuous from min to max date)
+                - row_count: Number of rows for that date (0 for dates with no data)
+                Returns None if no valid partitions found
+        """
         partitions = self.list_partitions()
 
-        dfs = [self.get_partition_row_count_per_date(part) for part in partitions]
+        dfs = [
+            self.get_partition_row_count_per_date(part, exclude_empty)
+            for part in partitions
+        ]
         dfs = [df for df in dfs if df is not None]
 
         if not dfs:
             return None
 
-        df_cnt = pl.concat(dfs).sort('dt')
-        df_dt = pl.DataFrame({'dt': pl.date_range(df_cnt['dt'].min(), df_cnt['dt'].max(), '1D', eager=True)})
-        df_cnt = df_cnt.join(df_dt, on='dt', how='full', maintain_order='right', coalesce=True)
-        df_cnt = df_cnt.with_columns(pl.col('row_count').fill_null(0))
+        df_cnt = pl.concat(dfs).sort("dt")
+        df_dt = pl.DataFrame(
+            {
+                "dt": pl.date_range(
+                    df_cnt["dt"].min(), df_cnt["dt"].max(), "1D", eager=True
+                )
+            }
+        )
+        df_cnt = df_cnt.join(
+            df_dt, on="dt", how="full", maintain_order="right", coalesce=True
+        )
+        df_cnt = df_cnt.with_columns(pl.col("row_count").fill_null(0))
         return df_cnt
