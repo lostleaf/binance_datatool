@@ -29,16 +29,13 @@ class ContractType(str, Enum):
 
 class DataFrequency(Enum):
     """
-    数据频率枚举类，用于表示数据的分区类型。
+    Data frequency enumeration class, used to represent the partition type of data.
 
-    枚举值：
-        yearly: 年分区，表示数据按年划分。
-        monthly: 月分区，表示数据按月划分。
-        daily: 日分区，表示数据按日划分。
+    Enum values:
+        yearly: Yearly partition, indicating data is divided by year.
+        monthly: Monthly partition, indicating data is divided by month.
+        daily: Daily partition, indicating data is divided by day.
     """
-    yearly = 'yearly'  # 年分区，表示数据按年划分
-    monthly = 'monthly'  # 月分区，表示数据按月划分
-    daily = 'daily'  # 日分区，表示数据按日划分
-
-
-
+    yearly = 'yearly'  # Yearly partition, data divided by year
+    monthly = 'monthly'  # Monthly partition, data divided by month
+    daily = 'daily'  # Daily partition, data divided by day
