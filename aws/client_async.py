@@ -102,6 +102,7 @@ class AwsClient(ABC):
         return {symbol: list_result for symbol, list_result in zip(symbols, results)}
 
     def aws_download(self, aws_files: list[PurePosixPath], max_tries=3):
+        logger.info(f'Local file path: {self.LOCAL_DIR}')
         download_infos = []
         for aws_file in aws_files:
             local_file = self.LOCAL_DIR / aws_file
@@ -140,6 +141,22 @@ class AwsFundingRateClient(AwsClient):
     @classmethod
     def get_base_dir(cls, trade_type: TradeType, data_freq: DataFrequency):
         return cls.TYPE_BASE_DIR[trade_type] / data_freq.value / 'fundingRate'
+
+    def get_symbol_dir(self, symbol) -> PurePosixPath:
+        return self.base_dir / symbol
+
+
+class AwsLiquidationClient(AwsClient):
+
+    def __init__(self, session, trade_type: TradeType, data_freq: DataFrequency = DataFrequency.daily, http_proxy: str = None):
+        self.trade_type = trade_type
+
+        base_dir = self.get_base_dir(trade_type, data_freq)
+        super().__init__(session, base_dir, http_proxy)
+
+    @classmethod
+    def get_base_dir(cls, trade_type: TradeType, data_freq: DataFrequency):
+        return cls.TYPE_BASE_DIR[trade_type] / data_freq.value / 'liquidationSnapshot'
 
     def get_symbol_dir(self, symbol) -> PurePosixPath:
         return self.base_dir / symbol
