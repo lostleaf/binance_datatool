@@ -2,7 +2,11 @@ import asyncio
 
 import aiohttp
 
+from api.binance_market_async import BinanceAPIException
+
 from .log_kit import logger
+
+BINANCE_CODES = {-1122}
 
 
 async def async_retry_getter(func, _max_times=5, _sleep_seconds=1, **kwargs):
@@ -10,9 +14,16 @@ async def async_retry_getter(func, _max_times=5, _sleep_seconds=1, **kwargs):
     while True:
         try:
             return await func(**kwargs)
+        except BinanceAPIException as e:
+            if e.code in BINANCE_CODES:
+                logger.warning(e)
+                logger.debug(e.response)
+                return None
+
+            raise e
         except Exception as e:
             if _max_times == 0:
-                logger.exception('Error occurred, 0 times retry left')
+                logger.exception("Error occurred, 0 times retry left")
                 raise e
 
             await asyncio.sleep(_sleep_seconds)

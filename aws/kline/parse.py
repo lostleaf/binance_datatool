@@ -91,7 +91,7 @@ def run_parse_symbol_kline(aws_symbol_kline_dir: Path, parsed_symbol_kline_dir: 
         partition_name = get_partition(dt, DataFrequency.monthly)
         aws_partition_files[partition_name].add((kline_file, dt))
 
-    df_cnt = ts_mgr.get_row_count_per_date()
+    df_cnt = ts_mgr.get_row_count_per_date(exclude_empty=False)
     enough_dts = set()
     if df_cnt is not None:
         df_enough = df_cnt.filter(pl.col('row_count') >= thres)

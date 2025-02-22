@@ -62,6 +62,8 @@ async def api_download_kline(
 
             for task in asyncio.as_completed(tasks):
                 df, symbol, dt = await task
+                if df is None:
+                    continue
                 filename = dt.strftime("%Y%m%d") + ".pqt"
                 kline_dir = (
                     config.BINANCE_DATA_DIR
@@ -73,7 +75,6 @@ async def api_download_kline(
                 )
                 kline_dir.mkdir(parents=True, exist_ok=True)
                 output_file = kline_dir / filename
-                df = df.filter(pl.col("volume") > 0)
                 df.write_parquet(output_file)
 
     logger.ok(f"{trade_type.value} {time_interval} API klines download successfully")
@@ -96,7 +97,7 @@ async def api_download_aws_missing_kline(
     for symbol in symbols:
         parsed_symbol_kline_dir = parsed_kline_dir / symbol / time_interval
         ts_mgr = TSManager(parsed_symbol_kline_dir)
-        df_cnt = ts_mgr.get_row_count_per_date()
+        df_cnt = ts_mgr.get_row_count_per_date(exclude_empty=False)
         expected_num = timedelta(days=1) // convert_interval_to_timedelta(time_interval)
 
         if df_cnt is None:

@@ -3,9 +3,11 @@ from datetime import datetime
 from datetime import time as dtime
 from datetime import timedelta
 from decimal import Decimal
+from typing import Optional
 from zoneinfo import ZoneInfo
 
 import aiohttp
+from click import Option
 import polars as pl
 from dateutil import parser as date_parser
 
@@ -98,11 +100,15 @@ class BinanceFetcher:
             results[info['symbol']] = self.syminfo_parse_func(info)
         return results
 
-    async def get_kline_df(self, symbol, interval, **kwargs) -> pl.DataFrame:
+    async def get_kline_df(self, symbol, interval, **kwargs) -> Optional[pl.DataFrame]:
         '''
         Request and parse return values of /klines API and convert to polars.DataFrame
         '''
         klines = await async_retry_getter(self.market_api.aioreq_klines, symbol=symbol, interval=interval, **kwargs)
+
+        if klines is None:
+            return None
+
         columns = [
             'candle_begin_time', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_volume', 'trade_num',
             'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
@@ -119,17 +125,15 @@ class BinanceFetcher:
             'taker_buy_base_asset_volume': pl.Float64,
             'taker_buy_quote_asset_volume': pl.Float64
         }
-        delta = convert_interval_to_timedelta(interval)
         lf = pl.LazyFrame(klines, schema=columns, orient='row', schema_overrides=schema)
         lf = lf.drop('close_time', 'ignore')
         lf = lf.with_columns(pl.col('candle_begin_time').cast(pl.Datetime('ms')).dt.replace_time_zone('UTC'))
-        lf = lf.with_columns((pl.col('candle_begin_time') + delta).alias('candle_end_time'))
         lf = lf.unique('candle_begin_time', keep='last')
         lf = lf.sort('candle_begin_time')
         df = lf.collect()
         return df
 
-    async def get_kline_df_of_day(self, symbol, interval, dt):
+    async def get_kline_df_of_day(self, symbol, interval, dt) -> Optional[pl.DataFrame]:
         '''
         Request and parse return values of /klines API of given date and convert to polars.DataFrame
         '''
@@ -144,12 +148,17 @@ class BinanceFetcher:
         num = timedelta(days=1) // convert_interval_to_timedelta(interval)
 
         if num <= max_once_candles:
-            lf = (await self.get_kline_df(symbol, interval, startTime=start_ms, limit=num)).lazy()
+            result = await self.get_kline_df(symbol, interval, startTime=start_ms, limit=num)
+            lf = result.lazy() if result is not None else None
         else:
-            df1, df2 = await asyncio.gather(
+            results = await asyncio.gather(
                 self.get_kline_df(symbol, interval, startTime=start_ms, limit=max_once_candles),
                 self.get_kline_df(symbol, interval, startTime=noon_ms, limit=max_once_candles))
-            lf = pl.concat([df1.lazy(), df2.lazy()])
+            results = [r.lazy() for r in results if r is not None]
+            lf = pl.concat(results) if results else None
+
+        if lf is None:
+            return None
 
         lf = lf.unique('candle_begin_time', keep='last')
         lf = lf.filter(pl.col('candle_begin_time').is_between(ts_start, ts_next, 'left'))
