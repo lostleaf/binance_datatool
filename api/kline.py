@@ -7,14 +7,9 @@ import polars as pl
 import config
 from api.binance import BinanceFetcher
 from config import TradeType
-from util.log_kit import logger
+from util.log_kit import divider, logger
 from util.network import create_aiohttp_session
-from util.time import (
-    async_sleep_until_run_time,
-    convert_date,
-    convert_interval_to_timedelta,
-    next_run_time,
-)
+from util.time import async_sleep_until_run_time, convert_date, convert_interval_to_timedelta, next_run_time
 from util.ts_manager import TSManager
 
 
@@ -31,9 +26,7 @@ async def api_download_kline(
 ):
     BATCH_SIZE = 40
 
-    logger.info(
-        f"Start Download {trade_type.value} {time_interval} {len(sym_dts)} Klines from Binance API"
-    )
+    logger.info(f"Start Download {trade_type.value} {time_interval} {len(sym_dts)} Klines from Binance API")
     if http_proxy is not None:
         logger.debug(f"Use proxy, http_proxy={http_proxy}")
     sym_dts = sorted([(sym, convert_date(dt)) for sym, dt in sym_dts])
@@ -43,36 +36,22 @@ async def api_download_kline(
         while sym_dts:
             server_ts, weight = await fetcher.get_time_and_weight()
             batch, sym_dts = sym_dts[:BATCH_SIZE], sym_dts[BATCH_SIZE:]
-            logger.debug(
-                f"server_time={server_ts}, weight_used={weight}, start={batch[0]}, end={batch[-1]}"
-            )
+            logger.debug(f"server_time={server_ts}, weight_used={weight}, start={batch[0]}, end={batch[-1]}")
 
             max_minute_weight, _ = fetcher.get_api_limits()
             if weight > max_minute_weight * 0.8:
-                logger.info(
-                    f"Weight {weight} exceeds the maximum limit, sleep until next minute"
-                )
+                logger.info(f"Weight {weight} exceeds the maximum limit, sleep until next minute")
                 await async_sleep_until_run_time(next_run_time("1m"))
                 continue
 
-            tasks = [
-                asyncio.create_task(_get_kline(fetcher, sym, time_interval, dt))
-                for sym, dt in batch
-            ]
+            tasks = [asyncio.create_task(_get_kline(fetcher, sym, time_interval, dt)) for sym, dt in batch]
 
             for task in asyncio.as_completed(tasks):
                 df, symbol, dt = await task
                 if df is None:
                     continue
                 filename = dt.strftime("%Y%m%d") + ".pqt"
-                kline_dir = (
-                    config.BINANCE_DATA_DIR
-                    / "api_data"
-                    / trade_type.value
-                    / "klines"
-                    / symbol
-                    / time_interval
-                )
+                kline_dir = config.BINANCE_DATA_DIR / "api_data" / trade_type.value / "klines" / symbol / time_interval
                 kline_dir.mkdir(parents=True, exist_ok=True)
                 output_file = kline_dir / filename
                 df.write_parquet(output_file)
@@ -86,10 +65,9 @@ async def api_download_aws_missing_kline(
     overwrite: bool,
     http_proxy: Optional[str],
 ):
+    divider("Download AWS missing klines from Binance API")
 
-    parsed_kline_dir = (
-        config.BINANCE_DATA_DIR / "parsed_data" / trade_type.value / "klines"
-    )
+    parsed_kline_dir = config.BINANCE_DATA_DIR / "parsed_data" / trade_type.value / "klines"
     sym_dts = []
 
     symbols = [f.stem for f in parsed_kline_dir.glob("*")]
@@ -107,14 +85,7 @@ async def api_download_aws_missing_kline(
         dts = set(df_missing["dt"])
 
         if not overwrite:
-            api_kline_dir = (
-                config.BINANCE_DATA_DIR
-                / "api_data"
-                / trade_type.value
-                / "klines"
-                / symbol
-                / time_interval
-            )
+            api_kline_dir = config.BINANCE_DATA_DIR / "api_data" / trade_type.value / "klines" / symbol / time_interval
             kline_files = api_kline_dir.glob("*.pqt")
             dts_exist = {convert_date(f.stem) for f in kline_files}
             dts -= dts_exist
