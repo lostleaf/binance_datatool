@@ -6,6 +6,7 @@ import polars as pl
 
 import config
 from api.binance import BinanceFetcher
+from aws.kline.util import local_list_kline_symbols
 from config import TradeType
 from util.log_kit import divider, logger
 from util.network import create_aiohttp_session
@@ -70,7 +71,7 @@ async def api_download_aws_missing_kline(
     parsed_kline_dir = config.BINANCE_DATA_DIR / "parsed_data" / trade_type.value / "klines"
     sym_dts = []
 
-    symbols = [f.stem for f in parsed_kline_dir.glob("*")]
+    symbols = local_list_kline_symbols(trade_type, time_interval)
 
     for symbol in symbols:
         parsed_symbol_kline_dir = parsed_kline_dir / symbol / time_interval
