@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Optional
 
 import polars as pl
@@ -72,3 +73,20 @@ def merge_klines(
     )
 
     return merged_df
+
+
+def scan_gaps(df: pl.DataFrame, min_days: int, min_price_chg: float) -> pl.DataFrame:
+    ldf = df.lazy()
+
+    ldf = ldf.with_columns(
+        pl.col("candle_begin_time").diff().alias("time_diff"),
+        (pl.col("open") / pl.col("close").shift() - 1).alias("price_change"),
+        pl.col("candle_begin_time").shift().alias("prev_begin_time"),
+        pl.col('close').shift().alias('prev_close')
+    )
+
+    min_delta = timedelta(days=min_days)
+    df_gap = ldf.filter((pl.col("time_diff") > min_delta) & (pl.col("price_change").abs() > min_price_chg))
+    df_gap = df_gap.select("prev_begin_time", "candle_begin_time", 'prev_close', "open", "time_diff", "price_change")
+
+    return df_gap.collect()
