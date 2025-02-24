@@ -2,8 +2,9 @@ import typer
 from typing_extensions import Annotated
 
 from config import TradeType
-from generate.kline import merge_and_split_gaps
+from generate.kline import merge_and_split_gaps, merge_and_split_gaps_type_all
 from util.log_kit import divider
+
 app = typer.Typer()
 
 
@@ -33,6 +34,28 @@ def merged_split_kline(
         trade_type=trade_type,
         time_interval=time_interval,
         symbol=symbol,
+        split_gaps=split_gaps,
+        min_days=min_days,
+        min_price_chg=min_price_chg,
+        with_vwap=with_vwap,
+    )
+
+
+@app.command()
+def merged_split_kline_type_all(
+    trade_type: Annotated[TradeType, typer.Argument(help="Type of trading (spot/futures)")],
+    time_interval: Annotated[str, typer.Argument(help="K-line time interval, e.g., '1m', '5m', '1h'")],
+    split_gaps: Annotated[bool, typer.Option(help="Whether to split data by gaps")] = True,
+    min_days: Annotated[int, typer.Option(help="Minimum gap days threshold")] = 1,
+    min_price_chg: Annotated[float, typer.Option(help="Minimum price change ratio threshold")] = 0.1,
+    with_vwap: Annotated[bool, typer.Option(help="Whether to calculate VWAP")] = True,
+):
+    """
+    Merge AWS and API kline data for all symbols of given trade type and time interval.
+    """
+    merge_and_split_gaps_type_all(
+        trade_type=trade_type,
+        time_interval=time_interval,
         split_gaps=split_gaps,
         min_days=min_days,
         min_price_chg=min_price_chg,

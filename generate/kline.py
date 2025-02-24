@@ -1,10 +1,19 @@
 from datetime import timedelta
+from functools import partial
+import time
 from typing import Optional
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing as mp
 
 import polars as pl
+from tqdm import tqdm
 
 from aws.kline.parse import TSManager
+from aws.kline.util import local_list_kline_symbols
 from config import BINANCE_DATA_DIR, TradeType
+import config
+from util.concurrent import mp_env_init
+from util.log_kit import divider, logger
 from util.time import convert_interval_to_timedelta
 
 
@@ -250,3 +259,51 @@ def merge_and_split_gaps(
     for symbol, df in splited_dfs.items():
         df = fill_kline_gaps(df, time_interval)
         df.write_parquet(results_dir / f"{symbol}.pqt")
+
+
+def merge_and_split_gaps_type_all(
+    trade_type: TradeType,
+    time_interval: str,
+    split_gaps: bool,
+    min_days: int,
+    min_price_chg: float,
+    with_vwap: bool,
+):
+    divider(f"Merge and split gaps for {trade_type.value} {time_interval}")
+
+    msg = f"split_gaps={split_gaps}"
+    if split_gaps:
+        msg += f" (min_days={min_days}, min_price_chg={min_price_chg})"
+    msg += f"; with_vwap={with_vwap}"
+    logger.info(msg)
+
+    symbols = local_list_kline_symbols(trade_type, time_interval)
+
+    if not symbols:
+        logger.warning(f"No symbols found for {trade_type.value} {time_interval}")
+        return
+
+    logger.info(f"num_symbols={len(symbols)} ({symbols[0]} -- {symbols[-1]})")
+
+    start_time = time.perf_counter()
+
+    run_func = partial(
+        merge_and_split_gaps,
+        trade_type=trade_type,
+        time_interval=time_interval,
+        split_gaps=split_gaps,
+        min_days=min_days,
+        min_price_chg=min_price_chg,
+        with_vwap=with_vwap,
+    )
+
+    with ProcessPoolExecutor(
+        max_workers=config.N_JOBS, mp_context=mp.get_context("spawn"), initializer=mp_env_init
+    ) as exe:
+        tasks = [exe.submit(run_func, symbol=symbol) for symbol in symbols]
+        with tqdm(total=len(tasks), desc="Processing tasks", unit="task") as pbar:
+            for task in as_completed(tasks):
+                task.result()
+                pbar.update(1)
+    time_elapsed = (time.perf_counter() - start_time) / 60
+    logger.ok(f"Finished in {time_elapsed:.2f}mins")
