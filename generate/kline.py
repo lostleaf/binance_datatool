@@ -181,6 +181,7 @@ def fill_kline_gaps(df: pl.DataFrame, time_interval: str) -> pl.DataFrame:
     # Fill Vwaps with open
     if "avg_price_1m" in df.columns:
         ldf = ldf.with_columns(pl.col("avg_price_1m").fill_null(pl.col("open")))
+        ldf = ldf.with_columns(pl.col("avg_price_1m").clip(pl.col("low"), pl.col("high")))
 
     # Fill volumes with 0
     ldf = ldf.with_columns(
@@ -198,10 +199,11 @@ def merge_and_split_gaps(
     trade_type: TradeType,
     time_interval: str,
     symbol: str,
+    split_gaps: bool,
     min_days: int,
     min_price_chg: float,
-    exclude_empty: bool,
-) -> Optional[pl.DataFrame]:
+    with_vwap: bool,
+):
     """
     Merge AWS and API kline data for a single symbol and scan for gaps.
     Scan for gaps in kline data where:
@@ -214,23 +216,37 @@ def merge_and_split_gaps(
         trade_type: Type of trading (spot/futures)
         time_interval: Kline time interval
         symbol: Trading pair symbol
+        split_gaps: Whether to split data by gaps
         min_days: Minimum gap days threshold
         min_price_chg: Minimum price change ratio threshold
         exclude_empty: Whether to exclude klines with 0 volume
-
+        with_vwap: Whether to calculate vwap
     Returns:
         Dictionary mapping split symbol names to DataFrames with filled gaps
     """
-    df = merge_klines(trade_type, symbol, time_interval, exclude_empty)
+    df = merge_klines(trade_type, symbol, time_interval, True)
+
     if df is None or df.is_empty():
-        return None
+        return
 
-    df_gap = scan_gaps(df, min_days, min_price_chg)
-    df_gap2 = scan_gaps(df, min_days * 2, 0)
-    df_gap = pl.concat([df_gap, df_gap2]).unique()
+    if with_vwap:
+        df = df.with_columns((pl.col("quote_volume") / pl.col("volume")).alias(f"avg_price_{time_interval}"))
 
-    splited_dfs = split_by_gaps(df, df_gap, symbol)
-    if splited_dfs is None:
-        return None
+    splited_dfs = {symbol: df}
+    if split_gaps:
+        df_gap = pl.concat([scan_gaps(df, min_days, min_price_chg), scan_gaps(df, min_days * 2, 0)]).unique(
+            "candle_begin_time", keep="last"
+        )
+        splited_dfs = split_by_gaps(df, df_gap, symbol)
 
-    return {symbol: fill_kline_gaps(df, time_interval) for symbol, df in splited_dfs.items()}
+    if not splited_dfs:
+        return
+
+    results_dir = BINANCE_DATA_DIR / "results_data" / trade_type.value / "klines" / time_interval
+
+    # Make sure results directory exists
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    for symbol, df in splited_dfs.items():
+        df = fill_kline_gaps(df, time_interval)
+        df.write_parquet(results_dir / f"{symbol}.pqt")
