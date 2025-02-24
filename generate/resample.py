@@ -83,8 +83,12 @@ def resampled_kline(trade_type: TradeType, symbol: str, resample_interval: str, 
     if base_delta >= resample_delta:
         return
 
-    # Calculate number of possible offsets
-    num_offsets = resample_delta // base_delta
+    if base_offset == '0m':
+        # If base offset is 0m, there is only one possible offset
+        num_offsets = 1 
+    else:
+        # Calculate number of possible offsets
+        num_offsets = resample_delta // base_delta
 
     df = pl.read_parquet(kline_file)
 
