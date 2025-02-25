@@ -1,5 +1,6 @@
 from datetime import timedelta
 from functools import partial
+import shutil
 import time
 from typing import Optional
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -269,8 +270,13 @@ def merge_and_split_gaps_type_all(
     min_price_chg: float,
     with_vwap: bool,
 ):
-    divider(f"Merge and split gaps for {trade_type.value} {time_interval}")
+    divider(f"BHDS Merge klines for {trade_type.value} {time_interval}")
+    results_dir = BINANCE_DATA_DIR / "results_data" / trade_type.value / "klines" / time_interval
 
+    if results_dir.exists():
+        shutil.rmtree(results_dir)
+
+    logger.info(f"results_dir={results_dir}")
     msg = f"split_gaps={split_gaps}"
     if split_gaps:
         msg += f" (min_days={min_days}, min_price_chg={min_price_chg})"

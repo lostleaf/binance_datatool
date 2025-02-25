@@ -2,6 +2,7 @@
 
 python bhds.py aws_kline parse-type-all spot 1m
 python bhds.py api_data download-aws-missing-kline spot 1m
+python bhds.py generate merged-split-kline-type-all spot 1m --split-gaps --with-vwap
 
 python bhds.py aws_kline parse-type-all um_futures 1m
 python bhds.py api_data download-aws-missing-kline um_futures 1m
