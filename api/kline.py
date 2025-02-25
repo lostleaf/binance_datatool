@@ -60,7 +60,72 @@ async def api_download_kline(
     logger.ok(f"{trade_type.value} {time_interval} API klines download successfully")
 
 
-async def api_download_aws_missing_kline(
+def _get_missing_kline_dates_for_symbol(
+    trade_type: TradeType,
+    symbol: str,
+    time_interval: str,
+    overwrite: bool,
+) -> list[str]:
+    """Get missing kline dates for a single symbol.
+    
+    Args:
+        trade_type: Type of trade (spot or futures)
+        symbol: Trading symbol
+        time_interval: Time interval for klines
+        overwrite: Whether to overwrite existing files
+        
+    Returns:
+        List of dates with missing kline data
+    """
+    parsed_kline_dir = config.BINANCE_DATA_DIR / "parsed_data" / trade_type.value / "klines"
+    parsed_symbol_kline_dir = parsed_kline_dir / symbol / time_interval
+    ts_mgr = TSManager(parsed_symbol_kline_dir)
+    df_cnt = ts_mgr.get_row_count_per_date(exclude_empty=False)
+    expected_num = timedelta(days=1) // convert_interval_to_timedelta(time_interval)
+
+    if df_cnt is None:
+        return []
+
+    df_missing = df_cnt.filter(pl.col("row_count") < expected_num)
+    dts = set(df_missing["dt"])
+
+    if not overwrite:
+        api_kline_dir = config.BINANCE_DATA_DIR / "api_data" / trade_type.value / "klines" / symbol / time_interval
+        kline_files = api_kline_dir.glob("*.pqt")
+        dts_exist = {convert_date(f.stem) for f in kline_files}
+        dts -= dts_exist
+
+    return sorted(dts)
+
+
+async def api_download_missing_kline_for_symbols(
+    trade_type: TradeType,
+    symbols: list[str],
+    time_interval: str,
+    overwrite: bool,
+    http_proxy: Optional[str],
+):
+    """Download missing kline data for multiple symbols.
+    
+    Args:
+        trade_type: Type of trade (spot or futures)
+        symbols: List of trading symbols
+        time_interval: Time interval for klines
+        overwrite: Whether to overwrite existing files
+        http_proxy: HTTP proxy to use
+        
+    """
+    sym_dts = []
+    
+    for symbol in symbols:
+        missing_dates = _get_missing_kline_dates_for_symbol(trade_type, symbol, time_interval, overwrite)
+        sym_dts.extend((symbol, dt) for dt in missing_dates)
+    
+    if sym_dts:
+        await api_download_kline(trade_type, time_interval, sym_dts, http_proxy)
+
+
+async def api_download_aws_missing_kline_for_type(
     trade_type: TradeType,
     time_interval: str,
     overwrite: bool,
@@ -68,31 +133,7 @@ async def api_download_aws_missing_kline(
 ):
     divider("Download AWS missing klines from Binance API")
 
-    parsed_kline_dir = config.BINANCE_DATA_DIR / "parsed_data" / trade_type.value / "klines"
-    sym_dts = []
-
     symbols = local_list_kline_symbols(trade_type, time_interval)
-
-    for symbol in symbols:
-        parsed_symbol_kline_dir = parsed_kline_dir / symbol / time_interval
-        ts_mgr = TSManager(parsed_symbol_kline_dir)
-        df_cnt = ts_mgr.get_row_count_per_date(exclude_empty=False)
-        expected_num = timedelta(days=1) // convert_interval_to_timedelta(time_interval)
-
-        if df_cnt is None:
-            continue
-
-        df_missing = df_cnt.filter(pl.col("row_count") < expected_num)
-        dts = set(df_missing["dt"])
-
-        if not overwrite:
-            api_kline_dir = config.BINANCE_DATA_DIR / "api_data" / trade_type.value / "klines" / symbol / time_interval
-            kline_files = api_kline_dir.glob("*.pqt")
-            dts_exist = {convert_date(f.stem) for f in kline_files}
-            dts -= dts_exist
-
-        sym_dts.extend((symbol, dt) for dt in sorted(dts))
-    if sym_dts:
-        await api_download_kline(trade_type, time_interval, sym_dts, http_proxy)
-    else:
-        logger.ok("All missings downloaded")
+    await api_download_missing_kline_for_symbols(trade_type, symbols, time_interval, overwrite, http_proxy)
+    
+    logger.ok("All missings downloaded")
