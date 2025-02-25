@@ -21,7 +21,7 @@ from util.time import convert_interval_to_timedelta
 from util.ts_manager import TSManager, get_partition
 
 
-def read_csv(csv_file):
+def read_kline_csv(csv_file):
     columns = [
         'candle_begin_time',
         'open',
@@ -103,7 +103,7 @@ def run_parse_symbol_kline(aws_symbol_kline_dir: Path, parsed_symbol_kline_dir: 
         num += len(filtered_kline_files)
         if not filtered_kline_files:
             continue
-        dfs = [read_csv(kline_file) for kline_file in filtered_kline_files]
+        dfs = [read_kline_csv(kline_file) for kline_file in filtered_kline_files]
         df_update = pl.concat(dfs).sort(pl.col('candle_begin_time'))
         ts_mgr.update_partition(partition_name, df_update)
 
