@@ -128,7 +128,7 @@ def split_by_gaps(df: pl.DataFrame, df_gap: pl.DataFrame, symbol: str) -> Option
         else:
             # Middle segments - from previous gap to current gap
             prev_gap_time = gap_times[i - 1]
-            split_df = df.filter(pl.col("candle_begin_time").between(prev_gap_time, gap_time, closed="left"))
+            split_df = df.filter(pl.col("candle_begin_time").is_between(prev_gap_time, gap_time, closed="left"))
 
         # Skip empty df
         if split_df.is_empty():
