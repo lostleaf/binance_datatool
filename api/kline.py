@@ -40,7 +40,7 @@ async def api_download_kline(
             logger.debug(f"server_time={server_ts}, weight_used={weight}, start={batch[0]}, end={batch[-1]}")
 
             max_minute_weight, _ = fetcher.get_api_limits()
-            if weight > max_minute_weight * 0.8:
+            if weight > max_minute_weight - 480:
                 logger.info(f"Weight {weight} exceeds the maximum limit, sleep until next minute")
                 await async_sleep_until_run_time(next_run_time("1m"))
                 continue
