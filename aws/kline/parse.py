@@ -142,13 +142,11 @@ def parse_klines(trade_type: TradeType, time_interval: str, symbols: list[str], 
 
             task = exe.submit(run_parse_symbol_kline, aws_symbol_kline_dir, parsed_symbol_kline_dir, thres)
             tasks.append(task)
-        # with tqdm(total=len(tasks), desc="Processing tasks", unit="task") as pbar:
+
         for future in as_completed(tasks):
             aws_symbol_kline_dir, num = future.result()
             if num > 0:
                 logger.debug(f'{aws_symbol_kline_dir.parts[-2:]} updated {num}')
-        for task in as_completed(tasks):
-            task.result()
 
 
 def parse_type_all_klines(trade_type: TradeType, time_interval: str, force_update: bool):

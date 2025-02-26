@@ -5,6 +5,7 @@ from typing import Optional
 import typer
 from typing_extensions import Annotated
 
+from aws.funding.parse import parse_funding_rates
 from config import ContractType, TradeType
 
 from .download import download_cm_futures_funding_rates, download_funding_rates, download_um_futures_funding_rates
@@ -78,3 +79,14 @@ def verify_type_all(
     Verify Binance funding rates for all symbols with the given trade type
     """
     verify_type_all_funding_rates(trade_type)
+
+
+@app.command()
+def parse(
+    trade_type: Annotated[TradeType, typer.Argument(help="Type of symbols")],
+    symbols: Annotated[list[str], typer.Argument(help="A list of trading symbols, e.g., 'BTCUSDT ETHUSDT'.")],
+):
+    """
+    Parse Binance funding rates for all symbols with the given trade type
+    """
+    parse_funding_rates(trade_type, symbols)
