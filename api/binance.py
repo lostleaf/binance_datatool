@@ -105,7 +105,6 @@ class BinanceFetcher:
         Request and parse return values of /klines API and convert to polars.DataFrame
         '''
         klines = await async_retry_getter(self.market_api.aioreq_klines, symbol=symbol, interval=interval, **kwargs)
-
         if klines is None:
             return None
 
@@ -143,17 +142,18 @@ class BinanceFetcher:
         ts_next = ts_start + timedelta(days=1)
         start_ms = int(ts_start.timestamp()) * 1000
         noon_ms = int(datetime.combine(dt, dtime(12, 0), tzinfo=ZoneInfo('UTC')).timestamp()) * 1000
+        end_ms = int(ts_next.timestamp()) * 1000 - 1
 
         max_once_candles = self.market_api.MAX_ONCE_CANDLES
         num = timedelta(days=1) // convert_interval_to_timedelta(interval)
 
         if num <= max_once_candles:
-            result = await self.get_kline_df(symbol, interval, startTime=start_ms, limit=num)
+            result = await self.get_kline_df(symbol, interval, startTime=start_ms, endTime=end_ms, limit=max_once_candles)
             lf = result.lazy() if result is not None else None
         else:
             results = await asyncio.gather(
-                self.get_kline_df(symbol, interval, startTime=start_ms, limit=max_once_candles),
-                self.get_kline_df(symbol, interval, startTime=noon_ms, limit=max_once_candles))
+                self.get_kline_df(symbol, interval, startTime=start_ms, endTime=noon_ms, limit=max_once_candles),
+                self.get_kline_df(symbol, interval, startTime=noon_ms, endTime=end_ms, limit=max_once_candles))
             results = [r.lazy() for r in results if r is not None]
             lf = pl.concat(results) if results else None
 

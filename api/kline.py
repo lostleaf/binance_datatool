@@ -131,7 +131,7 @@ async def api_download_aws_missing_kline_for_type(
     overwrite: bool,
     http_proxy: Optional[str],
 ):
-    divider("Download AWS missing klines from Binance API")
+    divider(f"BHDS Download missing {trade_type.value} {time_interval} klines from API")
 
     symbols = local_list_kline_symbols(trade_type, time_interval)
     await api_download_missing_kline_for_symbols(trade_type, symbols, time_interval, overwrite, http_proxy)
