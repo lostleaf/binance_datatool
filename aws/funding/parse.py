@@ -3,14 +3,16 @@ import multiprocessing as mp
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+import time
 from zipfile import ZipFile
 
 import polars as pl
 
 from aws.client_async import AwsFundingRateClient
+from aws.funding.util import local_list_funding_symbols
 from config import BINANCE_DATA_DIR, N_JOBS, DataFrequency, TradeType
 from util.concurrent import mp_env_init
-from util.log_kit import logger
+from util.log_kit import divider, logger
 
 
 def read_funding_csv(funding_file) -> pl.DataFrame:
@@ -113,3 +115,15 @@ def parse_funding_rates(trade_type: TradeType, symbols: list[str]):
 
         for future in as_completed(tasks):
             future.result()
+
+
+def parse_type_all_funding_rates(trade_type: TradeType):
+    divider(f"BHDS Parse {trade_type.value} Funding Rates")
+    symbols = local_list_funding_symbols(trade_type)
+
+    t_start = time.perf_counter()
+
+    parse_funding_rates(trade_type, symbols)
+    
+    time_elapsed = (time.perf_counter() - t_start) / 60
+    logger.ok(f"Finished Parsing {trade_type.value} Funding Rates, Time={time_elapsed:.2f}mins")
