@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # resample 1h spot klines with multiple of 5m offset
 python bhds.py generate resample-type spot 1h 5m
 
