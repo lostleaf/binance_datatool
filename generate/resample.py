@@ -50,6 +50,10 @@ def polars_calc_resample(df: pl.DataFrame, time_interval: str, resample_interval
         # Average price over the first minute of the resampled period
         agg.append(pl.col("avg_price_1m").first())
 
+    if 'funding_rate' in df.columns:
+        # Funding rate at the start of the resampled period
+        agg.append(pl.col('funding_rate').first())
+
     # Group the data by the start time of the klines, resampling to the specified interval with the given offset
     ldf = ldf.group_by_dynamic("candle_begin_time", every=resample_interval, offset=offset).agg(agg)
 
@@ -63,7 +67,7 @@ def polars_calc_resample(df: pl.DataFrame, time_interval: str, resample_interval
     return ldf.collect()
 
 
-def resampled_kline(trade_type: TradeType, symbol: str, resample_interval: str, base_offset: str):
+def resample_kline(trade_type: TradeType, symbol: str, resample_interval: str, base_offset: str):
     """
     Resample a kline DataFrame to a higher time frame with an offset.
     """
