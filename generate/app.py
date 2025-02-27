@@ -5,7 +5,7 @@ from config import TradeType
 from util.log_kit import divider
 
 from .kline import gen_kline, gen_kline_type
-from .resample import resample_kline
+from .resample import resample_kline, resample_kline_type
 
 app = typer.Typer()
 
@@ -86,3 +86,15 @@ def resample(
     """
     divider(f"Resample kline {trade_type.value} {resample_interval} {symbol} base offset {base_offset}")
     resample_kline(trade_type=trade_type, symbol=symbol, resample_interval=resample_interval, base_offset=base_offset)
+
+
+@app.command()
+def resample_type(
+    trade_type: Annotated[TradeType, typer.Argument(help="Type of trading (spot/futures)")],
+    resample_interval: Annotated[str, typer.Argument(help="Resample interval, e.g., '1h', '4h'")],
+    base_offset: Annotated[str, typer.Argument(help="Base offset, e.g., '5m', '15m', '30m'")],
+):
+    """
+    Resample kline data for all symbols of given trade type and resample interval.
+    """
+    resample_kline_type(trade_type=trade_type, resample_interval=resample_interval, base_offset=base_offset)

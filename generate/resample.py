@@ -1,10 +1,23 @@
-import polars as pl
-
-from config.config import BINANCE_DATA_DIR, TradeType
-from util.time import convert_interval_to_timedelta
+import multiprocessing as mp
+import shutil
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import timedelta
+from functools import partial
 
-def polars_calc_resample(df: pl.DataFrame, time_interval: str, resample_interval: str, offset: str | timedelta) -> pl.DataFrame:
+import polars as pl
+from tqdm import tqdm
+
+from config.config import BINANCE_DATA_DIR, N_JOBS, TradeType
+from generate.util import list_results_kline_symbols
+from util.concurrent import mp_env_init
+from util.log_kit import divider, logger
+from util.time import convert_interval_to_timedelta
+
+
+def polars_calc_resample(
+    df: pl.DataFrame, time_interval: str, resample_interval: str, offset: str | timedelta
+) -> pl.DataFrame:
     """
     Resample a Polars kline DataFrame to a higher time frame with an offset.
     For example, resample 5-minute klines to hourly klines with a 5-minute offset.
@@ -50,9 +63,9 @@ def polars_calc_resample(df: pl.DataFrame, time_interval: str, resample_interval
         # Average price over the first minute of the resampled period
         agg.append(pl.col("avg_price_1m").first())
 
-    if 'funding_rate' in df.columns:
+    if "funding_rate" in df.columns:
         # Funding rate at the start of the resampled period
-        agg.append(pl.col('funding_rate').first())
+        agg.append(pl.col("funding_rate").first())
 
     # Group the data by the start time of the klines, resampling to the specified interval with the given offset
     ldf = ldf.group_by_dynamic("candle_begin_time", every=resample_interval, offset=offset).agg(agg)
@@ -74,8 +87,7 @@ def resample_kline(trade_type: TradeType, symbol: str, resample_interval: str, b
     time_interval = "1m"
     results_dir = BINANCE_DATA_DIR / "results_data" / trade_type.value
 
-    spot_1m_kline_dir = results_dir / "klines" / time_interval
-    kline_file = spot_1m_kline_dir / f"{symbol}.pqt"
+    kline_file = results_dir / "klines" / time_interval / f"{symbol}.pqt"
     if not kline_file.exists():
         return
 
@@ -87,9 +99,9 @@ def resample_kline(trade_type: TradeType, symbol: str, resample_interval: str, b
     if base_delta >= resample_delta:
         return
 
-    if base_offset == '0m':
+    if base_offset == "0m":
         # If base offset is 0m, there is only one possible offset
-        num_offsets = 1 
+        num_offsets = 1
     else:
         # Calculate number of possible offsets
         num_offsets = resample_delta // base_delta
@@ -98,12 +110,48 @@ def resample_kline(trade_type: TradeType, symbol: str, resample_interval: str, b
 
     # Generate resampled data for each offset
     for i in range(num_offsets):
-        offset_str = f'{i * int(base_offset[:-1])}{base_offset[-1]}'
-        
+        offset_str = f"{i * int(base_offset[:-1])}{base_offset[-1]}"
+
         # Create output directory for this offset
-        resampled_kline_dir = results_dir / "resampled_klines" / resample_interval / offset_str
-        resampled_kline_dir.mkdir(parents=True, exist_ok=True)
+        resampled_offset_dir = results_dir / "resampled_klines" / resample_interval / offset_str
+        resampled_offset_dir.mkdir(parents=True, exist_ok=True)
 
         # Read and resample data
         df_resampled = polars_calc_resample(df, time_interval, resample_interval, offset_str)
-        df_resampled.write_parquet(resampled_kline_dir / f"{symbol}.pqt")
+        df_resampled.write_parquet(resampled_offset_dir / f"{symbol}.pqt")
+
+    return symbol
+
+
+def resample_kline_type(trade_type: TradeType, resample_interval: str, base_offset: str):
+    """
+    Resample kline data for all symbols of a given trade type.
+    """
+    divider(f"Resample kline {trade_type.value} {resample_interval} {base_offset}")
+    symbols = list_results_kline_symbols(trade_type, "1m")
+
+    resampled_dir = BINANCE_DATA_DIR / "results_data" / trade_type.value / "resampled_klines" / resample_interval
+    logger.info(f"Resampled kline directory: {resampled_dir}")
+    if resampled_dir.exists():
+        logger.warning(f"Resampled kline directory exists, removing it")
+        shutil.rmtree(resampled_dir)
+
+    start_time = time.perf_counter()
+
+    run_func = partial(
+        resample_kline,
+        trade_type=trade_type,
+        resample_interval=resample_interval,
+        base_offset=base_offset,
+    )
+
+    with ProcessPoolExecutor(max_workers=N_JOBS, mp_context=mp.get_context("spawn"), initializer=mp_env_init) as exe:
+        tasks = [exe.submit(run_func, symbol=symbol) for symbol in symbols]
+        with tqdm(total=len(tasks), desc="Processing tasks", unit="task") as pbar:
+            for task in as_completed(tasks):
+                symbol = task.result()
+                pbar.set_postfix_str(symbol)
+                pbar.update(1)
+
+    time_elapsed = (time.perf_counter() - start_time) / 60
+    logger.ok(f"Finished in {time_elapsed:.2f}mins")
