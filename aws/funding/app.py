@@ -87,7 +87,7 @@ def parse(
     symbols: Annotated[list[str], typer.Argument(help="A list of trading symbols, e.g., 'BTCUSDT ETHUSDT'.")],
 ):
     """
-    Parse Binance funding rates for all symbols with the given trade type
+    Parse Binance funding rates for specific symbols
     """
     parse_funding_rates(trade_type, symbols)
 

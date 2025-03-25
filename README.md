@@ -65,7 +65,7 @@ For example:
 │ download-cm-futures   Download Binance Coin Futures funding rates                                           │
 │ verify                Verify Binance funding rates for specific symbols from AWS data center                │
 │ verify-type-all       Verify Binance funding rates for all symbols with the given trade type                │
-│ parse                 Parse Binance funding rates for all symbols with the given trade type                 │
+│ parse                 Parse Binance funding rates for specific symbols                 │
 │ parse-type-all        Parse Binance funding rates for all symbols with the given trade type                 │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
