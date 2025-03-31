@@ -23,36 +23,36 @@ from util.ts_manager import TSManager, get_partition
 
 def read_kline_csv(csv_file):
     columns = [
-        'candle_begin_time',
-        'open',
-        'high',
-        'low',
-        'close',
-        'volume',
-        'close_time',
-        'quote_volume',
-        'trade_num',
-        'taker_buy_base_asset_volume',
-        'taker_buy_quote_asset_volume',
-        'ignore',
+        "candle_begin_time",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "close_time",
+        "quote_volume",
+        "trade_num",
+        "taker_buy_base_asset_volume",
+        "taker_buy_quote_asset_volume",
+        "ignore",
     ]
     schema = {
-        'candle_begin_time': pl.Int64,
-        'open': pl.Float64,
-        'high': pl.Float64,
-        'low': pl.Float64,
-        'close': pl.Float64,
-        'volume': pl.Float64,
-        'quote_volume': pl.Float64,
-        'trade_num': pl.Int64,
-        'taker_buy_base_asset_volume': pl.Float64,
-        'taker_buy_quote_asset_volume': pl.Float64,
+        "candle_begin_time": pl.Int64,
+        "open": pl.Float64,
+        "high": pl.Float64,
+        "low": pl.Float64,
+        "close": pl.Float64,
+        "volume": pl.Float64,
+        "quote_volume": pl.Float64,
+        "trade_num": pl.Int64,
+        "taker_buy_base_asset_volume": pl.Float64,
+        "taker_buy_quote_asset_volume": pl.Float64,
     }
     with ZipFile(csv_file) as f:
         filename = f.namelist()[0]
         lines = f.open(filename).readlines()
 
-        if lines[0].decode().startswith('open_time'):
+        if lines[0].decode().startswith("open_time"):
             # logger.warning(f'{p} skip header')
             lines = lines[1:]
 
@@ -60,24 +60,24 @@ def read_kline_csv(csv_file):
     ldf = pl.scan_csv(lines, has_header=False, new_columns=columns, schema_overrides=schema)
 
     # Remove useless columns
-    ldf = ldf.drop('ignore', 'close_time')
+    ldf = ldf.drop("ignore", "close_time")
 
     df = ldf.collect()
 
-    ts_unit = 'ms'
-    if df['candle_begin_time'].max() >= (10**15):
-        ts_unit = 'us'
+    ts_unit = "ms"
+    if df["candle_begin_time"].max() >= (10**15):
+        ts_unit = "us"
 
     # Cast column types
     ldf = ldf.with_columns(
-        pl.col('candle_begin_time').cast(pl.Datetime(ts_unit)).dt.replace_time_zone('UTC').dt.cast_time_unit('ms')
+        pl.col("candle_begin_time").cast(pl.Datetime(ts_unit)).dt.replace_time_zone("UTC").dt.cast_time_unit("ms")
     )
 
     return ldf.collect()
 
 
 def get_kline_file_dt(f: Path) -> date:
-    tks = f.stem.split('-')[-3:]
+    tks = f.stem.split("-")[-3:]
     return date(year=int(tks[0]), month=int(tks[1]), day=int(tks[2]))
 
 
@@ -94,8 +94,8 @@ def run_parse_symbol_kline(aws_symbol_kline_dir: Path, parsed_symbol_kline_dir: 
     df_cnt = ts_mgr.get_row_count_per_date(exclude_empty=False)
     enough_dts = set()
     if df_cnt is not None:
-        df_enough = df_cnt.filter(pl.col('row_count') >= thres)
-        enough_dts = set(df_enough['dt'])
+        df_enough = df_cnt.filter(pl.col("row_count") >= thres)
+        enough_dts = set(df_enough["dt"])
 
     num = 0
     for partition_name, kline_tuples in aws_partition_files.items():
@@ -104,32 +104,32 @@ def run_parse_symbol_kline(aws_symbol_kline_dir: Path, parsed_symbol_kline_dir: 
         if not filtered_kline_files:
             continue
         dfs = [read_kline_csv(kline_file) for kline_file in filtered_kline_files]
-        df_update = pl.concat(dfs).sort(pl.col('candle_begin_time'))
+        df_update = pl.concat(dfs).sort(pl.col("candle_begin_time"))
         ts_mgr.update_partition(partition_name, df_update)
 
     return aws_symbol_kline_dir, num
 
 
 def parse_klines(trade_type: TradeType, time_interval: str, symbols: list[str], force_update: bool):
-    logger.info(f'Start parse csv klines')
+    logger.info(f"Start parse csv klines")
     logger.debug(
-        f'trade_type={trade_type.value}, time_interval={time_interval}, num_symbols={len(symbols)}, '
-        f'n_jobs={config.N_JOBS}, '
-        f'{symbols[0]} -- {symbols[-1]}'
+        f"trade_type={trade_type.value}, time_interval={time_interval}, num_symbols={len(symbols)}, "
+        f"n_jobs={config.N_JOBS}, "
+        f"{symbols[0]} -- {symbols[-1]}"
     )
 
     aws_local_kline_dir = AwsKlineClient.LOCAL_DIR / AwsKlineClient.get_base_dir(trade_type, DataFrequency.daily)
-    parsed_kline_dir = config.BINANCE_DATA_DIR / 'parsed_data' / trade_type.value / 'klines'
-    
+    parsed_kline_dir = config.BINANCE_DATA_DIR / "parsed_data" / trade_type.value / "klines"
+
     thres = timedelta(days=1) // convert_interval_to_timedelta(time_interval)
     thres = 1
 
-    logger.debug(f'aws_local_kline_dir={aws_local_kline_dir}')
-    logger.debug(f'parsed_kline_dir={parsed_kline_dir}')
-    logger.debug(f'thres={thres}')
+    logger.debug(f"aws_local_kline_dir={aws_local_kline_dir}")
+    logger.debug(f"parsed_kline_dir={parsed_kline_dir}")
+    logger.debug(f"thres={thres}")
 
     with ProcessPoolExecutor(
-        max_workers=config.N_JOBS, mp_context=mp.get_context('spawn'), initializer=mp_env_init
+        max_workers=config.N_JOBS, mp_context=mp.get_context("spawn"), initializer=mp_env_init
     ) as exe:
         tasks = []
 
@@ -143,18 +143,20 @@ def parse_klines(trade_type: TradeType, time_interval: str, symbols: list[str], 
             task = exe.submit(run_parse_symbol_kline, aws_symbol_kline_dir, parsed_symbol_kline_dir, thres)
             tasks.append(task)
 
-        for future in as_completed(tasks):
-            aws_symbol_kline_dir, num = future.result()
-            if num > 0:
-                logger.debug(f'{aws_symbol_kline_dir.parts[-2:]} updated {num}')
+        with tqdm(total=len(tasks), desc="Parse klines", unit="task") as pbar:
+            for future in as_completed(tasks):
+                aws_symbol_kline_dir, num = future.result()
+                symbol = aws_symbol_kline_dir.parts[-2]
+                pbar.set_postfix_str(f"{symbol} {num} updates")
+                pbar.update(1)
 
 
 def parse_type_all_klines(trade_type: TradeType, time_interval: str, force_update: bool):
-    divider(f'BHDS Parse {trade_type.value} {time_interval} Klines')
+    divider(f"BHDS Parse {trade_type.value} {time_interval} Klines")
     symbols = local_list_kline_symbols(trade_type, time_interval)
 
     t_start = time.perf_counter()
     parse_klines(trade_type, time_interval, symbols, force_update)
     time_elapsed = (time.perf_counter() - t_start) / 60
 
-    logger.ok(f'Finished Parsing {trade_type.value} {time_interval} Klines, Time={time_elapsed:.2f}mins')
+    logger.ok(f"Finished Parsing {trade_type.value} {time_interval} Klines, Time={time_elapsed:.2f}mins")

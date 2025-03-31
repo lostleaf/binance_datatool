@@ -131,7 +131,7 @@ def gen_kline_type(
         max_workers=config.N_JOBS, mp_context=mp.get_context("spawn"), initializer=mp_env_init
     ) as exe:
         tasks = [exe.submit(run_func, symbol=symbol) for symbol in symbols]
-        with tqdm(total=len(tasks), desc="Processing tasks", unit="task") as pbar:
+        with tqdm(total=len(tasks), desc="Merge klines", unit="task") as pbar:
             for task in as_completed(tasks):
                 symbol = task.result()
                 pbar.set_postfix_str(symbol)
