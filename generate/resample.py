@@ -64,8 +64,15 @@ def polars_calc_resample(
         agg.append(pl.col("avg_price_1m").first())
 
     if "funding_rate" in df.columns:
-        # Funding rate at the start of the resampled period
-        agg.append(pl.col("funding_rate").first())
+        # Only consider funding rates with absolute value greater than 0.01 bps
+        has_funding_cond = pl.col("funding_rate").abs() > 1e-6
+
+        # Get the first valid funding rate and its corresponding price and time
+        agg.extend([
+            pl.col("funding_rate").filter(has_funding_cond).first().alias("funding_rate"),
+            pl.col("open").filter(has_funding_cond).first().alias("funding_price"),
+            pl.col("candle_begin_time").filter(has_funding_cond).first().alias("funding_time")
+        ])
 
     # Group the data by the start time of the klines, resampling to the specified interval with the given offset
     ldf = ldf.group_by_dynamic("candle_begin_time", every=resample_interval, offset=offset).agg(agg)
