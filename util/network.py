@@ -17,7 +17,6 @@ async def async_retry_getter(func, _max_times=5, _sleep_seconds=1, **kwargs):
         except BinanceAPIException as e:
             if e.code in BINANCE_CODES:
                 logger.warning(e)
-                logger.debug(e.response)
                 return None
 
             raise e
