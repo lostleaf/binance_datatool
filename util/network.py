@@ -6,7 +6,7 @@ from api.binance_market_async import BinanceAPIException
 
 from .log_kit import logger
 
-BINANCE_CODES = {-1122}
+BINANCE_CODES = {-1122, -1121}
 
 
 async def async_retry_getter(func, _max_times=5, _sleep_seconds=1, **kwargs):

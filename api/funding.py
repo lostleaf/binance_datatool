@@ -13,6 +13,9 @@ from util.network import create_aiohttp_session
 async def download_funding_for_symbol(funding_dir: Path, symbol: str, fetcher: BinanceFetcher):
     df_funding = await fetcher.get_hist_funding_rate(symbol=symbol, limit=1000)
 
+    if df_funding is None:
+        return
+
     output_file = funding_dir / f"{symbol}.pqt"
     df_funding.write_parquet(output_file)
 

@@ -185,7 +185,7 @@ class BinanceFetcher:
         )
         return df.collect()
 
-    async def get_hist_funding_rate(self, symbol, **kwargs):
+    async def get_hist_funding_rate(self, symbol, **kwargs) -> Optional[pl.DataFrame]:
         '''
         Parse historical funding rates from /fundingRate
         '''
@@ -194,6 +194,10 @@ class BinanceFetcher:
 
         # Wait for 75s after a failure because the rate limit is 500/5mins
         data = await async_retry_getter(self.market_api.aioreq_funding_rate, symbol=symbol, _sleep_seconds=75, **kwargs)
+        
+        if data is None:
+            return None
+
         schema = {
             'fundingTime': pl.Int64,
             'fundingRate': pl.Float64,
