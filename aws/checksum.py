@@ -27,7 +27,7 @@ def verify_checksum(data_file: Path):
         with open(checksum_path, 'r') as fin:
             text = fin.read()
         checksum_standard, _ = text.strip().split()
-    except:
+    except Exception:
         return False, 'Error reading checksum file'
 
     with open(data_file, 'rb') as file_to_check:

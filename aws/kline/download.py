@@ -2,7 +2,6 @@ from itertools import chain
 from typing import List, Optional
 
 from aws.client_async import AwsKlineClient
-from aws.kline.util import split_into_batches
 from config import HTTP_TIMEOUT_SEC, ContractType, TradeType
 from util.log_kit import divider, logger
 from util.network import create_aiohttp_session

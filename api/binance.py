@@ -7,7 +7,6 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 import aiohttp
-from click import Option
 import polars as pl
 from dateutil import parser as date_parser
 
