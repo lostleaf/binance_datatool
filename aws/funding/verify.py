@@ -10,7 +10,7 @@ from util.log_kit import divider, logger
 
 
 def verify_funding_rates(trade_type: TradeType, symbols: List[str]):
-    logger.info(f"Start verify funding rates checksums")
+    logger.info("Start verify funding rates checksums")
     logger.debug(f"trade_type={trade_type.value}, num_symbols={len(symbols)}, " f"{symbols[0]} -- {symbols[-1]}")
 
     local_funding_dir = AwsFundingRateClient.LOCAL_DIR / AwsFundingRateClient.get_base_dir(

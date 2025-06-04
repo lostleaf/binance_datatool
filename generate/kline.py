@@ -1,7 +1,6 @@
 from functools import partial
 import shutil
 import time
-from typing import Optional
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing as mp
 
@@ -97,7 +96,7 @@ def gen_kline_type(
     results_dir = BINANCE_DATA_DIR / "results_data" / trade_type.value / "klines" / time_interval
     logger.info(f"results_dir={results_dir}")
     if results_dir.exists():
-        logger.warning(f"results_dir exists, removing it")
+        logger.warning("results_dir exists, removing it")
         shutil.rmtree(results_dir)
 
     msg = f"split_gaps={split_gaps}"

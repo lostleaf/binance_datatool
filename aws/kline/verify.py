@@ -10,7 +10,7 @@ from util.log_kit import divider, logger
 
 
 def verify_klines(trade_type: TradeType, time_interval: str, symbols: List[str]):
-    logger.info(f'Start verify klines checksums')
+    logger.info('Start verify klines checksums')
     logger.debug(f'trade_type={trade_type.value}, time_interval={time_interval}, num_symbols={len(symbols)}, '
                  f'{symbols[0]} -- {symbols[-1]}')
 

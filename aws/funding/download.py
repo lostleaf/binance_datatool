@@ -33,7 +33,7 @@ async def aws_list_kline_symbols(trade_type: TradeType, http_proxy):
 
 
 async def download_um_futures_funding_rates(quote: str, contract_type: ContractType, http_proxy: Optional[str]):
-    divider(f'BHDS Download USDⓈ-M Futures Funding Rates')
+    divider('BHDS Download USDⓈ-M Futures Funding Rates')
     logger.debug(f'quote={quote}, contract_type={contract_type}')
 
     symbols = await aws_list_kline_symbols(TradeType.um_futures, http_proxy)
@@ -43,7 +43,7 @@ async def download_um_futures_funding_rates(quote: str, contract_type: ContractT
 
 
 async def download_cm_futures_funding_rates(contract_type: ContractType, http_proxy: Optional[str]):
-    divider(f'BHDS Download Coin Futures Funding Rates')
+    divider('BHDS Download Coin Futures Funding Rates')
     logger.debug(f'contract_type={contract_type}')
 
     symbols = await aws_list_kline_symbols(TradeType.cm_futures, http_proxy)

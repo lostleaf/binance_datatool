@@ -140,7 +140,7 @@ def resample_kline_type(trade_type: TradeType, resample_interval: str, base_offs
     resampled_dir = BINANCE_DATA_DIR / "results_data" / trade_type.value / "resampled_klines" / resample_interval
     logger.info(f"Resampled kline directory: {resampled_dir}")
     if resampled_dir.exists():
-        logger.warning(f"Resampled kline directory exists, removing it")
+        logger.warning("Resampled kline directory exists, removing it")
         shutil.rmtree(resampled_dir)
 
     start_time = time.perf_counter()

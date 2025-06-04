@@ -3,7 +3,7 @@ import shutil
 import time
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -111,7 +111,7 @@ def run_parse_symbol_kline(aws_symbol_kline_dir: Path, parsed_symbol_kline_dir: 
 
 
 def parse_klines(trade_type: TradeType, time_interval: str, symbols: list[str], force_update: bool):
-    logger.info(f"Start parse csv klines")
+    logger.info("Start parse csv klines")
     logger.debug(
         f"trade_type={trade_type.value}, time_interval={time_interval}, num_symbols={len(symbols)}, "
         f"n_jobs={config.N_JOBS}, "
