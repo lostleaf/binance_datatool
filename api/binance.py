@@ -189,7 +189,7 @@ class BinanceFetcher:
         '''
         Parse historical funding rates from /fundingRate
         '''
-        if self.trade_type == 'spot':
+        if self.trade_type == TradeType.spot:
             raise RuntimeError('Cannot request funding rate for spot')
 
         # Wait for 75s after a failure because the rate limit is 500/5mins
