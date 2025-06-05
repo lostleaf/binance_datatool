@@ -61,14 +61,14 @@ def gen_kline(
         if df_funding is not None and not df_funding.is_empty():
             df = df.join(df_funding, on="candle_begin_time", how="left").fill_null(0)
 
-    splited_dfs = {symbol: df}
+    split_dfs = {symbol: df}
     if split_gaps:
         df_gap = pl.concat([scan_gaps(df, min_days, min_price_chg), scan_gaps(df, min_days * 2, 0)]).unique(
             "candle_begin_time", keep="last"
         )
-        splited_dfs = split_by_gaps(df, df_gap, symbol)
+        split_dfs = split_by_gaps(df, df_gap, symbol)
 
-    if not splited_dfs:
+    if not split_dfs:
         return
 
     results_dir = BINANCE_DATA_DIR / "results_data" / trade_type.value / "klines" / time_interval
@@ -76,7 +76,7 @@ def gen_kline(
     # Make sure results directory exists
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    for symbol, df in splited_dfs.items():
+    for symbol, df in split_dfs.items():
         df = fill_kline_gaps(df, time_interval)
         df.write_parquet(results_dir / f"{symbol}.pqt")
 
