@@ -8,13 +8,65 @@ This project is released under the **MIT License**.
 
 Here's a refined version of your documentation:
 
-## Dependencies
+## Environment
 
-To set up the conda environment, refer to the `environment.yml` file.
+### Python Environment Setup
 
-By default, the BHDS service uses `$HOME/crypto_data` as the base directory, where all data is downloaded. To change this base directory, set the `CRYPTO_BASE_DIR` environment variable accordingly.
+This project uses [uv](https://docs.astral.sh/uv/) for Python package management. To set up the environment:
 
-The BHDS service utilizes `aria2`, an efficient cross-platform command-line download utility, which is included in the `environment.yml` file.
+1. **Install uv** (if not already installed):
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+2. **Create and activate a virtual environment**:
+   ```bash
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+3. **Install project dependencies**:
+   ```bash
+   uv sync
+   ```
+
+### Aria2 Installation
+
+The BHDS service requires `aria2`, an efficient cross-platform command-line download utility, for downloading historical data from Binance's AWS repository.
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt update && sudo apt install aria2
+```
+
+**Linux (CentOS/RHEL/Fedora):**
+```bash
+# CentOS/RHEL
+sudo yum install aria2
+# or Fedora
+sudo dnf install aria2
+```
+
+**macOS:**
+```bash
+# Using Homebrew
+brew install aria2
+# Using MacPorts
+sudo port install aria2
+```
+
+**Windows:**
+- Download the latest release from [aria2 GitHub releases](https://github.com/aria2/aria2/releases)
+- Extract the archive and add the `aria2c.exe` path to your system PATH
+- Alternatively, use package managers like Chocolatey: `choco install aria2`
+
+### Configuration
+
+By default, the BHDS service uses `$HOME/crypto_data` as the base directory, where all data is downloaded. To change this base directory, set the `CRYPTO_BASE_DIR` environment variable accordingly:
+
+```bash
+export CRYPTO_BASE_DIR=/path/to/your/crypto/data
+```
 
 ## Usage
 
