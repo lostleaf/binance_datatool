@@ -124,12 +124,14 @@ Time-series data manager for monthly partitioned storage (used for non-kline dat
 - `update()`: Update partitions with new data
 - `read_all()`: Read and merge all partitions
 
-#### K-line Data Storage (aws/kline/parse.py)
+#### K-line Data Storage (aws/kline/parse.py & api/kline.py)
 Simplified daily file-based storage:
-- **Input**: Daily CSV zip files from AWS S3
-- **Output**: Daily parquet files (YYYYMMDD.parquet)
+- **Input**: Daily CSV zip files from AWS S3 (AWS) / Binance API (API)
+- **Output**: Daily parquet files (YYYYMMDD.parquet) - unified format
 - **Processing**: Incremental - only missing dates are processed
 - **Verification**: Uses `get_verified_aws_data_files` for file integrity
+- **Date Range**: Scan continuous range from min existing date to NY timezone yesterday
+- **File Extensions**: Unified .parquet for both AWS and API data
 
 #### Logging (util/log_kit.py)
 Custom logging with colors and emojis:
