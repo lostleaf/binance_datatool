@@ -32,7 +32,7 @@ sudo apt update && sudo apt install aria2
 ### Configuration
 - **Data Directory**: Defaults to `$HOME/crypto_data`
 - **Custom Directory**: Set `CRYPTO_BASE_DIR` environment variable
-- **Parallel Jobs**: Set `CRYPTO_NJOBS` (defaults to CPU count - 2)
+- **Parallel Jobs**: Set `CRYPTO_NJOBS` (defaults to CPU count - 2) - Note: resampling operations now use LazyFrame streaming instead of multiprocessing
 - **HTTP Proxy**: Set `HTTP_PROXY` or `http_proxy` for downloads
 
 ## Architecture
@@ -171,6 +171,13 @@ Most AWS operations use asyncio for concurrent downloads via `aiohttp`.
 3. Parse CSV → Polars DataFrame
 4. Clean and enhance data
 5. Save as partitioned Parquet
+6. **Resample**: Create higher timeframe data using LazyFrame streaming for memory efficiency
+
+### LazyFrame Architecture
+- **Memory Efficient**: Uses `pl.scan_parquet()` + `sink_parquet(lazy=True)` for streaming processing
+- **Batch Processing**: `pl.collect_all()` with configurable batch sizes for large datasets
+- **No Multiprocessing**: Single-process LazyFrame execution eliminates ProcessPoolExecutor overhead
+- **Progress Tracking**: Optional tqdm integration for batch operations
 
 ### Gap Detection
 When generating merged datasets, the system detects gaps based on:

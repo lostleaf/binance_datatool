@@ -5,7 +5,7 @@ from config import TradeType
 from util.log_kit import divider
 
 from .kline import gen_kline, gen_kline_type
-from .resample import resample_kline, resample_kline_type
+from .resample_lazy import resample_kline_type, resample_kline
 
 app = typer.Typer()
 
