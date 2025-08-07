@@ -6,7 +6,7 @@ from aws.kline.app import app as aws_kline
 from api.app import app as api_data
 from generate.app import app as generate
 
-app = typer.Typer()
+app = typer.Typer(add_completion=False)
 
 app.add_typer(
     aws_funding,
