@@ -108,19 +108,28 @@ python bhds.py generate resample-type um_futures 1h 5m
 - `cm_futures`: Coin-Margined futures (crypto settled)
 
 ### Storage Format
-- **Format**: Parquet files with monthly partitioning
+- **Format**: Parquet files
 - **Location**: `$CRYPTO_BASE_DIR/binance_data/[trade_type]/[data_type]/[time_interval]/[symbol]/`
-- **Partitioning**: Monthly (YYYYMM) by default
+- **Partitioning**: 
+  - **K-line data**: Daily files (YYYYMMDD.parquet) - simplified from monthly partitioning
+  - **Other data types**: Monthly (YYYYMM) by default
 - **Columns**: Standard OHLCV + additional computed features
 
 ### Key Utilities
 
 #### TSManager (util/ts_manager.py)
-Time-series data manager for partitioned storage:
+Time-series data manager for monthly partitioned storage (used for non-kline data):
 - `read_partition()`: Read specific month/year
 - `write_partition()`: Write data to partition
 - `update()`: Update partitions with new data
 - `read_all()`: Read and merge all partitions
+
+#### K-line Data Storage (aws/kline/parse.py)
+Simplified daily file-based storage:
+- **Input**: Daily CSV zip files from AWS S3
+- **Output**: Daily parquet files (YYYYMMDD.parquet)
+- **Processing**: Incremental - only missing dates are processed
+- **Verification**: Uses `get_verified_aws_data_files` for file integrity
 
 #### Logging (util/log_kit.py)
 Custom logging with colors and emojis:
