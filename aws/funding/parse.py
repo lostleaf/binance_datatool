@@ -108,7 +108,7 @@ def parse_funding_rates(trade_type: TradeType, symbols: list[str]):
 
         for symbol in symbols:
             aws_symbol_funding_dir = aws_local_funding_dir / symbol
-            parsed_symbol_funding_file = parsed_funding_dir / f"{symbol}.pqt"
+            parsed_symbol_funding_file = parsed_funding_dir / f"{symbol}.parquet"
 
             task = exe.submit(run_parse_symbol_funding, aws_symbol_funding_dir, parsed_symbol_funding_file)
             tasks.append(task)

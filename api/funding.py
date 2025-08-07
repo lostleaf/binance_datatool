@@ -16,7 +16,7 @@ async def download_funding_for_symbol(funding_dir: Path, symbol: str, fetcher: B
     if df_funding is None:
         return
 
-    output_file = funding_dir / f"{symbol}.pqt"
+    output_file = funding_dir / f"{symbol}.parquet"
     df_funding.write_parquet(output_file)
 
 
