@@ -7,6 +7,7 @@ dependencies = [
     "colorama>=0.4.6",
     "polars>=1.30.0",
     "python-dateutil>=2.9.0.post0",
+    "pytz>=2025.2",
     "tqdm>=4.67.1",
     "typer>=0.16.0",
     "xmltodict>=0.14.2",

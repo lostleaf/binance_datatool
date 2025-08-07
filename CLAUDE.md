@@ -1,201 +1,152 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code working with BHDS (Binance Historical Data Service).
 
-## Project Overview
+## Overview
+Python tool for downloading and maintaining Binance historical market data using Aria2 and Polars, stored in Parquet format for quantitative research.
 
-**BHDS (Binance Historical Data Service)** is a Python-based tool for downloading and maintaining historical market data from Binance. It uses Aria2 for downloading from Binance's AWS repository and Polars for data processing, storing data in Parquet format for quantitative trading research.
-
-## Environment Setup
+## Setup
 
 ### Prerequisites
-- **Python**: >=3.12
-- **Package Manager**: uv (Astral's Python package manager)
-- **Downloader**: aria2 (cross-platform command-line download utility)
+- Python >=3.12
+- uv (Astral's package manager)
+- aria2 (download utility)
 
-### Quick Setup
+### Install
 ```bash
-# Install uv if not already installed
 curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Create and activate virtual environment
-uv venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# Install dependencies
+uv venv && source .venv/bin/activate
 uv sync
-
-# Install aria2 (Ubuntu/Debian)
-sudo apt update && sudo apt install aria2
+sudo apt install aria2  # Ubuntu/Debian
 ```
 
-### Configuration
-- **Data Directory**: Defaults to `$HOME/crypto_data`
-- **Custom Directory**: Set `CRYPTO_BASE_DIR` environment variable
-- **Parallel Jobs**: Set `CRYPTO_NJOBS` (defaults to CPU count - 2) - Note: resampling operations now use LazyFrame streaming instead of multiprocessing
-- **HTTP Proxy**: Set `HTTP_PROXY` or `http_proxy` for downloads
+### Config
+- `CRYPTO_BASE_DIR`: Data directory (default: $HOME/crypto_data)
+- `CRYPTO_NJOBS`: Parallel jobs (default: CPU-2)
+- `HTTP_PROXY`: HTTP proxy for downloads
 
 ## Architecture
 
-### Core Components
-
 ```
-bhds.py                 # CLI entry point (Typer-based)
-├── api/                # Real-time Binance API data fetching
-├── aws/                # AWS historical data processing
-│   ├── kline/          # K-line (candlestick) data
-│   ├── funding/        # Funding rates data
+bhds.py                 # CLI (Typer)
+├── api/                # Real-time Binance API
+├── aws/                # AWS historical data
+│   ├── kline/          # Candlestick data
+│   ├── funding/        # Funding rates
 │   └── liquidation/    # Liquidation snapshots
-├── generate/           # Data merging and processing
+├── generate/           # Data merging/processing
 ├── util/               # Shared utilities
-├── config/             # Configuration and constants
-└── notebook/           # Jupyter notebooks for analysis
+├── config/             # Constants
+└── notebook/           # Jupyter analysis
 ```
 
 ### Data Flow
-1. **Download**: Fetch historical data from Binance AWS using aria2
-2. **Verify**: Check checksums and validate downloaded files
-3. **Parse**: Convert raw CSV data to Polars DataFrames in Parquet format
-4. **Generate**: Merge AWS and API data, handle gaps, add features (VWAP, funding rates)
-5. **Resample**: Create higher timeframe data from 1-minute base data
+1. Download AWS data via aria2
+2. Verify checksums (SHA256)
+3. Parse CSV → Polars DataFrame
+4. Merge AWS+API data, handle gaps
+5. Resample to higher timeframes
 
-## CLI Commands
+## CLI
 
-### Main CLI Structure
+### Structure
 ```bash
 python bhds.py [COMMAND] [SUBCOMMAND] [OPTIONS]
 ```
 
-### Command Groups
-- `aws_kline`: Download/verify/parse K-line data from AWS
-- `aws_funding`: Download/verify/parse funding rate data
-- `aws_liquidation`: Download liquidation snapshot data
-- `api_data`: Download recent data from Binance API
-- `generate`: Merge data and create final datasets
+### Commands
+- `aws_kline`: Download/verify/parse k-lines
+- `aws_funding`: Download/verify/parse funding rates
+- `aws_liquidation`: Download liquidation snapshots
+- `api_data`: Download recent API data
+- `generate`: Merge data and create datasets
 
-### Common Workflows
+### Workflows
 
-#### Full Data Pipeline (via shell scripts)
+#### Pipeline Scripts
 ```bash
-# Sequential workflow
-./aws_download.sh 1m    # Download all data
+./aws_download.sh 1m    # Download
 ./aws_parse.sh          # Parse to parquet
-./api_download.sh       # Fill recent gaps
-./gen_kline.sh 1m       # Generate merged datasets
-./resample.sh           # Create higher timeframes (optional)
+./api_download.sh       # Fill gaps
+./gen_kline.sh 1m       # Generate datasets
+./resample.sh           # Higher timeframes
 ```
 
-#### Individual Commands
+#### Individual
 ```bash
-# Download spot 1-minute klines for USDT pairs
-python bhds.py aws_kline download-spot 1m --quote USDT
-
-# Download USD-M futures funding rates
+python bhds.py aws_kline download-spot 1m
 python bhds.py aws_funding download-um-futures
-
-# Generate merged kline data with VWAP and funding rates
 python bhds.py generate kline-type um_futures 1m --split-gaps --with-vwap --with-funding-rates
-
-# Resample to 1-hour data with 5-minute offset
 python bhds.py generate resample-type um_futures 1h 5m
 ```
 
 ## Data Structure
 
 ### Trade Types
-- `spot`: Spot trading pairs
-- `um_futures`: USD-Margined futures (USDT/USDC settled)
-- `cm_futures`: Coin-Margined futures (crypto settled)
+- `spot`: Spot trading
+- `um_futures`: USD-margined futures
+- `cm_futures`: Coin-margined futures
 
-### Storage Format
-- **Format**: Parquet files
-- **Location**: `$CRYPTO_BASE_DIR/binance_data/[trade_type]/[data_type]/[time_interval]/[symbol]/`
-- **Partitioning**: 
-  - **K-line data**: Daily files (YYYYMMDD.parquet) - simplified from monthly partitioning
-  - **Other data types**: Monthly (YYYYMM) by default
-- **Columns**: Standard OHLCV + additional computed features
+### Storage
+- **Format**: Parquet
+- **Path**: `$CRYPTO_BASE_DIR/binance_data/[trade_type]/[data_type]/[time_interval]/[symbol]/`
+- **Partitioning**:
+  - K-line: Daily files (YYYYMMDD.parquet)
+  - Other: Monthly (YYYYMM)
 
-### Key Utilities
+### Utilities
 
 #### TSManager (util/ts_manager.py)
-Time-series data manager for monthly partitioned storage (used for non-kline data):
-- `read_partition()`: Read specific month/year
-- `write_partition()`: Write data to partition
-- `update()`: Update partitions with new data
-- `read_all()`: Read and merge all partitions
+Monthly partitioned storage for non-kline data:
+- `read_partition()`, `write_partition()`, `update()`, `read_all()`
 
-#### K-line Data Storage (aws/kline/parse.py & api/kline.py)
-Simplified daily file-based storage:
-- **Input**: Daily CSV zip files from AWS S3 (AWS) / Binance API (API)
-- **Output**: Daily parquet files (YYYYMMDD.parquet) - unified format
-- **Processing**: Incremental - only missing dates are processed
-- **Verification**: Uses `get_verified_aws_data_files` for file integrity
-- **Date Range**: Scan continuous range from min existing date to NY timezone yesterday
-- **File Extensions**: Unified .parquet for both AWS and API data
+#### K-line Storage
+Daily file-based:
+- Input: Daily CSV zips from AWS/API
+- Output: YYYYMMDD.parquet
+- Processing: Incremental (missing dates only)
 
 #### Logging (util/log_kit.py)
-Custom logging with colors and emojis:
-- `logger.debug()`: Plain output
-- `logger.info()`: Blue with spinner
-- `logger.ok()`: Green checkmark for success
-- `logger.warning()`: Yellow bell
-- `logger.error()`: Red X
-- `divider()`: Section separators with timestamps
+- `logger.debug()`, `logger.info()`, `logger.ok()`, `logger.warning()`, `logger.error()`
 
-## Development Commands
+## Development
 
-### Code Quality
+### Quality
 ```bash
-# Format code
-black .
-isort .
-
-# Run type checking (if configured)
-python -m mypy .
-
-# Run tests (if configured)
-pytest
+black . && isort .
+uv run python -m mypy .
 ```
 
-### Environment Management
+### Dependencies
 ```bash
-# Install dev dependencies
-uv sync --dev
-
-# Update dependencies
-uv lock
-uv sync
-
-# Add new dependency
-uv add package_name
-uv add --dev dev_package_name
+uv sync --dev        # Dev deps
+uv add package       # Add package
+uv lock && uv sync   # Update
 ```
 
-## Key Patterns
+## Patterns
 
-### Async Operations
-Most AWS operations use asyncio for concurrent downloads via `aiohttp`.
+### Async
+AWS operations use asyncio with aiohttp.
 
-### Data Processing Pipeline
-1. Download raw ZIP files with aria2
-2. Verify checksums (SHA256)
-3. Parse CSV → Polars DataFrame
-4. Clean and enhance data
-5. Save as partitioned Parquet
-6. **Resample**: Create higher timeframe data using LazyFrame streaming for memory efficiency
+### Pipeline
+1. Download ZIP with aria2
+2. Verify SHA256 checksum
+3. CSV → Polars DataFrame
+4. Clean/enhance data
+5. Save partitioned Parquet
+6. Resample with LazyFrame streaming
 
-### LazyFrame Architecture
-- **Memory Efficient**: Uses `pl.scan_parquet()` + `sink_parquet(lazy=True)` for streaming processing
-- **Batch Processing**: `pl.collect_all()` with configurable batch sizes for large datasets
-- **No Multiprocessing**: Single-process LazyFrame execution eliminates ProcessPoolExecutor overhead
-- **Progress Tracking**: Optional tqdm integration for batch operations
+### LazyFrame
+- `pl.scan_parquet()` + `sink_parquet(lazy=True)` for streaming
+- Single-process execution (no multiprocessing)
+- Optional tqdm progress
 
 ### Gap Detection
-When generating merged datasets, the system detects gaps based on:
-- Time gaps > minimum days threshold
-- Price changes > minimum percentage threshold
+- Time gaps > threshold days
+- Price changes > threshold %
 
-### Feature Engineering
-- **VWAP**: Volume-weighted average price
-- **Funding Rates**: For perpetual futures contracts
-- **Gap Splitting**: Separate continuous trading periods
+### Features
+- VWAP (volume-weighted average price)
+- Funding rates for perpetuals
+- Gap splitting for continuous periods

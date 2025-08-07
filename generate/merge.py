@@ -1,5 +1,5 @@
 from typing import Optional
-from aws.kline.parse import TSManager
+from util.ts_manager import TSManager
 from config import BINANCE_DATA_DIR, TradeType
 
 
