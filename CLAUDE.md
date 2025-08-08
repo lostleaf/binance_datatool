@@ -70,6 +70,7 @@ python bhds.py [COMMAND] [SUBCOMMAND] [OPTIONS]
 ./api_download.sh       # Fill gaps
 ./gen_kline.sh 1m       # Generate datasets
 ./resample.sh           # Higher timeframes
+./backup_aws_data.sh    # Backup AWS data
 ```
 
 #### Individual
