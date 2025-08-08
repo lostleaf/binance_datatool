@@ -1,13 +1,12 @@
 import asyncio
-from datetime import timedelta
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import pytz
 
+import config
 from api.binance import BinanceFetcher
 from aws.kline.util import local_list_kline_symbols
-import config
 from config import TradeType
 from util.log_kit import divider, logger
 from util.network import create_aiohttp_session

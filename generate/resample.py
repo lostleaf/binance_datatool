@@ -94,7 +94,7 @@ def resample_kline(trade_type: TradeType, symbol: str, resample_interval: str, b
     time_interval = "1m"
     results_dir = BINANCE_DATA_DIR / "results_data" / trade_type.value
 
-    kline_file = results_dir / "klines" / time_interval / f"{symbol}.pqt"
+    kline_file = results_dir / "klines" / time_interval / f"{symbol}.parquet"
     if not kline_file.exists():
         return
 
@@ -125,7 +125,7 @@ def resample_kline(trade_type: TradeType, symbol: str, resample_interval: str, b
 
         # Read and resample data
         df_resampled = polars_calc_resample(df, time_interval, resample_interval, offset_str)
-        df_resampled.write_parquet(resampled_offset_dir / f"{symbol}.pqt")
+        df_resampled.write_parquet(resampled_offset_dir / f"{symbol}.parquet")
 
     return symbol
 

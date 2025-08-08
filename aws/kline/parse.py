@@ -43,7 +43,20 @@ def read_kline_csv(csv_file):
     }
 
     # Include additional columns that exist in the raw data but will be filtered out later
-    all_columns = list(useful_columns.keys()) + ["close_time", "ignore"]
+    all_columns = [
+        "candle_begin_time",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "close_time",
+        "quote_volume",
+        "trade_num",
+        "taker_buy_base_asset_volume",
+        "taker_buy_quote_asset_volume",
+        "ignore",
+    ]
 
     # Extract the CSV content from the zip file
     with ZipFile(csv_file) as f:

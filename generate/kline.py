@@ -78,7 +78,7 @@ def gen_kline(
 
     for symbol, df in split_dfs.items():
         df = fill_kline_gaps(df, time_interval)
-        df.write_parquet(results_dir / f"{symbol}.pqt")
+        df.write_parquet(results_dir / f"{symbol}.parquet")
 
     return symbol
 

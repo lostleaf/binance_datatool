@@ -120,7 +120,7 @@ def process_symbols_batch(
     lazy_frames = []
 
     for symbol in symbols:
-        kline_file = results_dir / "klines" / time_interval / f"{symbol}.pqt"
+        kline_file = results_dir / "klines" / time_interval / f"{symbol}.parquet"
         if not kline_file.exists():
             continue
 
@@ -140,7 +140,7 @@ def process_symbols_batch(
             resampled_lf = polars_calc_resample_lazy(lf, time_interval, resample_interval, offset_str, schema)
 
             # Sink to parquet file (lazy execution)
-            output_file = offset_dir / f"{symbol}.pqt"
+            output_file = offset_dir / f"{symbol}.parquet"
             resampled_lf = resampled_lf.sink_parquet(output_file, lazy=True)
 
             # Add the sink operation to lazy frames list

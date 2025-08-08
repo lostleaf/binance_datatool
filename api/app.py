@@ -6,6 +6,7 @@ import typer
 from typing_extensions import Annotated
 
 from config import TradeType
+from util.log_kit import logger
 
 from .funding import api_download_funding_rates, api_download_funding_rates_type_all
 from .kline import api_download_aws_missing_kline_for_type, api_download_kline, api_download_missing_kline_for_symbols
@@ -78,24 +79,28 @@ def download_aws_missing_kline(
 
 @app.command()
 def download_recent_funding(
-    trade_type: Annotated[TradeType, typer.Argument(help="Type of trading (spot/futures)")],
+    trade_type: Annotated[TradeType, typer.Argument(help="Type of trading")],
     symbols: Annotated[list[str], typer.Argument(help="Trading symbols, e.g., 'BTCUSDT' or 'ETHUSDT'.")],
     http_proxy: Annotated[Optional[str], typer.Option(help="HTTP proxy address")] = HTTP_PROXY,
 ):
     """
     Download Binance funding rate for specific symbol from Binance API
     """
+    if trade_type == TradeType.spot:
+        logger.error("Cannot download funding rate for spot type")
+        return
     asyncio.run(api_download_funding_rates(trade_type, symbols, http_proxy))
-
 
 
 @app.command()
 def download_recent_funding_type(
-    trade_type: Annotated[TradeType, typer.Argument(help="Type of trading (spot/futures)")],
+    trade_type: Annotated[TradeType, typer.Argument(help="Type of trading")],
     http_proxy: Annotated[Optional[str], typer.Option(help="HTTP proxy address")] = HTTP_PROXY,
 ):
     """
     Download Binance funding rate for all symbols of a specific trade type from Binance API
     """
+    if trade_type == TradeType.spot:
+        logger.error("Cannot download funding rate for spot type")
+        return
     asyncio.run(api_download_funding_rates_type_all(trade_type, http_proxy))
-
