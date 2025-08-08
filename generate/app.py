@@ -43,7 +43,7 @@ def kline(
         min_days=min_days,
         min_price_chg=min_price_chg,
         with_vwap=with_vwap,
-        with_funding_rates=with_funding_rates,
+        with_funding=with_funding_rates,
     )
 
 
