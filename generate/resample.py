@@ -184,7 +184,7 @@ def resample_kline_type(trade_type: TradeType, resample_interval: str, base_offs
     start_time = time.perf_counter()
 
     # Execute all sink operations
-    batch_size = 288
+    batch_size = 32
     with tqdm(total=len(lazy_frames), desc="Resample klines", unit="task") as pbar:
         for i in range(0, len(lazy_frames), batch_size):
             batch = lazy_frames[i:i+batch_size]
