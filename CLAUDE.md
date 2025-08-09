@@ -38,7 +38,7 @@ bhds.py                 # CLI (Typer)
 │   ├── kline.py        # K-line data generation
 │   ├── kline_gaps.py   # Gap detection and handling
 │   ├── merge.py        # Data merging utilities
-│   └── resample_lazy.py # LazyFrame resampling
+│   └── resample.py        # LazyFrame resampling
 ├── util/               # Shared utilities
 ├── config/             # Constants
 ├── notebook/           # Jupyter analysis
