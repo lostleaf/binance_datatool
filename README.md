@@ -153,3 +153,5 @@ The following scripts should be run in sequence for a complete data pipeline:
 4. `gen_kline.sh`: Generates enhanced 1-minute klines by merging AWS and API data and joins the funding rates
 
 5. `resample.sh` (Optional): Creates resampled timeframes
+
+6. `backup_aws_data.sh`: Creates compressed backups of AWS downloaded data
