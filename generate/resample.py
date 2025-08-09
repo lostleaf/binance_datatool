@@ -1,35 +1,36 @@
-import multiprocessing as mp
 import shutil
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import timedelta
-from functools import partial
 
 import polars as pl
 from tqdm import tqdm
 
-from config.config import BINANCE_DATA_DIR, N_JOBS, TradeType
+from config.config import BINANCE_DATA_DIR, TradeType
 from generate.util import list_results_kline_symbols
-from util.concurrent import mp_env_init
 from util.log_kit import divider, logger
 from util.time import convert_interval_to_timedelta
 
 
-def polars_calc_resample(
-    df: pl.DataFrame, time_interval: str, resample_interval: str, offset: str | timedelta
-) -> pl.DataFrame:
+def polars_calc_resample_lazy(
+    lf: pl.LazyFrame,
+    time_interval: str,
+    resample_interval: str,
+    offset: str | timedelta,
+    schema: dict[str, pl.DataType],
+) -> pl.LazyFrame:
     """
-    Resample a Polars kline DataFrame to a higher time frame with an offset.
-    For example, resample 5-minute klines to hourly klines with a 5-minute offset.
+    Resample a Polars kline LazyFrame to a higher time frame with an offset.
+    Returns a LazyFrame for delayed execution.
 
     Args:
-        df: Polars kline DataFrame
+        lf: Polars kline LazyFrame
         time_interval: Time interval of the klines
         resample_interval: Time interval to resample to
-        offset_str: Offset to apply to the resampled klines
+        offset: Offset to apply to the resampled klines
+        schema: Schema of the input kline DataFrame
 
     Returns:
-        Polars kline DataFrame
+        Polars kline LazyFrame
     """
     # Convert the time intervals and offset from string to timedelta
     time_interval = convert_interval_to_timedelta(time_interval)
@@ -38,11 +39,10 @@ def polars_calc_resample(
     if isinstance(offset, str):
         offset = convert_interval_to_timedelta(offset)
 
-    # Create a lazy DataFrame for efficient computation
-    ldf = df.lazy()
-
     # Add a new column for the end time of each kline
-    ldf = ldf.with_columns((pl.col("candle_begin_time") + time_interval).alias("candle_end_time"))
+    ldf = lf.with_columns(
+        (pl.col("candle_begin_time") + time_interval).alias("candle_end_time"),
+    )
 
     # Aggregation rules
     agg = [
@@ -59,20 +59,23 @@ def polars_calc_resample(
         pl.col("taker_buy_quote_asset_volume").sum(),  # Total taker buy quote asset volume during the resampled period
     ]
 
-    if "avg_price_1m" in df.columns:
+    # Check for vwap1m column
+    if "vwap1m" in schema:
         # Average price over the first minute of the resampled period
-        agg.append(pl.col("avg_price_1m").first())
+        agg.append(pl.col("vwap1m").first().alias("vwap1m_open"))
 
-    if "funding_rate" in df.columns:
+    if "funding_rate" in schema:
         # Only consider funding rates with absolute value greater than 0.01 bps
         has_funding_cond = pl.col("funding_rate").abs() > 1e-6
 
         # Get the first valid funding rate and its corresponding price and time
-        agg.extend([
-            pl.col("funding_rate").filter(has_funding_cond).first().alias("funding_rate"),
-            pl.col("open").filter(has_funding_cond).first().alias("funding_price"),
-            pl.col("candle_begin_time").filter(has_funding_cond).first().alias("funding_time")
-        ])
+        agg.extend(
+            [
+                pl.col("funding_rate").filter(has_funding_cond).first().alias("funding_rate"),
+                pl.col("open").filter(has_funding_cond).first().alias("funding_price"),
+                pl.col("candle_begin_time").filter(has_funding_cond).first().alias("funding_time"),
+            ]
+        )
 
     # Group the data by the start time of the klines, resampling to the specified interval with the given offset
     ldf = ldf.group_by_dynamic("candle_begin_time", every=resample_interval, offset=offset).agg(agg)
@@ -83,82 +86,140 @@ def polars_calc_resample(
     # Drop the temporary columns used for calculations
     ldf = ldf.drop(["candle_begin_time_real", "candle_end_time"])
 
-    # Collect the results into a DataFrame and return
-    return ldf.collect()
+    return ldf
 
 
-def resample_kline(trade_type: TradeType, symbol: str, resample_interval: str, base_offset: str):
+def process_symbols_batch(
+    trade_type: TradeType, symbols: list[str], resample_interval: str, base_offset: str
+) -> list[pl.LazyFrame]:
     """
-    Resample a kline DataFrame to a higher time frame with an offset.
+    Create LazyFrame processing pipeline for all symbols and sink to parquet files.
+
+    Args:
+        trade_type: Trade type (spot, um_futures, cm_futures)
+        symbols: List of symbol names
+        resample_interval: Time interval to resample to
+        base_offset: Base offset for resampling
+
+    Returns:
+        List of LazyFrames that will be executed by sink_parquet
     """
     time_interval = "1m"
     results_dir = BINANCE_DATA_DIR / "results_data" / trade_type.value
+    resampled_dir = results_dir / "resampled_klines" / resample_interval
 
-    kline_file = results_dir / "klines" / time_interval / f"{symbol}.parquet"
-    if not kline_file.exists():
-        return
-
-    # Calculate base offset interval
+    # Calculate offset intervals
     base_delta = convert_interval_to_timedelta(base_offset)
     resample_delta = convert_interval_to_timedelta(resample_interval)
 
-    # Ensure base offset is smaller than resample interval
-    if base_delta >= resample_delta:
-        return
-
     if base_offset == "0m":
-        # If base offset is 0m, there is only one possible offset
         num_offsets = 1
     else:
-        # Calculate number of possible offsets
         num_offsets = resample_delta // base_delta
 
-    df = pl.read_parquet(kline_file)
+    lazy_frames = []
 
-    # Generate resampled data for each offset
-    for i in range(num_offsets):
-        offset_str = f"{i * int(base_offset[:-1])}{base_offset[-1]}"
+    for symbol in symbols:
+        kline_file = results_dir / "klines" / time_interval / f"{symbol}.parquet"
+        if not kline_file.exists():
+            continue
 
-        # Create output directory for this offset
-        resampled_offset_dir = results_dir / "resampled_klines" / resample_interval / offset_str
-        resampled_offset_dir.mkdir(parents=True, exist_ok=True)
+        # Scan file as LazyFrame
+        lf = pl.scan_parquet(kline_file)
+        schema = pl.read_parquet_schema(kline_file)
 
-        # Read and resample data
-        df_resampled = polars_calc_resample(df, time_interval, resample_interval, offset_str)
-        df_resampled.write_parquet(resampled_offset_dir / f"{symbol}.parquet")
+        # Create LazyFrame for each offset and sink to file
+        for i in range(num_offsets):
+            offset_str = f"{i * int(base_offset[:-1])}{base_offset[-1]}"
 
-    return symbol
+            # Create output directory for this offset
+            offset_dir = resampled_dir / offset_str
+            offset_dir.mkdir(parents=True, exist_ok=True)
+
+            # Create resampled LazyFrame with offset
+            resampled_lf = polars_calc_resample_lazy(lf, time_interval, resample_interval, offset_str, schema)
+
+            # Sink to parquet file (lazy execution)
+            output_file = offset_dir / f"{symbol}.parquet"
+            resampled_lf = resampled_lf.sink_parquet(output_file, lazy=True)
+
+            # Add the sink operation to lazy frames list
+            lazy_frames.append(resampled_lf)
+
+    return lazy_frames
 
 
 def resample_kline_type(trade_type: TradeType, resample_interval: str, base_offset: str):
     """
-    Resample kline data for all symbols of a given trade type.
+    Resample kline data for all symbols of a given trade type using LazyFrame batch processing.
+
+    Args:
+        trade_type: Trade type (spot, um_futures, cm_futures)
+        resample_interval: Time interval to resample to
+        base_offset: Base offset for resampling
     """
     divider(f"Resample kline {trade_type.value} {resample_interval} {base_offset}")
     symbols = list_results_kline_symbols(trade_type, "1m")
 
     resampled_dir = BINANCE_DATA_DIR / "results_data" / trade_type.value / "resampled_klines" / resample_interval
     logger.info(f"Resampled kline directory: {resampled_dir}")
+
     if resampled_dir.exists():
         logger.warning(f"Resampled kline directory exists, removing it")
         shutil.rmtree(resampled_dir)
 
     start_time = time.perf_counter()
 
-    run_func = partial(
-        resample_kline,
-        trade_type=trade_type,
-        resample_interval=resample_interval,
-        base_offset=base_offset,
-    )
+    # Create and execute all LazyFrames with sink_parquet
+    lazy_frames = process_symbols_batch(trade_type, symbols, resample_interval, base_offset)
 
-    with ProcessPoolExecutor(max_workers=N_JOBS, mp_context=mp.get_context("spawn"), initializer=mp_env_init) as exe:
-        tasks = [exe.submit(run_func, symbol=symbol) for symbol in symbols]
-        with tqdm(total=len(tasks), desc="Resample klines", unit="task") as pbar:
-            for task in as_completed(tasks):
-                symbol = task.result()
-                pbar.set_postfix_str(symbol)
-                pbar.update(1)
+    time_elapsed = time.perf_counter() - start_time
+    logger.ok(f"Finished creating resampled tasks in {time_elapsed:.2f}s")
+
+    if not lazy_frames:
+        logger.warning("No valid data to process")
+        return
+
+    logger.info(f"Executing {len(lazy_frames)} resample tasks")
+    start_time = time.perf_counter()
+
+    # Execute all sink operations
+    batch_size = 288
+    with tqdm(total=len(lazy_frames), desc="Resample klines", unit="task") as pbar:
+        for i in range(0, len(lazy_frames), batch_size):
+            batch = lazy_frames[i:i+batch_size]
+            pl.collect_all(batch)
+            pbar.update(len(batch))
 
     time_elapsed = (time.perf_counter() - start_time) / 60
     logger.ok(f"Finished in {time_elapsed:.2f}mins")
+
+
+def resample_kline(trade_type: TradeType, symbol: str, resample_interval: str, base_offset: str):
+    """
+    Resample a kline DataFrame to a higher time frame with an offset.
+    This is an internal function for single symbol processing.
+
+    Args:
+        trade_type: Trade type (spot, um_futures, cm_futures)
+        symbol: Symbol name
+        resample_interval: Time interval to resample to
+        base_offset: Base offset for resampling
+    """
+    divider(f"Resample kline {trade_type.value} {symbol} {resample_interval} {base_offset}")
+    time_start = time.perf_counter()
+
+    logger.info(f"Define resample kline {trade_type.value} {symbol} {resample_interval} {base_offset}")
+    time_start = time.perf_counter()
+    # Directly use process_symbols_batch for single symbol
+    lazy_frames = process_symbols_batch(trade_type, [symbol], resample_interval, base_offset)
+    logger.ok(f"Finished define in {time.perf_counter() - time_start:.2f}s")
+
+    logger.info(f"Executing {len(lazy_frames)} resample tasks")
+    time_start = time.perf_counter()
+    if lazy_frames:
+        # Execute sink operations for this single symbol
+        pl.collect_all(lazy_frames)
+    logger.ok(f"Finished execute in {time.perf_counter() - time_start:.2f}s")
+
+    logger.ok(f"Finished all in {time.perf_counter() - time_start:.2f}s")

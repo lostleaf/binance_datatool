@@ -5,7 +5,7 @@ from config import TradeType, BINANCE_DATA_DIR
 from util.log_kit import divider
 
 from .kline import gen_kline, gen_kline_type
-from .resample_lazy import resample_kline_type, resample_kline
+from .resample import resample_kline_type, resample_kline
 
 app = typer.Typer()
 
@@ -87,7 +87,6 @@ def resample(
     Resample kline data for a single symbol.
     All multiples of base_offset will be generated.
     """
-    divider(f"Resample kline {trade_type.value} {resample_interval} {symbol} base offset {base_offset}")
     resample_kline(trade_type=trade_type, symbol=symbol, resample_interval=resample_interval, base_offset=base_offset)
 
 
