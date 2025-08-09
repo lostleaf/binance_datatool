@@ -35,9 +35,15 @@ bhds.py                 # CLI (Typer)
 │   ├── funding/        # Funding rates
 │   └── liquidation/    # Liquidation snapshots
 ├── generate/           # Data merging/processing
+│   ├── kline.py        # K-line data generation
+│   ├── kline_gaps.py   # Gap detection and handling
+│   ├── merge.py        # Data merging utilities
+│   └── resample_lazy.py # LazyFrame resampling
 ├── util/               # Shared utilities
 ├── config/             # Constants
-└── notebook/           # Jupyter analysis
+├── notebook/           # Jupyter analysis
+├── *.sh                # Pipeline scripts
+└── CLAUDE.md           # This documentation
 ```
 
 ### Data Flow
@@ -45,7 +51,7 @@ bhds.py                 # CLI (Typer)
 2. Verify checksums (SHA256)
 3. Parse CSV → Polars DataFrame
 4. Merge AWS+API data, handle gaps
-5. Resample to higher timeframes
+5. Resample to higher timeframes using LazyFrame streaming
 
 ## CLI
 
@@ -60,6 +66,9 @@ python bhds.py [COMMAND] [SUBCOMMAND] [OPTIONS]
 - `aws_liquidation`: Download liquidation snapshots
 - `api_data`: Download recent API data
 - `generate`: Merge data and create datasets
+  - `kline`: Generate k-line dataset for single symbol
+  - `kline-type`: Generate k-line datasets for all symbols of type
+  - `resample-type`: Resample k-line data to higher timeframes
 
 ### Workflows
 
@@ -97,15 +106,12 @@ python bhds.py generate resample-type um_futures 1h 5m
 
 ### Utilities
 
-#### TSManager (util/ts_manager.py)
-Monthly partitioned storage for non-kline data:
-- `read_partition()`, `write_partition()`, `update()`, `read_all()`
-
 #### K-line Storage
 Daily file-based:
 - Input: Daily CSV zips from AWS/API
 - Output: YYYYMMDD.parquet
 - Processing: Incremental (missing dates only)
+- **Path**: `$CRYPTO_BASE_DIR/binance_data/[trade_type]/klines/[interval]/[symbol]/[YYYYMMDD].parquet`
 
 #### Logging (util/log_kit.py)
 - `logger.debug()`, `logger.info()`, `logger.ok()`, `logger.warning()`, `logger.error()`
@@ -142,12 +148,17 @@ AWS operations use asyncio with aiohttp.
 - `pl.scan_parquet()` + `sink_parquet(lazy=True)` for streaming
 - Single-process execution (no multiprocessing)
 - Optional tqdm progress
+- **Results storage**: `$CRYPTO_BASE_DIR/binance_data/results_data/[trade_type]/klines/[interval]/[symbol].parquet`
 
 ### Gap Detection
 - Time gaps > threshold days
 - Price changes > threshold %
+- **Algorithm**: 
+  - gap1: time gap > min_days AND absolute price change > min_price_chg
+  - gap2: time gap > min_days*2 regardless of price change
 
 ### Features
 - VWAP (volume-weighted average price)
 - Funding rates for perpetuals
 - Gap splitting for continuous periods
+- Merge AWS historical + API recent data

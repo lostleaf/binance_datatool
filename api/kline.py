@@ -83,8 +83,8 @@ def _get_missing_kline_dates_for_symbol(
     api_kline_dir = config.BINANCE_DATA_DIR / "api_data" / trade_type.value / "klines" / symbol / time_interval
 
     # Get New York timezone and yesterday's date
-    ny_now = datetime.now(pytz.timezone("America/New_York"))
-    ny_yesterday = ny_now.date() - timedelta(days=1)
+    la_dt = datetime.now(pytz.timezone("America/Los_Angeles")).date()
+    la_yesterday = la_dt - timedelta(days=1)
 
     # Collect all existing dates from parsed data
     existing_dates = set()
@@ -101,7 +101,7 @@ def _get_missing_kline_dates_for_symbol(
 
     # Find date range
     min_date = min(existing_dates)
-    max_date = max(*existing_dates, ny_yesterday)
+    max_date = max(existing_dates)
 
     # If max_date is before min_date, return empty list
     if max_date < min_date:
@@ -153,7 +153,6 @@ async def api_download_missing_kline_for_symbols(
     for symbol in symbols:
         missing_dates = _get_missing_kline_dates_for_symbol(trade_type, symbol, time_interval, overwrite)
         sym_dts.extend((symbol, dt) for dt in missing_dates)
-
     if sym_dts:
         await api_download_kline(trade_type, time_interval, sym_dts, http_proxy)
 

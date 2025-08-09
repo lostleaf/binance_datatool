@@ -55,28 +55,24 @@ def split_by_gaps(df: pl.DataFrame, df_gap: pl.DataFrame, symbol: str) -> Option
     if df_gap.is_empty():
         return {symbol: df}
 
-    # Get gap start times
-    gap_times = df_gap.get_column("candle_begin_time").to_list()
-
     # Split df at gap points
     dfs = []
-    for i, gap_time in enumerate(gap_times):
-        if i == 0:
-            # First segment - from start to first gap
-            split_df = df.filter(pl.col("candle_begin_time") < gap_time)
-        else:
-            # Middle segments - from previous gap to current gap
-            prev_gap_time = gap_times[i - 1]
-            split_df = df.filter(pl.col("candle_begin_time").is_between(prev_gap_time, gap_time, closed="left"))
+    prev_gap_cbt = None
+    for gap in df_gap.iter_rows(named=True):
+        cond = pl.col("candle_begin_time") <= gap['prev_begin_time']
+        if prev_gap_cbt is not None:
+            cond = cond & (pl.col("candle_begin_time") >= prev_gap_cbt)
 
+        split_df = df.filter(cond)
         # Skip empty df
         if split_df.is_empty():
             continue
 
         dfs.append(split_df)
+        prev_gap_cbt = gap['candle_begin_time']
 
     # Add final segment after last gap
-    final_df = df.filter(pl.col("candle_begin_time") >= gap_times[-1])
+    final_df = df.filter(pl.col("candle_begin_time") >= prev_gap_cbt)
     if not final_df.is_empty():
         dfs.append(final_df)
 
@@ -89,37 +85,37 @@ def split_by_gaps(df: pl.DataFrame, df_gap: pl.DataFrame, symbol: str) -> Option
     return result
 
 
-def fill_kline_gaps(
-    ldf: pl.LazyFrame, time_interval: str, min_time: pl.Expr, max_time: pl.Expr, with_vwap: bool, with_funding: bool
-) -> pl.LazyFrame:
+def fill_kline_gaps(ldf: pl.LazyFrame, time_interval: str, with_vwap: bool, with_funding: bool) -> pl.LazyFrame:
     """
     Fill gaps between klines by adding rows with 0 volume and previous close price.
 
     Args:
         ldf: LazyFrame containing kline data
         time_interval: Kline interval string (e.g. "1m", "5m", "1h", etc)
-        min_time: Expression for minimum candle_begin_time
-        max_time: Expression for maximum candle_begin_time
         with_vwap: Whether to process avg_price_1m column
         with_funding: Whether to process funding_rate column
 
     Returns:
         LazyFrame with gaps filled
     """
-    # Create complete time series using lazy evaluation
-    complete_times = pl.datetime_range(
-        min_time,
-        max_time,
-        interval=convert_interval_to_timedelta(time_interval),
-        time_zone="UTC",
-        eager=False,  # Use lazy evaluation
+
+    bounds = ldf.select(
+        pl.col("candle_begin_time").min().alias("min_time"),
+        pl.col("candle_begin_time").max().alias("max_time"),
     )
 
-    # Create template ldf with all timestamps
-    template_ldf = pl.LazyFrame({"candle_begin_time": complete_times})
+    calendar = bounds.select(
+        pl.datetime_range(
+            pl.col("min_time").first(),
+            pl.col("max_time").first(),
+            interval="1m",
+            time_zone="UTC",
+            eager=False,  # Use lazy evaluation
+        ).alias("candle_begin_time")
+    )
 
     # Join with original data
-    result_ldf = template_ldf.join(ldf, on="candle_begin_time", how="left")
+    result_ldf = calendar.join(ldf, on="candle_begin_time", how="left", maintain_order='left')
 
     # Fill prices with previous close
     result_ldf = result_ldf.with_columns(pl.col("close").fill_null(strategy="forward"))

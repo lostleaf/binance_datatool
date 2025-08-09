@@ -21,7 +21,9 @@ async def download_funding_for_symbol(funding_dir: Path, symbol: str, fetcher: B
 
 
 async def api_download_funding_rates(trade_type: TradeType, symbols: list[str], http_proxy: Optional[str]):
-    logger.info(f"Start Download {trade_type.value} {symbols[0]} -- {symbols[-1]} Funding Rates from Binance API")
+    logger.info(
+        f"Start Download {trade_type.value} {len(symbols)} Symbols({symbols[0]} -- {symbols[-1]}) Funding Rates"
+    )
 
     funding_dir = BINANCE_DATA_DIR / "api_data" / trade_type.value / "funding_rate"
     funding_dir.mkdir(parents=True, exist_ok=True)

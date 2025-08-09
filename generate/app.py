@@ -1,7 +1,7 @@
 import typer
 from typing_extensions import Annotated
 
-from config import TradeType
+from config import TradeType, BINANCE_DATA_DIR
 from util.log_kit import divider
 
 from .kline import gen_kline, gen_kline_type
@@ -19,14 +19,14 @@ def kline(
     min_days: Annotated[int, typer.Option(help="Minimum gap days threshold")] = 1,
     min_price_chg: Annotated[float, typer.Option(help="Minimum price change ratio threshold")] = 0.1,
     with_vwap: Annotated[bool, typer.Option(help="Whether to calculate VWAP")] = True,
-    with_funding_rates: Annotated[bool, typer.Option(help="Whether to include funding rates")] = True,
+    with_funding: Annotated[bool, typer.Option(help="Whether to include funding rates")] = True,
 ):
     """
     Merge AWS and API kline data for a single symbol.
 
     Add avg_price_{time_interval} column if with_vwap is True.
 
-    Add funding_rate for perpetual futures if with_funding_rates is True.
+    Add funding_rate for perpetual futures if with_funding is True.
 
     Scan for gaps and split data by gaps in kline data where if split_gaps is True.
 
@@ -34,16 +34,19 @@ def kline(
     1. gap1: time gap > min_days AND absolute price change > min_price_chg;
     2. gap2: time gap > min_days*2 regardless of price change.
     """
-    divider(f"Generate merged and split kline data for {symbol} {trade_type.value} {time_interval}")
+    divider(f"Generate kline data for {symbol} {trade_type.value} {time_interval}")
+    results_dir = BINANCE_DATA_DIR / "results_data" / trade_type.value / "klines" / time_interval
+    results_dir.mkdir(parents=True, exist_ok=True)
     gen_kline(
+        results_dir=results_dir,
         trade_type=trade_type,
         time_interval=time_interval,
-        symbol=symbol,
+        symbols=[symbol],
         split_gaps=split_gaps,
         min_days=min_days,
         min_price_chg=min_price_chg,
         with_vwap=with_vwap,
-        with_funding=with_funding_rates,
+        with_funding=with_funding,
     )
 
 
@@ -55,7 +58,7 @@ def kline_type(
     min_days: Annotated[int, typer.Option(help="Minimum gap days threshold")] = 1,
     min_price_chg: Annotated[float, typer.Option(help="Minimum price change ratio threshold")] = 0.1,
     with_vwap: Annotated[bool, typer.Option(help="Whether to calculate VWAP")] = True,
-    with_funding_rates: Annotated[bool, typer.Option(help="Whether to include funding rates")] = True,
+    with_funding: Annotated[bool, typer.Option(help="Whether to include funding rates")] = True,
 ):
     """
     Merge AWS and API kline data for all symbols of given trade type and time interval.
@@ -69,7 +72,7 @@ def kline_type(
         min_days=min_days,
         min_price_chg=min_price_chg,
         with_vwap=with_vwap,
-        with_funding_rates=with_funding_rates,
+        with_funding=with_funding,
     )
 
 

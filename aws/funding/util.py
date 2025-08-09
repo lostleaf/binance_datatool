@@ -1,4 +1,4 @@
-from aws.client_async import AwsFundingRateClient
+from aws.client_async import AwsFundingRateClient, AwsKlineClient
 from config import DataFrequency, TradeType
 
 
@@ -7,5 +7,13 @@ def local_list_funding_symbols(trade_type: TradeType):
     funding_dir = AwsFundingRateClient.LOCAL_DIR / AwsFundingRateClient.get_base_dir(
         trade_type=trade_type, data_freq=DataFrequency.monthly
     )
+
     symbols = sorted(p.name for p in funding_dir.glob("*") if p.is_dir())
+    kline_dir = AwsKlineClient.LOCAL_DIR / AwsKlineClient.get_base_dir(
+        trade_type=trade_type, data_freq=DataFrequency.daily
+    )
+
+    if kline_dir.exists():
+        kline_symbols = sorted(p.name for p in kline_dir.glob("*") if p.is_dir())
+        symbols = sorted(set(symbols).union(set(kline_symbols)))
     return symbols
