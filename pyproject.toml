@@ -14,12 +14,17 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "black>=25.1.0",
-    "ipykernel>=6.30.1",
-    "ipython>=9.3.0",
-    "isort>=6.0.1",
-]
+dev = ["black>=25.1.0", "ipykernel>=6.30.1", "ipython>=9.3.0", "isort>=6.0.1"]
 
 [tool.uv]
 default-groups = []
+
+[project.scripts]
+bhds = "bhds.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bhds"]
