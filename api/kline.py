@@ -1,8 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
-
-import pytz
+import zoneinfo
 
 import config
 from api.binance import BinanceFetcher
@@ -83,8 +82,8 @@ def _get_missing_kline_dates_for_symbol(
     api_kline_dir = config.BINANCE_DATA_DIR / "api_data" / trade_type.value / "klines" / symbol / time_interval
 
     # Get New York timezone and yesterday's date
-    la_dt = datetime.now(pytz.timezone("America/Los_Angeles")).date()
-    la_yesterday = la_dt - timedelta(days=1)
+    ny_dt = datetime.now(zoneinfo.ZoneInfo("America/New_York")).date()
+    ny_yesterday = ny_dt - timedelta(days=1)
 
     # Collect all existing dates from parsed data
     existing_dates = set()
