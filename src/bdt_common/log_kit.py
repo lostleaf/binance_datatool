@@ -37,13 +37,13 @@ logging.Logger.ok = ok
 # ====================================================================================================
 def get_display_width(text: str) -> int:
     """
-    Get the display width of text. 
+    Get the display width of text.
     :param text: Input text
     :return: Display width of the text
     """
     width = 0
     for char in text:
-        if unicodedata.east_asian_width(char) in ('F', 'W', 'A'):
+        if unicodedata.east_asian_width(char) in ("F", "W", "A"):
             width += 1.685
         else:
             width += 1
@@ -58,7 +58,7 @@ def get_display_width(text: str) -> int:
 # ====================================================================================================
 class SimonsFormatter(logging.Formatter):
     FORMATS = {
-        logging.DEBUG: ('', ''),
+        logging.DEBUG: ("", ""),
         logging.INFO: (Fore.WHITE, "🌀 "),
         logging.WARNING: (Fore.YELLOW, "🔔 "),
         logging.ERROR: (Fore.RED, "❌ "),
@@ -85,7 +85,7 @@ class SimonsConsoleHandler(logging.StreamHandler):
 class SimonsLogger:
     _instance = dict()
 
-    def __new__(cls, name='DataTool'):
+    def __new__(cls, name="DataTool"):
         if cls._instance.get(name) is None:
             cls._instance[name] = super(SimonsLogger, cls).__new__(cls)
             cls._instance[name]._initialize_logger(name)
@@ -117,7 +117,7 @@ def get_logger(name=None):
     return SimonsLogger(name).logger
 
 
-def divider(name='', sep='=', _logger=None, with_timestamp=True) -> None:
+def divider(name="", sep="=", _logger=None, with_timestamp=True) -> None:
     """
     Draw a line with a timestamp
     :param name: Text in the middle
@@ -128,10 +128,10 @@ def divider(name='', sep='=', _logger=None, with_timestamp=True) -> None:
     """
     seperator_len = 82
     if with_timestamp:
-        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        middle = f' {name} {now} '
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        middle = f" {name} {now} "
     else:
-        middle = f' {name} '
+        middle = f" {name} "
     middle_width = get_display_width(middle)
     decoration_count = max(4, (seperator_len - middle_width) // 2)
     line = sep * decoration_count + middle + sep * decoration_count
@@ -148,17 +148,3 @@ def divider(name='', sep='=', _logger=None, with_timestamp=True) -> None:
 
 
 logger = get_logger()
-
-# Run directly to see usage examples
-if __name__ == '__main__':
-    # Output log information
-    logger.debug("Debug information without markers or colors, equivalent to print")
-    logger.info("Informational message in blue, useful for recording intermediate results")
-    # noinspection PyUnresolvedReferences
-    logger.ok("Completion message in green, typically indicating success")
-    logger.warning("Warning message in yellow, typically used for alerts")
-    logger.error("Error message in red, usually error-related hints")
-    logger.critical("Critical message in dark red, typically very important information")
-    divider('This is my divider function')
-    divider('You can change the separator characters', sep='*')
-    divider('The text is centered, and I’ve tried to adapt for both English and Chinese...', sep='-')
