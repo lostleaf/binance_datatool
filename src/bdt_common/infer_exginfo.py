@@ -19,11 +19,11 @@ def infer_spot_info(symbol: str) -> dict | None:
         - quote_asset (str): The quote currency (e.g., "USDT", "BTC", "ETH")
         - base_asset (str): The base currency (e.g., "BTC", "ETH", "ADAUP")
         - is_leverage (bool): True if the base asset is a leveraged token
-        - is_stablecoin (bool): True if both base and quote are stablecoins
+        - is_stable_pair (bool): True if both base and quote are stablecoins
 
     Examples:
         >>> infer_spot_info("BTCUSDT")
-        {'symbol': 'BTCUSDT', 'quote_asset': 'USDT', 'base_asset': 'BTC', 'is_leverage': False, 'is_stablecoin': False}
+        {'symbol': 'BTCUSDT', 'quote_asset': 'USDT', 'base_asset': 'BTC', 'is_leverage': False, 'is_stable_pair': False}
     """
     symbol_original = symbol
 
@@ -33,13 +33,13 @@ def infer_spot_info(symbol: str) -> dict | None:
         if symbol.endswith(quote):
             base = symbol[: -len(quote)]
             is_leverage = base.endswith(LEVERAGE_SUFFIXES) and base not in LEVERAGE_EXCLUDES
-            is_stablecoin = (base in STABLECOINS) and (quote in STABLECOINS)
+            is_stable_pair = (base in STABLECOINS) and (quote in STABLECOINS)
             return {
                 "symbol": symbol_original,
                 "quote_asset": quote,
                 "base_asset": base,
                 "is_leverage": is_leverage,
-                "is_stablecoin": is_stablecoin,
+                "is_stable_pair": is_stable_pair,
             }
     return None
 
@@ -60,12 +60,12 @@ def infer_um_futures_info(symbol: str):
         - quote_asset (str): The quote currency (e.g., "USDT", "BUSD")
         - base_asset (str): The base currency (e.g., "BTC", "ETH")
         - contract_type (ContractType): The type of futures contract (perpetual or delivery)
-        - is_stablecoin (bool): True if both base and quote are stablecoins
+        - is_stable_pair (bool): True if both base and quote are stablecoins
 
     Examples:
         >>> infer_um_futures_info("BTCUSDT")
         {'symbol': 'BTCUSDT', 'quote_asset': 'USDT', 'base_asset': 'BTC', 'contract_type': ContractType.perpetual,
-        'is_stablecoin': False}
+        'is_stable_pair': False}
     """
     symbol_original = symbol
 
@@ -84,13 +84,13 @@ def infer_um_futures_info(symbol: str):
     for quote in QUOTES:
         if symbol.endswith(quote):
             base = symbol[: -len(quote)]
-            is_stablecoin = base in STABLECOINS and quote in STABLECOINS
+            is_stable_pair = base in STABLECOINS and quote in STABLECOINS
             return {
                 "symbol": symbol_original,
                 "quote_asset": quote,
                 "base_asset": base,
                 "contract_type": contract_type,
-                "is_stablecoin": is_stablecoin,
+                "is_stable_pair": is_stable_pair,
             }
     return None
 
