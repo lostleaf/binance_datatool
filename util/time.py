@@ -4,11 +4,11 @@ from zoneinfo import ZoneInfo
 
 from dateutil import parser as date_parser
 
-DEFAULT_TZ = ZoneInfo("Asia/Shanghai")
+DEFAULT_TZ = ZoneInfo("Asia/Hong_Kong")
 
 
-def now_time() -> datetime:
-    return datetime.now(DEFAULT_TZ)
+def now_time(tz: ZoneInfo = DEFAULT_TZ) -> datetime:
+    return datetime.now(tz)
 
 
 def convert_interval_to_timedelta(time_interval: str) -> timedelta:
@@ -20,7 +20,7 @@ def convert_interval_to_timedelta(time_interval: str) -> timedelta:
 
     if time_interval.endswith("D") or time_interval.endswith("d"):
         return timedelta(days=int(time_interval[:-1]))
-        
+
     raise ValueError("time_interval %s format error", time_interval)
 
 
