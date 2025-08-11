@@ -22,7 +22,7 @@ def run_aws_download(download_infos: list[tuple[str, Path]], http_proxy):
 
         cmd = ['aria2c', '-i', aria_file.name, '-j32', '-x4', '-q']
         if http_proxy is not None:
-            cmd.append(f'--all-proxy={http_proxy}')
+            cmd.append(f'--https-proxy={http_proxy}')
 
         run_result = subprocess.run(cmd)
         returncode = run_result.returncode

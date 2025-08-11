@@ -1,17 +1,16 @@
 import asyncio
 from pathlib import PurePosixPath
+from typing import Optional
 
 import xmltodict
 from aiohttp import ClientSession
-from typing import Optional
 
-from bdt_common.network import async_retry_getter
+from bdt_common.constants import BINANCE_AWS_PREFIX
 from bdt_common.enums import DataFrequency, DataType, TradeType
+from bdt_common.network import async_retry_getter
 
 
 class AwsClient:
-    PREFIX = "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision"
-
     def __init__(
         self,
         trade_type: TradeType,
@@ -35,7 +34,7 @@ class AwsClient:
 
     async def list_dir(self, dir_path: PurePosixPath) -> list[PurePosixPath]:
         aws_dir_str = str(dir_path) + "/"
-        base_url = url = f"{self.PREFIX}?delimiter=/&prefix={aws_dir_str}"
+        base_url = url = f"{BINANCE_AWS_PREFIX}?delimiter=/&prefix={aws_dir_str}"
         results = []
         while True:
             data = await async_retry_getter(self._aio_get_xml, url=url)
