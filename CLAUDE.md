@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Binance Historical Data Service (BHDS) - Python CLI tool for downloading, processing, and maintaining Binance cryptocurrency market data using AWS historical archives and Binance APIs. Outputs optimized Parquet datasets for quantitative research.
 
+**⚠️ UNDER REFACTORING**: This project is currently being refactored from a legacy structure to a modern `src/` layout. All code under `legacy/` will eventually be moved to `src/`. The new structure includes:
+- `src/bhds/` - New modular CLI (in development)
+- `src/bdt_common/` - Shared utilities (modernized)
+- `legacy/` - Legacy code (still functional, to be migrated)
+
 ## Environment Setup
 
 ### Prerequisites
@@ -38,30 +43,21 @@ brew install aria2
 
 ### Directory Structure
 ```
-bhds.py                 # CLI entry (Typer)
-api/                   # Real-time Binance API
-├── binance.py         # API client
-├── kline.py          # K-line endpoints
-└── funding.py        # Funding rate endpoints
-
-aws/                   # AWS historical data
-├── kline/            # Candlestick data
-│   ├── download.py   # AWS S3 downloads
-│   ├── parse.py      # CSV → Parquet
-│   └── verify.py     # Checksum validation
-├── funding/          # Funding rates
-└── liquidation/      # Liquidation snapshots
-
-generate/             # Data processing
-├── kline.py          # Dataset generation
-├── resample.py       # LazyFrame resampling
-├── kline_gaps.py     # Gap detection
-└── merge.py          # AWS+API merging
-
-util/                 # Shared utilities
-├── log_kit.py        # Logging
-├── time.py           # Time handling
-└── network.py        # HTTP utilities
+├── legacy/                    # Legacy CLI implementation (primary, to be migrated)
+│   ├── bhds.py               # Main CLI entry point
+│   ├── api/                  # Real-time Binance API
+│   ├── aws/                  # AWS historical data
+│   ├── generate/             # Data processing
+│   └── util/                 # Shared utilities
+├── src/                      # New refactored structure
+│   ├── bhds/                 # New modular CLI (in development)
+│   │   ├── cli.py            # New CLI entry
+│   │   ├── aws/              # AWS client/downloader
+│   │   └── config.py
+│   └── bdt_common/           # Shared utilities (modernized)
+├── scripts/                  # Shell scripts for workflows
+├── tests/                    # Test files
+└── notebook/                 # Jupyter notebooks
 ```
 
 ### Data Flow
@@ -115,19 +111,30 @@ python bhds.py generate resample-type um_futures 1m 5m
 
 ### Complete Pipeline
 ```bash
-./aws_download.sh 1m      # Download AWS historical data
-./aws_parse.sh            # Parse to parquet
-./api_download.sh         # Download recent API data
-./gen_kline.sh 1m         # Generate merged datasets
-./resample.sh             # Create higher timeframes
+./scripts/aws_download.sh 1m      # Download AWS historical data
+./scripts/aws_parse.sh            # Parse to parquet
+./scripts/api_download.sh         # Download recent API data
+./scripts/gen_kline.sh 1m         # Generate merged datasets
+./scripts/resample.sh             # Create higher timeframes
 ```
 
 ## Development
 
+### Migration Status
+- **Legacy structure**: All functional code currently in `legacy/` directory
+- **New structure**: Modular code being developed in `src/` directory
+- **Migration target**: Move all legacy components to `src/bhds/` with improved modularity
+
 ### Code Quality
 ```bash
-black . && isort .
+# Format code
+uv run black . && uv run isort .
+
+# Type checking
 uv run python -m mypy .
+
+# Run tests
+uv run python tests/aws_downloader.py
 ```
 
 ### Dependencies
@@ -151,18 +158,13 @@ pl.scan_parquet(input_path)
   .sink_parquet(output_path)
 ```
 
-#### Time Handling
-```python
-from util.time import TimeUtil
-
-# Convert timestamps
-ts = TimeUtil.convert_ms_to_datetime(ms_timestamp)
-start_date = TimeUtil.get_start_date(days_back=30)
-```
-
 #### Logging
 ```python
+# Legacy (from legacy/util/)
 from util.log_kit import logger
+
+# New (from src/bdt_common/)
+from bdt_common.log_kit import logger
 
 logger.info("Processing started")
 logger.ok("Download completed")

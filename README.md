@@ -6,7 +6,7 @@ BHDS is primarily intended for cryptocurrency quantitative trading research usin
 
 This project is released under the **MIT License**.
 
-Here's a refined version of your documentation:
+**Be careful, I'm refactoring this project, the code may be broken.**
 
 ## Environment
 
@@ -36,29 +36,21 @@ The BHDS service requires `aria2`, an efficient cross-platform command-line down
 
 **Linux (Ubuntu/Debian):**
 ```bash
-sudo apt update && sudo apt install aria2
+sudo apt install aria2
 ```
 
 **Linux (CentOS/RHEL/Fedora):**
 ```bash
-# CentOS/RHEL
 sudo yum install aria2
-# or Fedora
-sudo dnf install aria2
 ```
 
 **macOS:**
 ```bash
 # Using Homebrew
 brew install aria2
-# Using MacPorts
-sudo port install aria2
 ```
 
-**Windows:**
-- Download the latest release from [aria2 GitHub releases](https://github.com/aria2/aria2/releases)
-- Extract the archive and add the `aria2c.exe` path to your system PATH
-- Alternatively, use package managers like Chocolatey: `choco install aria2`
+# The below document might be outdated
 
 ### Configuration
 
