@@ -1,7 +1,7 @@
-# BHDS Swap (USDT perpetuals) K-line Download Task
+# BHDS swap(USDT perpetuals) K-line Download Task
 
 # Data type, Options: "klines", "fundingRate", "metrics", "aggTrades", "liquidationSnapshot"
-data_type: "metrics"
+data_type: "klines"
 
 # Trade type, Options: "spot", "futures/um", "futures/cm"
 trade_type: "futures/um"
@@ -11,8 +11,14 @@ aws_client:
   # Binance packaging frequency, Options: "daily", "monthly"
   data_freq: "daily"
 
-# User-specified symbols
-symbols: ["BTCUSDT", "ETHUSDT"]
+  # Binance supported Kline intervals, Options: "1m", "1h", "4h", "1d", etc.
+  time_interval: "1m"
+
+# Symbol filtering
+symbol_filter:
+  quote: "USDT" # USDT quote asset
+  stable_pairs: false # Exclude stable coin pairs
+  contract_type: "PERPETUAL" # Exclude leverage token pairs
 
 # Data configuration, local directory for downloads
 # Use $CRYPTO_BASE_DIR/binance_data/aws_data/ if not set
@@ -24,4 +30,4 @@ http_proxy: null
 
 # Verification configuration
 verification:
-  delete_mismatch: true # Delete files on checksum mismatch
+  delete_mismatch: false # Don't delete files on checksum mismatch

@@ -22,7 +22,7 @@ symbol_filter:
 
 # Data configuration, local directory for downloads
 # Use $CRYPTO_BASE_DIR/binance_data/aws_data/ if not set
-# Use ~/crypto_data if $CRYPTO_BASE_DIR is not set
+# Use ~/crypto_data as $CRYPTO_BASE_DIR if not set
 data_dir: null
 
 # HTTP proxy, uses environment HTTP_PROXY if not set
