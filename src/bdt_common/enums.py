@@ -48,3 +48,7 @@ class DataType(str, Enum):
     funding_rate = "fundingRate"
     # Aggregated trades stream
     agg_trade = "aggTrades"
+    # Liquidation snapshot stream
+    liquidation_snapshot = "liquidationSnapshot"
+    # Metrics data
+    metrics = "metrics"
