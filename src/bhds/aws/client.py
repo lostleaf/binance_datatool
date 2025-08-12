@@ -8,6 +8,7 @@ from aiohttp import ClientSession
 from bdt_common.constants import BINANCE_AWS_PREFIX
 from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.network import async_retry_getter
+from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
 
 
 class AwsClient:
@@ -37,7 +38,8 @@ class AwsClient:
         """
         self.session = session
         self.http_proxy = http_proxy
-        self.base_dir = PurePosixPath("data") / trade_type / data_freq / data_type
+        self.path_builder = AwsPathBuilder(trade_type, data_freq, data_type)
+        self.base_dir = self.path_builder.base_dir
 
     async def _aio_get_xml(self, url):
         """
@@ -67,7 +69,7 @@ class AwsClient:
         Returns:
             PurePosixPath object representing the symbol directory path
         """
-        return self.base_dir / symbol
+        return self.path_builder.get_symbol_dir(symbol)
 
     async def list_dir(self, dir_path: PurePosixPath) -> list[PurePosixPath]:
         """
@@ -176,7 +178,10 @@ class AwsKlineClient(AwsClient):
             session: aiohttp ClientSession for HTTP requests
             http_proxy: Optional HTTP proxy URL for requests
         """
-        super().__init__(trade_type, data_freq, DataType.kline, session, http_proxy)
+        self.session = session
+        self.http_proxy = http_proxy
+        self.path_builder = AwsKlinePathBuilder(trade_type, data_freq, time_interval)
+        self.base_dir = self.path_builder.base_dir
         self.time_interval = time_interval
 
     def get_symbol_dir(self, symbol) -> PurePosixPath:
@@ -189,4 +194,4 @@ class AwsKlineClient(AwsClient):
         Returns:
             PurePosixPath object for the symbol directory path with the time interval subdirectory
         """
-        return self.base_dir / symbol / self.time_interval
+        return self.path_builder.get_symbol_dir(symbol)

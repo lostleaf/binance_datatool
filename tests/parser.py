@@ -11,13 +11,16 @@ from pathlib import Path
 import random
 
 from bhds.aws.parser import create_aws_parser
+from bhds.aws.path_builder import AwsKlinePathBuilder, AwsPathBuilder
+from bhds.aws.checksum import AwsDataFileManager
+from bdt_common.enums import TradeType, DataFrequency, DataType
 
 
 def get_aws_data_dir():
     """Get the AWS data directory path."""
     # Check if CRYPTO_BASE_DIR is set, otherwise use default
     crypto_base = os.environ.get("CRYPTO_BASE_DIR", str(Path.home() / "crypto_data"))
-    return Path(crypto_base) / "binance_data" / "aws_data" / "data"
+    return Path(crypto_base) / "binance_data" / "aws_data"
 
 
 def test_klines_parser():
@@ -27,20 +30,35 @@ def test_klines_parser():
     print("=" * 80)
 
     aws_data_dir = get_aws_data_dir()
-    klines_dir = aws_data_dir / "spot" / "daily" / "klines" / "BTCUSDT" / "1m"
+    
+    # Use AwsKlinePathBuilder to get symbol directory without HTTP session
+    path_builder = AwsKlinePathBuilder(
+        trade_type=TradeType.spot,
+        data_freq=DataFrequency.daily,
+        time_interval="1m"
+    )
+    symbol_dir = path_builder.get_symbol_dir("BTCUSDT")
+    # symbol_dir returns 'data/spot/daily/klines/BTCUSDT/1m'
+    klines_dir = aws_data_dir / symbol_dir
 
     if not klines_dir.exists():
         print(f"❌ Klines directory not found: {klines_dir}")
         return
 
-    # Get the first 3 available klines files
-    klines_files = list(klines_dir.glob("*.zip"))
-    random.shuffle(klines_files)
-    klines_files = klines_files[:3]
-
-    if not klines_files:
+    # Use AwsDataFileManager to manage files
+    file_manager = AwsDataFileManager(klines_dir)
+    verified_files, unverified_files = file_manager.get_files()
+    
+    # Prefer verified files
+    if verified_files:
+        random.shuffle(verified_files)
+        klines_files = verified_files[:3]
+    else:
         print("❌ No klines files found")
         return
+    
+    print(f"Found {len(verified_files)} verified files and {len(unverified_files)} unverified files")
+    print(f"Using {len(klines_files)} files for testing")
 
     parser = create_aws_parser("klines")
 
@@ -72,18 +90,29 @@ def test_funding_parser():
     print("=" * 80)
 
     aws_data_dir = get_aws_data_dir()
-    funding_dir = aws_data_dir / "futures" / "um" / "monthly" / "fundingRate" / "BTCUSDT"
+    
+    # Use AwsPathBuilder to get funding rate directory
+    path_builder = AwsPathBuilder(
+        trade_type=TradeType.um_futures,
+        data_freq=DataFrequency.monthly,
+        data_type=DataType.funding_rate
+    )
+    symbol_dir = path_builder.get_symbol_dir("BTCUSDT")
+    funding_dir = aws_data_dir / symbol_dir
 
     if not funding_dir.exists():
         print(f"❌ Funding directory not found: {funding_dir}")
         return
 
-    # Get the first 3 available funding files
-    funding_files = list(funding_dir.glob("*.zip"))
-    random.shuffle(funding_files)
-    funding_files = funding_files[:3]
-
-    if not funding_files:
+    # Use AwsDataFileManager to manage files
+    file_manager = AwsDataFileManager(funding_dir)
+    verified_files, unverified_files = file_manager.get_files()
+    
+    # Prefer verified files, fallback to unverified if no verified files available
+    if verified_files:
+        random.shuffle(verified_files)
+        funding_files = verified_files[:3]
+    else:
         print("❌ No funding files found")
         return
 
