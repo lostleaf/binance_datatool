@@ -67,7 +67,7 @@ def read_checksum(checksum_path: Path) -> str:
     try:
         with open(checksum_path, "r") as fin:
             text = fin.read()
-        checksum_standard = text.strip()
+        checksum_standard, _ = text.strip().split()
         return checksum_standard
     except Exception as e:
         raise RuntimeError(f"Checksum Error {checksum_path}: {e}")
