@@ -77,21 +77,21 @@ async def test_um_futures_filters(http_proxy: Optional[str]):
         return
 
     # USDT perpetual, exclude stable pairs
-    f1 = UmFuturesFilter(quote_asset="USDT", contract_type=ContractType.perpetual, stable_pairs=False)
+    f1 = UmFuturesFilter(quote="USDT", contract_type=ContractType.perpetual, stable_pairs=False)
     r1 = f1.filter(symbols)
     print(f"USDT perpetual (no-stable) count: {len(r1)}")
     random.shuffle(r1)
     print(r1[:5])
 
     # USDT delivery, exclude stable pairs
-    f2 = UmFuturesFilter(quote_asset="USDT", contract_type=ContractType.delivery, stable_pairs=False)
+    f2 = UmFuturesFilter(quote="USDT", contract_type=ContractType.delivery, stable_pairs=False)
     r2 = f2.filter(symbols)
     print(f"USDT delivery (no-stable) count: {len(r2)}")
     random.shuffle(r2)
     print(r2[:5])
 
     # Any contract type, include stable pairs
-    f3 = UmFuturesFilter(quote_asset="USDT", contract_type=ContractType.perpetual, stable_pairs=True)
+    f3 = UmFuturesFilter(quote="USDT", contract_type=ContractType.perpetual, stable_pairs=True)
     r3 = f3.filter(symbols)
     print(f"USDT perpetual (with-stable) count: {len(r3)}")
     random.shuffle(r3)
@@ -99,7 +99,7 @@ async def test_um_futures_filters(http_proxy: Optional[str]):
     print('USDT perpetual (stable)', set(r3) - set(r1))
 
     # No filters
-    f4 = UmFuturesFilter(quote_asset=None, contract_type=None, stable_pairs=True)
+    f4 = UmFuturesFilter(quote=None, contract_type=None, stable_pairs=True)
     r4 = f4.filter(symbols)
     print(f"All UM contracts (with-stable) count: {len(r4)}")
     random.shuffle(r4)

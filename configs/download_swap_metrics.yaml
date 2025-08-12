@@ -1,0 +1,27 @@
+# BHDS Swap (USDT perpetuals) K-line Download Task
+
+# Data type, Options: "klines", "fundingRate", "metrics", "aggTrades", "liquidationSnapshot"
+data_type: "metrics"
+
+# Trade type, Options: "spot", "futures/um", "futures/cm"
+trade_type: "futures/um"
+
+# AwsClient configuration
+aws_client:
+  # Binance packaging frequency, Options: "daily", "monthly"
+  data_freq: "daily"
+
+# User-specified symbols
+symbols: ["BTCUSDT", "ETHUSDT"]
+
+# Data configuration, local directory for downloads
+# Use $CRYPTO_BASE_DIR/binance_data/aws_data/ if not set
+# Use ~/crypto_data if $CRYPTO_BASE_DIR is not set
+data_dir: null
+
+# HTTP proxy, uses environment HTTP_PROXY if not set
+http_proxy: null
+
+# Verification configuration
+verification:
+  delete_mismatch: true # Delete files on checksum mismatch

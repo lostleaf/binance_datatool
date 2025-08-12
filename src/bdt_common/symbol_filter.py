@@ -62,14 +62,14 @@ class UmFuturesFilter(BaseSymbolFilter):
     def infer_fn(cls, symbol: str) -> dict:
         return infer_um_futures_info(symbol)
 
-    def __init__(self, quote_asset: Optional[str], contract_type: Optional[ContractType], stable_pairs: bool):
-        self.quote_asset = quote_asset
+    def __init__(self, quote: Optional[str], contract_type: Optional[ContractType], stable_pairs: bool):
+        self.quote = quote
         self.contract_type = contract_type
         self.stable_pairs = stable_pairs
 
     def is_valid(self, info: dict) -> bool:
         # Not valid if quote_asset mismatches
-        if self.quote_asset is not None and info["quote_asset"] != self.quote_asset:
+        if self.quote is not None and info["quote_asset"] != self.quote:
             return False
 
         # Not valid if contract_type mismatches
@@ -88,7 +88,7 @@ class CmFuturesFilter(BaseSymbolFilter):
     def infer_fn(cls, symbol: str) -> dict:
         return infer_cm_futures_info(symbol)
 
-    def __init__(self, contract_type: ContractType, status=None):
+    def __init__(self, contract_type: Optional[ContractType], status=None):
         self.contract_type = contract_type
         self.status = status
 
@@ -98,7 +98,48 @@ class CmFuturesFilter(BaseSymbolFilter):
             return False
 
         # Not valid if contract_type mismatches
-        if x["contract_type"] != self.contract_type:
+        if self.contract_type is not None and x["contract_type"] != self.contract_type:
             return False
 
         return True
+
+
+def create_symbol_filter_from_config(trade_type, filter_config: dict):
+    """
+    Create symbol filter based on trade type and filter configuration.
+
+    Args:
+        trade_type: TradeType enum value (spot, futures/um, futures/cm)
+        filter_config: Dictionary containing filter configuration
+
+    Returns:
+        Appropriate symbol filter instance
+
+    Raises:
+        ValueError: If trade type is not supported for filtering
+    """
+    from bdt_common.enums import TradeType  # Import here to avoid circular imports
+
+    quote = filter_config.get("quote")
+    contract_type = filter_config.get("contract_type")
+    contract_type = ContractType(contract_type) if contract_type else None
+    stable_pairs = filter_config.get("stable_pairs", True)
+    if trade_type == TradeType.spot:
+        return SpotFilter(
+            quote=quote,
+            stable_pairs=stable_pairs,
+            leverage_tokens=filter_config.get("leverage_tokens", False),
+        )
+    elif trade_type == TradeType.um_futures:
+        return UmFuturesFilter(
+            quote=quote,
+            contract_type=contract_type,
+            stable_pairs=stable_pairs,
+        )
+    elif trade_type == TradeType.cm_futures:
+        return CmFuturesFilter(
+            contract_type=contract_type,
+            status=filter_config.get("status"),
+        )
+    else:
+        raise ValueError(f"Unsupported trade type for filtering: {trade_type}")

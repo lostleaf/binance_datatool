@@ -85,10 +85,6 @@ class AwsDownloader:
             aws_files: List of PurePosixPath objects representing AWS S3 file paths
             max_tries: Maximum number of retry attempts for failed downloads (default: 3)
         """
-        # Log initial download information if verbose mode is enabled
-        if self.verbose:
-            logger.info(f"Downloading {len(aws_files)} Files, Local Dir: {self.local_dir}")
-
         # Build list of download information (URL, local path) for all files
         download_infos = []
         for aws_file in aws_files:
@@ -109,7 +105,7 @@ class AwsDownloader:
 
             # Log retry attempt information if verbose mode is enabled
             if self.verbose:
-                divider(f"try_id={try_id}, {len(missing_infos)} files to be downloaded", sep="-")
+                divider(f"Aria2 Download, try_id={try_id}, {len(missing_infos)} files", sep="-")
 
             # Process downloads in batches to avoid overwhelming the system
             batch_size = 4096
