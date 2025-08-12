@@ -198,4 +198,5 @@ uv run python tests/parser.py  # Test parser with actual data
 - **Modern approach**: Use `uv run bhds` CLI or library-based workflows
 - **Legacy code**: Deprecated scripts moved to `legacy/` directory
 - **Current**: New CLI uses YAML configurations and library API
+- **Architecture**: AWS path building now uses dedicated `path_builder.py` module
 - **Recommendation**: Use examples/kline_download_task.py as template for custom workflows
