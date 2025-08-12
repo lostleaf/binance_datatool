@@ -185,10 +185,12 @@ Test files are in `tests/` directory:
 - `infer_exginfo.py`: Exchange info tests
 - `checksum.py`: Checksum verification tests
 - `symbol_filter.py`: Symbol filtering tests
+- `test_parser.py`: Unified CSV parser tests
 
 Run individual tests:
 ```bash
 uv run python tests/aws_downloader.py
+uv run python tests/test_parser.py  # Test parser with actual data
 ```
 
 ## Migration Notes
