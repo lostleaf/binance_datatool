@@ -12,6 +12,8 @@ from zipfile import ZipFile
 
 import polars as pl
 
+from bdt_common.enums import DataType
+
 
 class BaseCsvParser(ABC):
     """Abstract base class for CSV file parsers.
@@ -192,37 +194,30 @@ class FundingParser(BaseCsvParser):
         )
 
 
-def create_aws_parser(data_type: str) -> BaseCsvParser:
+def create_aws_parser(data_type: DataType) -> BaseCsvParser:
     """Create a parser instance for the specified AWS data type.
-    
+
     Simple factory function to instantiate parsers for different Binance AWS data types.
-    
+
     Args:
-        data_type: Type of data to parse (e.g., "klines", "funding").
-        
+        data_type: Type of data to parse (e.g., DataType.kline, DataType.funding_rate).
+
     Returns:
         BaseCsvParser: Configured parser instance.
-        
+
     Raises:
         ValueError: If the data type is not supported.
-        
+
     Examples:
-        >>> parser = create_aws_parser("klines")
+        >>> parser = create_aws_parser(DataType.kline)
         >>> df = parser.read_csv_from_zip("BTCUSDT-1m-2023-01-01.zip")
-        
-        >>> parser = create_aws_parser("funding")
+
+        >>> parser = create_aws_parser(DataType.funding_rate)
         >>> df = parser.read_csv_from_zip("BTCUSDT-funding-2023-01.zip")
     """
-    parsers = {
-        "klines": KlineParser,
-        "funding": FundingParser,
-    }
-    
-    data_type = data_type.lower()
+    parsers = {DataType.kline: KlineParser, DataType.funding_rate: FundingParser}
+
     if data_type not in parsers:
         available = list(parsers.keys())
-        raise ValueError(
-            f"Unsupported data type: {data_type}. "
-            f"Available types: {available}"
-        )
+        raise ValueError(f"Unsupported data type: {data_type}. Available types: {available}")
     return parsers[data_type]()

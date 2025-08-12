@@ -60,7 +60,7 @@ def test_klines_parser():
     print(f"Found {len(verified_files)} verified files and {len(unverified_files)} unverified files")
     print(f"Using {len(klines_files)} files for testing")
 
-    parser = create_aws_parser("klines")
+    parser = create_aws_parser(DataType.kline)
 
     print(f"Found {len(klines_files)} klines files to test:")
     for file in klines_files:
@@ -116,7 +116,7 @@ def test_funding_parser():
         print("❌ No funding files found")
         return
 
-    parser = create_aws_parser("funding")
+    parser = create_aws_parser(DataType.funding_rate)
 
     print(f"Found {len(funding_files)} funding files to test:")
     for file in funding_files:
@@ -146,17 +146,17 @@ def test_parser_creation():
     print("=" * 80)
 
     try:
-        kline_parser = create_aws_parser("klines")
+        kline_parser = create_aws_parser(DataType.kline)
         print("✅ Successfully created klines parser")
         print(f"   Type: {type(kline_parser).__name__}")
 
-        funding_parser = create_aws_parser("funding")
+        funding_parser = create_aws_parser(DataType.funding_rate)
         print("✅ Successfully created funding parser")
         print(f"   Type: {type(funding_parser).__name__}")
 
         # Test error handling
         try:
-            create_aws_parser("invalid_type")
+            create_aws_parser(DataType.agg_trade)  # Use an unsupported DataType
             print("❌ Should have raised ValueError for invalid type")
         except ValueError as e:
             print(f"✅ Correctly handled invalid type: {e}")
