@@ -30,4 +30,4 @@ http_proxy: null
 
 # Verification configuration
 verification:
-  delete_mismatch: false # Don't delete files on checksum mismatch
+  delete_mismatch: true # Delete files on checksum mismatch

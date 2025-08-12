@@ -1,7 +1,7 @@
-# BHDS Swap (USDT perpetuals) Metrics Download Task
+# BHDS swap(USDT perpetuals) Funding Rate Download Task
 
 # Data type, Options: "klines", "fundingRate", "metrics", "aggTrades", "liquidationSnapshot"
-data_type: "metrics"
+data_type: "fundingRate"
 
 # Trade type, Options: "spot", "futures/um", "futures/cm"
 trade_type: "futures/um"
@@ -9,10 +9,13 @@ trade_type: "futures/um"
 # AwsClient configuration
 aws_client:
   # Binance packaging frequency, Options: "daily", "monthly"
-  data_freq: "daily"
+  data_freq: "monthly"
 
-# User-specified symbols
-symbols: ["BTCUSDT", "ETHUSDT"]
+# Symbol filtering
+symbol_filter:
+  quote: "USDT" # USDT quote asset
+  stable_pairs: false # Exclude stable coin pairs
+  contract_type: "PERPETUAL" # Exclude leverage token pairs
 
 # Data configuration, local directory for downloads
 # Use $CRYPTO_BASE_DIR/binance_data/aws_data/ if not set
