@@ -12,6 +12,33 @@ def now_time(tz: ZoneInfo = DEFAULT_TZ) -> datetime:
 
 
 def convert_interval_to_timedelta(time_interval: str) -> timedelta:
+    """
+    Convert a time interval string to a Python timedelta object.
+    
+    This function parses time interval strings commonly used in Binance API and
+    trading contexts, converting them into equivalent timedelta objects for
+    datetime calculations.
+    
+    Args:
+        time_interval (str): The time interval string to convert. Supported formats:
+            - Minutes: "1m", "5m", "15m", "30m", "60m", "1T", "5T", etc.
+            - Hours: "1h", "2h", "4h", "6h", "8h", "12h", "1H", "2H", etc.
+            - Days: "1d", "3d", "7d", "30d", "1D", "3D", etc.
+            
+    Returns:
+        timedelta: A timedelta object representing the equivalent duration.
+        
+    Raises:
+        ValueError: If the time_interval format is not supported or cannot be parsed.
+        
+    Examples:
+        >>> convert_interval_to_timedelta("5m")
+        datetime.timedelta(seconds=300)
+        >>> convert_interval_to_timedelta("2h")
+        datetime.timedelta(seconds=7200)
+        >>> convert_interval_to_timedelta("1d")
+        datetime.timedelta(days=1)
+    """
     if time_interval.endswith("m") or time_interval.endswith("T"):
         return timedelta(minutes=int(time_interval[:-1]))
 
@@ -24,13 +51,13 @@ def convert_interval_to_timedelta(time_interval: str) -> timedelta:
     raise ValueError("time_interval %s format error", time_interval)
 
 
-def convert_date(dt) -> date:
+def convert_date(dt: str | date) -> date:
     if isinstance(dt, str):
         return date_parser.parse(dt).date()
     return dt
 
 
-async def async_sleep_until_run_time(run_time):
+async def async_sleep_until_run_time(run_time: datetime):
     sleep_seconds = (run_time - now_time()).total_seconds()
     await asyncio.sleep(max(0, sleep_seconds - 1))
     while now_time() < run_time:
