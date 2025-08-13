@@ -19,7 +19,8 @@ from tempfile import TemporaryDirectory
 from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, TradeType
 from bdt_common.network import create_aiohttp_session
-from bhds.aws.checksum import ChecksumVerifier, AwsDataFileManager, calc_checksum, read_checksum
+from bhds.aws.checksum import ChecksumVerifier, calc_checksum, read_checksum
+from bhds.aws.local import AwsDataFileManager
 from bhds.aws.client import AwsClient
 from bhds.aws.path_builder import AwsKlinePathBuilder
 from bhds.aws.downloader import AwsDownloader

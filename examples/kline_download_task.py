@@ -15,7 +15,8 @@ from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, TradeType
 from bdt_common.network import create_aiohttp_session
 from bdt_common.symbol_filter import SpotFilter
-from bhds.aws.checksum import AwsDataFileManager, ChecksumVerifier
+from bhds.aws.checksum import ChecksumVerifier
+from bhds.aws.local import AwsDataFileManager
 from bhds.aws.client import AwsClient
 from bhds.aws.path_builder import AwsKlinePathBuilder
 from bhds.aws.downloader import AwsDownloader

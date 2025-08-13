@@ -35,6 +35,9 @@ uv run python -c "from bhds.aws.downloader import AwsDownloader; ..."
 │   ├── bhds/                   # New modular CLI
 │   │   ├── cli.py              # CLI entry point (uv run bhds)
 │   │   ├── aws/                # AWS client/downloader
+│   │   │   ├── local.py        # Local file management (AwsDataFileManager)
+│   │   │   ├── checksum.py     # Checksum verification utilities
+│   │   │   └── ...             # Other AWS modules
 │   │   └── tasks/              # Task implementations
 │   └── bdt_common/             # Shared utilities
 ├── configs/                    # YAML task configurations

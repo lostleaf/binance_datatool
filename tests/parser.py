@@ -12,7 +12,7 @@ import random
 
 from bhds.aws.parser import create_aws_parser
 from bhds.aws.path_builder import AwsKlinePathBuilder, AwsPathBuilder
-from bhds.aws.checksum import AwsDataFileManager
+from bhds.aws.local import AwsDataFileManager
 from bdt_common.enums import TradeType, DataFrequency, DataType
 
 

@@ -18,7 +18,8 @@ from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.log_kit import divider, logger
 from bdt_common.network import create_aiohttp_session
 from bdt_common.symbol_filter import create_symbol_filter_from_config
-from bhds.aws.checksum import AwsDataFileManager, ChecksumVerifier
+from bhds.aws.checksum import ChecksumVerifier
+from bhds.aws.local import AwsDataFileManager
 from bhds.aws.client import AwsClient
 from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
 from bhds.aws.downloader import AwsDownloader
