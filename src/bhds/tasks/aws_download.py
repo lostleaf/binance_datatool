@@ -19,7 +19,8 @@ from bdt_common.log_kit import divider, logger
 from bdt_common.network import create_aiohttp_session
 from bdt_common.symbol_filter import create_symbol_filter_from_config
 from bhds.aws.checksum import AwsDataFileManager, ChecksumVerifier
-from bhds.aws.client import AwsClient, AwsKlineClient
+from bhds.aws.client import AwsClient
+from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
 from bhds.aws.downloader import AwsDownloader
 
 
@@ -41,18 +42,20 @@ def create_aws_client_from_config(
 
     if data_type == DataType.kline:
         time_interval = aws_cfg["time_interval"]
-        return AwsKlineClient(
+        path_builder = AwsKlinePathBuilder(
             trade_type=trade_type,
             data_freq=data_freq,
             time_interval=time_interval,
-            session=session,
-            http_proxy=http_proxy,
+        )
+    else:
+        path_builder = AwsPathBuilder(
+            trade_type=trade_type,
+            data_freq=data_freq,
+            data_type=data_type,
         )
 
     return AwsClient(
-        trade_type=trade_type,
-        data_freq=data_freq,
-        data_type=data_type,
+        path_builder=path_builder,
         session=session,
         http_proxy=http_proxy,
     )

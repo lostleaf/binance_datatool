@@ -20,7 +20,8 @@ from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, TradeType
 from bdt_common.network import create_aiohttp_session
 from bhds.aws.checksum import ChecksumVerifier, AwsDataFileManager, calc_checksum, read_checksum
-from bhds.aws.client import AwsKlineClient
+from bhds.aws.client import AwsClient
+from bhds.aws.path_builder import AwsKlinePathBuilder
 from bhds.aws.downloader import AwsDownloader
 
 
@@ -30,10 +31,13 @@ async def collect_target_files(
     async with create_aiohttp_session(HTTP_TIMEOUT_SEC) as session:
 
         """Collect target AWS files for testing."""
-        client = AwsKlineClient(
+        path_builder = AwsKlinePathBuilder(
             trade_type=trade_type,
             data_freq=DataFrequency.daily,
             time_interval="1m",
+        )
+        client = AwsClient(
+            path_builder=path_builder,
             session=session,
             http_proxy=http_proxy,
         )

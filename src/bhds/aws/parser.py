@@ -15,7 +15,7 @@ import polars as pl
 from bdt_common.enums import DataType
 
 
-class BaseCsvParser(ABC):
+class AwsCsvParser(ABC):
     """Abstract base class for CSV file parsers.
 
     This class defines the common interface for all CSV parsers used in BHDS.
@@ -101,7 +101,7 @@ class BaseCsvParser(ABC):
         return self.post_process(ldf).collect()
 
 
-class KlineParser(BaseCsvParser):
+class KlineParser(AwsCsvParser):
     """Parser for kline (OHLCV) data from Binance.
 
     Handles CSV files containing candlestick data with open, high, low, close,
@@ -159,7 +159,7 @@ class KlineParser(BaseCsvParser):
         )
 
 
-class FundingParser(BaseCsvParser):
+class FundingParser(AwsCsvParser):
     """Parser for funding rate data from Binance.
 
     Handles CSV files containing funding rate information for perpetual futures.
@@ -194,7 +194,7 @@ class FundingParser(BaseCsvParser):
         )
 
 
-def create_aws_parser(data_type: DataType) -> BaseCsvParser:
+def create_aws_parser(data_type: DataType) -> AwsCsvParser:
     """Create a parser instance for the specified AWS data type.
 
     Simple factory function to instantiate parsers for different Binance AWS data types.

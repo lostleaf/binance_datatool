@@ -8,17 +8,21 @@ from tempfile import TemporaryDirectory
 from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, TradeType
 from bdt_common.network import create_aiohttp_session
-from bhds.aws.client import AwsKlineClient
+from bhds.aws.client import AwsClient
+from bhds.aws.path_builder import AwsKlinePathBuilder
 from bhds.aws.downloader import AwsDownloader
 
 
 async def collect_1m_kline_files(
     session, http_proxy: str | None, trade_type: TradeType, max_symbols: int, files_per_symbol: int
 ):
-    client = AwsKlineClient(
+    path_builder = AwsKlinePathBuilder(
         trade_type=trade_type,
         data_freq=DataFrequency.daily,
         time_interval="1m",
+    )
+    client = AwsClient(
+        path_builder=path_builder,
         session=session,
         http_proxy=http_proxy,
     )

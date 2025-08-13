@@ -6,9 +6,8 @@ import xmltodict
 from aiohttp import ClientSession
 
 from bdt_common.constants import BINANCE_AWS_PREFIX
-from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.network import async_retry_getter
-from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
+from bhds.aws.path_builder import AwsPathBuilder
 
 
 class AwsClient:
@@ -20,9 +19,7 @@ class AwsClient:
     
     def __init__(
         self,
-        trade_type: TradeType,
-        data_freq: DataFrequency,
-        data_type: DataType,
+        path_builder: AwsPathBuilder,
         session: ClientSession,
         http_proxy: Optional[str] = None,
     ):
@@ -30,16 +27,13 @@ class AwsClient:
         Initialize AWS client for Binance data access.
         
         Args:
-            trade_type: Type of trading data (spot/futures)
-            data_freq: Frequency of data (daily/monthly)
-            data_type: Type of market data (kline/funding/liquidation)
+            path_builder: AWS path builder for constructing directory paths
             session: aiohttp ClientSession for HTTP requests
             http_proxy: Optional HTTP proxy URL for requests
         """
         self.session = session
         self.http_proxy = http_proxy
-        self.path_builder = AwsPathBuilder(trade_type, data_freq, data_type)
-        self.base_dir = self.path_builder.base_dir
+        self.path_builder = path_builder
 
     async def _aio_get_xml(self, url):
         """
@@ -118,7 +112,7 @@ class AwsClient:
         Returns:
             Sorted list of symbol names as strings
         """
-        paths = await self.list_dir(self.base_dir)
+        paths = await self.list_dir(self.path_builder.base_dir)
         symbols = sorted(p.name for p in paths)
         return symbols
 
@@ -151,47 +145,3 @@ class AwsClient:
         tasks = [self.list_data_files(symbol) for symbol in symbols]
         results = await asyncio.gather(*tasks)
         return {symbol: list_result for symbol, list_result in zip(symbols, results)}
-
-
-class AwsKlineClient(AwsClient):
-    """
-    Specialized AWS client for Binance kline/candlestick data.
-    
-    Extends AwsClient to provide kline-specific functionality, including time intervals (1m, 5m, 1h, 1d, etc.).
-    """
-    
-    def __init__(
-        self,
-        trade_type: TradeType,
-        data_freq: DataFrequency,
-        time_interval: str,
-        session: ClientSession,
-        http_proxy: Optional[str] = None,
-    ):
-        """
-        Initialize AWS client for Binance kline data access.
-        
-        Args:
-            trade_type: Type of trading data (spot/futures)
-            data_freq: Frequency of data (daily/monthly)
-            time_interval: Kline interval (1m, 5m, 1h, 1d, etc.)
-            session: aiohttp ClientSession for HTTP requests
-            http_proxy: Optional HTTP proxy URL for requests
-        """
-        self.session = session
-        self.http_proxy = http_proxy
-        self.path_builder = AwsKlinePathBuilder(trade_type, data_freq, time_interval)
-        self.base_dir = self.path_builder.base_dir
-        self.time_interval = time_interval
-
-    def get_symbol_dir(self, symbol) -> PurePosixPath:
-        """
-        Get the directory path for a specific symbol and time interval.
-        
-        Args:
-            symbol: Trading symbol (e.g., BTCUSDT)
-            
-        Returns:
-            PurePosixPath object for the symbol directory path with the time interval subdirectory
-        """
-        return self.path_builder.get_symbol_dir(symbol)

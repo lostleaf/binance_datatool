@@ -16,7 +16,8 @@ from bdt_common.enums import DataFrequency, TradeType
 from bdt_common.network import create_aiohttp_session
 from bdt_common.symbol_filter import SpotFilter
 from bhds.aws.checksum import AwsDataFileManager, ChecksumVerifier
-from bhds.aws.client import AwsKlineClient, AwsClient
+from bhds.aws.client import AwsClient
+from bhds.aws.path_builder import AwsKlinePathBuilder
 from bhds.aws.downloader import AwsDownloader
 
 
@@ -55,10 +56,13 @@ async def download_and_verify_klines(client: AwsClient, data_dir: Path, symbols,
 
 
 def create_aws_client(session, http_proxy):
-    return AwsKlineClient(
+    path_builder = AwsKlinePathBuilder(
         trade_type=TradeType.spot,
         data_freq=DataFrequency.daily,
         time_interval="1m",
+    )
+    return AwsClient(
+        path_builder=path_builder,
         session=session,
         http_proxy=http_proxy,
     )

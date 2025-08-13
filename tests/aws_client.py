@@ -6,17 +6,21 @@ from itertools import islice
 from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.network import create_aiohttp_session
-from bhds.aws.client import AwsClient, AwsKlineClient
+from bhds.aws.client import AwsClient
+from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
 
 
 async def test_client(
     session, http_proxy: str | None, trade_type: TradeType, data_freq: DataFrequency, data_type: DataType, title: str
 ):
     print(f"==== {title} ====")
-    client = AwsClient(
+    path_builder = AwsPathBuilder(
         trade_type=trade_type,
         data_freq=data_freq,
         data_type=data_type,
+    )
+    client = AwsClient(
+        path_builder=path_builder,
         session=session,
         http_proxy=http_proxy,
     )
@@ -44,10 +48,13 @@ async def test_kline_client(
     session, http_proxy: str | None, trade_type: TradeType, data_freq: DataFrequency, time_interval: str, title: str
 ):
     print(f"==== {title} ====")
-    client = AwsKlineClient(
+    path_builder = AwsKlinePathBuilder(
         trade_type=trade_type,
         data_freq=data_freq,
         time_interval=time_interval,
+    )
+    client = AwsClient(
+        path_builder=path_builder,
         session=session,
         http_proxy=http_proxy,
     )

@@ -7,15 +7,19 @@ from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import ContractType, DataFrequency, TradeType
 from bdt_common.network import create_aiohttp_session
 from bdt_common.symbol_filter import SpotFilter, UmFuturesFilter, CmFuturesFilter
-from bhds.aws.client import AwsKlineClient
+from bhds.aws.client import AwsClient
+from bhds.aws.path_builder import AwsKlinePathBuilder
 
 
 async def get_symbols(trade_type: TradeType, time_interval: str, http_proxy: Optional[str]) -> list[str]:
     async with create_aiohttp_session(HTTP_TIMEOUT_SEC) as session:
-        client = AwsKlineClient(
+        path_builder = AwsKlinePathBuilder(
             trade_type=trade_type,
             data_freq=DataFrequency.daily,
             time_interval=time_interval,
+        )
+        client = AwsClient(
+            path_builder=path_builder,
             session=session,
             http_proxy=http_proxy,
         )
