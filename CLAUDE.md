@@ -163,6 +163,33 @@ symbol_filter:
   stable_pairs: false
 ```
 
+#### Data Completion API
+```python
+from bdt_common.enums import TradeType, ContractType
+from bdt_common.rest_api.fetcher import BinanceFetcher
+from bhds.api.completion.kline import DailyKlineCompletion
+from bhds.api.completion.funding import RecentFundingCompletion
+
+# Kline data completion
+completion = DailyKlineCompletion(
+    trade_type=TradeType.spot,
+    interval="1m",
+    base_dir="/path/to/data",
+    fetcher=fetcher
+)
+
+# Funding rate completion  
+completion = RecentFundingCompletion(
+    trade_type=TradeType.um_futures,
+    base_dir="/path/to/data",
+    fetcher=fetcher,
+    contract_type=ContractType.perpetual
+)
+
+# Complete missing data for symbols
+result = await completion.complete_multiple_symbols(symbols=["BTCUSDT", "ETHUSDT"])
+```
+
 #### Polars LazyFrame Processing
 ```python
 import polars as pl
@@ -210,12 +237,16 @@ Test files are in `tests/` directory:
 - `checksum.py`: Checksum verification tests
 - `symbol_filter.py`: Symbol filtering tests
 - `parser.py`: Unified CSV parser tests
+- `kline_completion.py`: Kline data completion tests
+- `funding_completion.py`: Funding rate completion tests
 
 Run individual tests:
 ```bash
 uv run python tests/aws_downloader.py
 uv run python tests/local_aws_client.py  # Test local file management
 uv run python tests/parser.py  # Test parser with actual data
+uv run python tests/kline_completion.py  # Test kline completion
+uv run python tests/funding_completion.py  # Test funding completion
 ```
 
 ## Migration Notes

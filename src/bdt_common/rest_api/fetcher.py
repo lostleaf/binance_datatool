@@ -18,12 +18,12 @@ from bdt_common.time import convert_interval_to_timedelta
 
 def _get_from_filters(filters, filter_type, field_name):
     """Extract a specific field value from exchange info filters.
-    
+
     Args:
         filters: List of filter dictionaries from exchange info
         filter_type: The type of filter to search for (e.g., 'PRICE_FILTER')
         field_name: The field name to extract from the matching filter
-        
+
     Returns:
         The value of the specified field from the matching filter
     """
@@ -34,10 +34,10 @@ def _get_from_filters(filters, filter_type, field_name):
 
 def _parse_um_futures_syminfo(info):
     """Parse symbol information for USD-M futures from exchange info.
-    
+
     Args:
         info: Symbol information dictionary from exchange info API
-        
+
     Returns:
         Dictionary containing parsed symbol information including trading rules
     """
@@ -57,10 +57,10 @@ def _parse_um_futures_syminfo(info):
 
 def _parse_cm_futures_syminfo(info):
     """Parse symbol information for Coin-M futures from exchange info.
-    
+
     Args:
         info: Symbol information dictionary from exchange info API
-        
+
     Returns:
         Dictionary containing parsed symbol information including trading rules
     """
@@ -79,10 +79,10 @@ def _parse_cm_futures_syminfo(info):
 
 def _parse_spot_syminfo(info):
     """Parse symbol information for spot trading from exchange info.
-    
+
     Args:
         info: Symbol information dictionary from exchange info API
-        
+
     Returns:
         Dictionary containing parsed symbol information including trading rules
     """
@@ -100,11 +100,11 @@ def _parse_spot_syminfo(info):
 
 class BinanceFetcher:
     """A comprehensive fetcher for Binance market data across different trading types.
-    
+
     This class provides a unified interface to fetch various types of market data
     from Binance APIs including klines, funding rates, and exchange information
     for spot, USD-M futures, and Coin-M futures markets.
-    
+
     Attributes:
         TYPE_MAP: Mapping of trade types to their respective symbol info parsers
         trade_type: The type of trading (spot, um_futures, cm_futures)
@@ -121,12 +121,12 @@ class BinanceFetcher:
 
     def __init__(self, trade_type: TradeType, session: aiohttp.ClientSession, http_proxy=None):
         """Initialize the BinanceFetcher with specified trade type and session.
-        
+
         Args:
             trade_type: The type of trading (spot, um_futures, cm_futures)
             session: aiohttp ClientSession for making HTTP requests
             http_proxy: Optional HTTP proxy configuration
-            
+
         Raises:
             ValueError: If the trade_type is not supported
         """
@@ -140,7 +140,7 @@ class BinanceFetcher:
 
     def get_api_limits(self) -> tuple[int, int]:
         """Get API rate limits for the current market API.
-        
+
         Returns:
             Tuple of (max_minute_weight, weight_efficient_once_candles)
         """
@@ -148,7 +148,7 @@ class BinanceFetcher:
 
     async def get_time_and_weight(self) -> tuple[datetime, int]:
         """Get server time and current API weight usage.
-        
+
         Returns:
             Tuple of (server_datetime, current_weight)
         """
@@ -158,7 +158,7 @@ class BinanceFetcher:
 
     async def get_exchange_info(self) -> dict[str, dict]:
         """Fetch and parse trading rules from the /exchangeinfo API.
-        
+
         Returns:
             Dictionary mapping symbol names to their parsed trading information
             including price ticks, lot sizes, and other trading rules
@@ -171,12 +171,12 @@ class BinanceFetcher:
 
     async def get_kline_df(self, symbol, interval, **kwargs) -> Optional[pl.DataFrame]:
         """Fetch kline data for a symbol and convert to polars DataFrame.
-        
+
         Args:
             symbol: Trading symbol (e.g., 'BTCUSDT')
             interval: Kline interval (e.g., '1m', '1h', '1d')
             **kwargs: Additional parameters for the klines API (startTime, endTime, limit)
-            
+
         Returns:
             DataFrame with columns: candle_begin_time, open, high, low, close, volume,
             quote_volume, trade_num, taker_buy_base_asset_volume, taker_buy_quote_asset_volume
@@ -222,15 +222,15 @@ class BinanceFetcher:
 
     async def get_kline_df_of_day(self, symbol, interval, dt) -> Optional[pl.DataFrame]:
         """Fetch kline data for a specific day and convert to polars DataFrame.
-        
+
         This method handles the complexity of fetching a full day's data by splitting
         the request into multiple API calls if necessary due to API limits.
-        
+
         Args:
             symbol: Trading symbol (e.g., 'BTCUSDT')
             interval: Kline interval (e.g., '1m', '1h', '1d')
             dt: Date to fetch data for (can be string or date object)
-            
+
         Returns:
             DataFrame with kline data for the specified day, or None if no data available
         """
@@ -270,10 +270,10 @@ class BinanceFetcher:
 
     async def get_realtime_funding_rate(self) -> pl.DataFrame:
         """Fetch current funding rates for all futures symbols.
-        
+
         Returns:
             DataFrame with columns: next_funding_time, symbol, funding_rate
-            
+
         Raises:
             RuntimeError: If called on spot trade type (funding rates don't apply to spot)
         """
@@ -292,18 +292,18 @@ class BinanceFetcher:
 
     async def get_hist_funding_rate(self, symbol, **kwargs) -> Optional[pl.DataFrame]:
         """Fetch historical funding rates for a specific symbol.
-        
+
         Args:
             symbol: Trading symbol (e.g., 'BTCUSDT')
             **kwargs: Additional parameters for the funding rate API (startTime, endTime, limit)
-            
+
         Returns:
             DataFrame with columns: funding_time, candle_begin_time, funding_rate
             Returns None if no data is available
-            
+
         Raises:
             RuntimeError: If called on spot trade type (funding rates don't apply to spot)
-            
+
         Note:
             This method includes a 75-second retry delay on failures due to strict rate limits
         """
@@ -326,4 +326,5 @@ class BinanceFetcher:
             pl.col("fundingRate").alias("funding_rate"),
         )
         df = df.sort(["candle_begin_time"])
-        return df.collect()
+        df = df.collect()
+        return df

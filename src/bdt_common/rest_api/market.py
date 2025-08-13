@@ -5,7 +5,7 @@ from bdt_common.rest_api.base import BinanceBaseApi
 from bdt_common.enums import TradeType
 
 
-class BinanceBaseMarketApi(ABC, BinanceBaseApi):
+class BinanceBaseMarketApi(BinanceBaseApi):
     WEIGHT_EFFICIENT_ONCE_CANDLES = 499
     MAX_MINUTE_WEIGHT = 2400
     MAX_ONCE_CANDLES = 1000

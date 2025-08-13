@@ -86,7 +86,7 @@ class LocalAwsClient:
             base_dir: Base directory containing downloaded AWS data files
             path_builder: AWS path builder for constructing directory paths
         """
-        self.base_dir = base_dir
+        self.base_dir = Path(base_dir)
         self.path_builder = path_builder
     
     def get_symbol_dir(self, symbol: str) -> Path:
