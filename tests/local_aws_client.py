@@ -193,12 +193,6 @@ def main():
             "data_freq": DataFrequency.monthly,
             "data_type": DataType.funding_rate,
             "title": "LocalAwsClient test - UM futures monthly fundingRate"
-        },
-        {
-            "trade_type": TradeType.spot,
-            "data_freq": DataFrequency.daily,
-            "data_type": DataType.agg_trade,
-            "title": "LocalAwsClient test - Spot daily agg_trade"
         }
     ]
     

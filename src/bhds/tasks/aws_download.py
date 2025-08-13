@@ -19,7 +19,7 @@ from bdt_common.log_kit import divider, logger
 from bdt_common.network import create_aiohttp_session
 from bdt_common.symbol_filter import create_symbol_filter_from_config
 from bhds.aws.checksum import ChecksumVerifier
-from bhds.aws.local import AwsDataFileManager
+from bhds.aws.local import LocalAwsClient
 from bhds.aws.client import AwsClient
 from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
 from bhds.aws.downloader import AwsDownloader
@@ -142,12 +142,13 @@ class AwsDownloadTask:
         """Verify checksums for downloaded files."""
         verifier = ChecksumVerifier(delete_mismatch=self.verification_config.get("delete_mismatch", False))
 
+        # Use LocalAwsClient to get all unverified files
+        local_client = LocalAwsClient(self.data_dir, client.path_builder)
+        all_symbols_status = local_client.get_all_symbols_status()
+
         all_unverified_files = []
-        for symbol in symbols:
-            symbol_dir = self.data_dir / str(client.get_symbol_dir(symbol))
-            if symbol_dir.exists():
-                manager = AwsDataFileManager(symbol_dir)
-                all_unverified_files.extend(manager.get_unverified_files())
+        for symbol_status in all_symbols_status.values():
+            all_unverified_files.extend(symbol_status["unverified"])
 
         if all_unverified_files:
             logger.debug(f"\U0001F50D Verifying {len(all_unverified_files)} files")
