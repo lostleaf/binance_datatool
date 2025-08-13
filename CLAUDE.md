@@ -108,6 +108,26 @@ async def custom_download():
     )
     downloader = AwsDownloader(local_dir="/path/to/data")
     # ... custom logic
+
+# Local file management (offline analysis)
+from bhds.aws.local import LocalAwsClient
+from bhds.aws.path_builder import AwsKlinePathBuilder
+
+# Manage local downloaded data
+path_builder = AwsKlinePathBuilder(
+    trade_type=TradeType.spot,
+    data_freq=DataFrequency.daily,
+    time_interval="1m"
+)
+local_client = LocalAwsClient(
+    base_dir=Path("/path/to/crypto_data"),
+    path_builder=path_builder
+)
+
+# Get verification status
+symbols = local_client.list_symbols()
+status = local_client.get_all_symbols_status()
+summary = local_client.get_summary()
 ```
 
 ### Running Examples
@@ -185,6 +205,7 @@ logger.ok("Download completed")
 Test files are in `tests/` directory:
 - `aws_client.py`: AWS client tests
 - `aws_downloader.py`: Downloader tests
+- `local_aws_client.py`: Local file management tests
 - `infer_exginfo.py`: Exchange info tests
 - `checksum.py`: Checksum verification tests
 - `symbol_filter.py`: Symbol filtering tests
@@ -193,6 +214,7 @@ Test files are in `tests/` directory:
 Run individual tests:
 ```bash
 uv run python tests/aws_downloader.py
+uv run python tests/local_aws_client.py  # Test local file management
 uv run python tests/parser.py  # Test parser with actual data
 ```
 
