@@ -76,7 +76,6 @@ uv lock && uv sync   # Update lockfile
 
 ### Configuration
 - `CRYPTO_BASE_DIR`: Data storage (default: $HOME/crypto_data)
-- `CRYPTO_NJOBS`: Parallel jobs (default: CPU-2)
 - `HTTP_PROXY`: HTTP proxy for downloads
 
 ## Usage Patterns
