@@ -88,15 +88,10 @@ class CmFuturesFilter(BaseSymbolFilter):
     def infer_fn(cls, symbol: str) -> dict:
         return infer_cm_futures_info(symbol)
 
-    def __init__(self, contract_type: Optional[ContractType], status=None):
+    def __init__(self, contract_type: Optional[ContractType]):
         self.contract_type = contract_type
-        self.status = status
 
     def is_valid(self, x):
-        # Not valid if is not trading
-        if self.status is not None and x["status"] != self.status:
-            return False
-
         # Not valid if contract_type mismatches
         if self.contract_type is not None and x["contract_type"] != self.contract_type:
             return False
@@ -138,8 +133,7 @@ def create_symbol_filter_from_config(trade_type, filter_config: dict):
         )
     elif trade_type == TradeType.cm_futures:
         return CmFuturesFilter(
-            contract_type=contract_type,
-            status=filter_config.get("status"),
+            contract_type=contract_type
         )
     else:
         raise ValueError(f"Unsupported trade type for filtering: {trade_type}")

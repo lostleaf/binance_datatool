@@ -41,6 +41,8 @@ uv run python -c "from bhds.aws.downloader import AwsDownloader; ..."
 │   │   └── tasks/              # Task implementations
 │   └── bdt_common/             # Shared utilities
 ├── configs/                    # YAML task configurations
+│   ├── download/               # Download task configurations
+│   └── parsing/                # Parsing task configurations
 ├── examples/                   # Library usage examples
 ├── scripts/                    # Minimal shell scripts (backup only)
 ├── tests/                      # Test files
@@ -82,8 +84,8 @@ uv lock && uv sync   # Update lockfile
 ### Modern CLI Usage
 ```bash
 # YAML-based task execution (recommended)
-uv run bhds aws-download configs/download_spot_kline.yaml
-uv run bhds parse-aws-data configs/parse_klines.yaml
+uv run bhds aws-download configs/download/spot_kline.yaml
+uv run bhds parse-aws-data configs/parsing/spot_kline.yaml
 
 # Available CLI commands
 uv run bhds --help                    # Show all commands
@@ -153,7 +155,7 @@ uv run python tests/aws_downloader.py  # Run specific test
 
 #### YAML Configuration
 ```yaml
-# configs/download_spot_kline.yaml
+# configs/download/spot_kline.yaml
 data_type: "klines"
 trade_type: "spot"
 aws_client:
@@ -163,7 +165,7 @@ symbol_filter:
   quote: "USDT"
   stable_pairs: false
 
-# configs/parse_klines.yaml
+# configs/parsing/spot_kline.yaml
 data_type: "klines"
 trade_type: "spot"
 data_freq: "daily"
@@ -171,7 +173,7 @@ time_interval: "1m"
 enable_completion: true
 force_update: false
 
-# configs/parse_funding.yaml
+# configs/parsing/um_funding.yaml
 data_type: "fundingRate"
 trade_type: "um_futures"
 data_freq: "monthly"
