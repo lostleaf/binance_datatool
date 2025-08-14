@@ -1,18 +1,13 @@
-"""Data completion API module
+"""Data completion API
 
-Provides unified data completion interface supporting intelligent completion strategies for different data types.
+Provides independent detectors and executors for data completion tasks.
 """
 
-from .base import BaseCompletion
-from .kline import DailyKlineCompletion
-from .funding import RecentFundingCompletion
-
+from .detector import DailyKlineDetector, FundingRateDetector
+from .executor import DataExecutor
 
 __all__ = [
-    # Core framework
-    "BaseCompletion",
-    # K-line completion strategies
-    "DailyKlineCompletion",
-    # Funding rate completion strategies
-    "RecentFundingCompletion",
+    "DailyKlineDetector",
+    "FundingRateDetector", 
+    "DataExecutor"
 ]

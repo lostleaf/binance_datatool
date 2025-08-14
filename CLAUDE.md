@@ -35,7 +35,7 @@ uv run python -c "from bhds.aws.downloader import AwsDownloader; ..."
 │   ├── bhds/                   # New modular CLI
 │   │   ├── cli.py              # CLI entry point (uv run bhds)
 │   │   ├── aws/                # AWS client/downloader
-│   │   │   ├── local.py        # Local file management (AwsDataFileManager)
+│   │   │   ├── local.py        # Local file management (LocalAwsClient)
 │   │   │   ├── checksum.py     # Checksum verification utilities
 │   │   │   └── ...             # Other AWS modules
 │   │   └── tasks/              # Task implementations
@@ -197,7 +197,7 @@ import polars as pl
 pl.scan_parquet(input_path)
   .filter(pl.col("volume") > 0)
   .group_by(pl.col("candle_begin_time").dt.date())
-  .agg([pl.col("close"last())])
+  .agg([pl.col("close").last()])
   .sink_parquet(output_path)
 ```
 
@@ -237,16 +237,16 @@ Test files are in `tests/` directory:
 - `checksum.py`: Checksum verification tests
 - `symbol_filter.py`: Symbol filtering tests
 - `parser.py`: Unified CSV parser tests
-- `kline_completion.py`: Kline data completion tests
-- `funding_completion.py`: Funding rate completion tests
+- `kline_comp.py`: Kline detector + DataExecutor integration tests
+- `funding_comp.py`: Funding rate detector + DataExecutor integration tests
 
 Run individual tests:
 ```bash
 uv run python tests/aws_downloader.py
 uv run python tests/local_aws_client.py  # Test local file management
 uv run python tests/parser.py  # Test parser with actual data
-uv run python tests/kline_completion.py  # Test kline completion
-uv run python tests/funding_completion.py  # Test funding completion
+uv run python tests/kline_comp.py  # Test kline detector + executor
+uv run python tests/funding_comp.py  # Test funding detector + executor
 ```
 
 ## Migration Notes
@@ -256,3 +256,7 @@ uv run python tests/funding_completion.py  # Test funding completion
 - **Current**: New CLI uses YAML configurations and library API
 - **Architecture**: AWS path building now uses dedicated `path_builder.py` module
 - **Recommendation**: Use examples/kline_download_task.py as template for custom workflows
+
+## User Defined Notes
+
+- Always write comments and logs in English, No other languages
