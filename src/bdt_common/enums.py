@@ -8,7 +8,7 @@ class TradeType(str, Enum):
 
     # Spot market trades and data
     spot = "spot"
-    # USDT-margined futures (perpetual or delivery)
+    # USDⓈ-margined futures (perpetual or delivery)
     um_futures = "futures/um"
     # COIN-margined futures (perpetual or delivery)
     cm_futures = "futures/cm"

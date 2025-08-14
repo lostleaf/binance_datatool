@@ -16,67 +16,63 @@ from bhds.aws.path_builder import AwsKlinePathBuilder, AwsPathBuilder
 
 class DailyKlineDetector:
     """Daily kline data missing detector"""
-    
-    def __init__(self, trade_type: TradeType, interval: str, base_dir: str):
+
+    def __init__(self, trade_type: TradeType, interval: str, base_dir: str | Path):
         """Initialize with path-related parameters only, no BinanceFetcher needed"""
         self.trade_type = trade_type
         self.interval = interval
+        base_dir = Path(base_dir)
         self.path_builder = AwsKlinePathBuilder(
-            trade_type=trade_type,
-            data_freq=DataFrequency.daily,
-            time_interval=interval
+            trade_type=trade_type, data_freq=DataFrequency.daily, time_interval=interval
         )
-        self.local_client = LocalAwsClient(
-            base_dir=base_dir,
-            path_builder=self.path_builder
-        )
-    
+        self.local_client = LocalAwsClient(base_dir=base_dir, path_builder=self.path_builder)
+
     def detect(self, symbols: List[str]) -> List[Tuple[Callable, Dict, Path]]:
         """Detect missing daily kline data
-        
+
         Args:
             symbols: List of trading symbols
-            
+
         Returns:
             List[Tuple]: (unbound method, parameter dict, save path)
         """
         missing_tasks = []
-        
+
         for symbol in symbols:
             try:
                 missing_dates = self._get_missing_dates(symbol)
-                
+
                 for date_str in missing_dates:
                     # Build save path
                     symbol_dir = self.local_client.get_symbol_dir(symbol)
                     filename = f"{symbol}-{self.interval}-{date_str}.parquet"
                     save_path = symbol_dir / filename
-                    
+
                     # Create task tuple with unbound method
                     task = (
                         BinanceFetcher.get_kline_df_of_day,
                         {"symbol": symbol, "interval": self.interval, "dt": date_str},
-                        save_path
+                        save_path,
                     )
                     missing_tasks.append(task)
-                    
+
             except Exception as e:
                 logger.exception(f"Failed to detect missing dates for {symbol}: {e}")
                 continue
-        
+
         logger.info(f"Detected {len(missing_tasks)} missing kline tasks")
         return missing_tasks
-    
+
     def _get_missing_dates(self, symbol: str) -> List[str]:
         """Get missing date list for specified symbol
-        
+
         Infer date range from existing data files and find missing dates
         """
         symbol_dir = self.local_client.get_symbol_dir(symbol)
-        
+
         if not symbol_dir.exists():
             return []
-        
+
         # Collect existing dates
         existing_dates = set()
         for file_path in symbol_dir.glob("*.parquet"):
@@ -88,80 +84,95 @@ class DailyKlineDetector:
                     existing_dates.add(dt)
                 except ValueError:
                     continue
-        
+
         if not existing_dates:
             return []
-        
+
         # Calculate date range
         min_date = min(existing_dates)
         max_date = max(existing_dates)
-        
+
         if max_date < min_date:
             return []
-        
+
         # Generate expected date range
         expected_dates = set()
         current_date = min_date
         while current_date <= max_date:
             expected_dates.add(current_date)
             current_date += timedelta(days=1)
-        
+
         # Find missing dates
         missing_dates = expected_dates - existing_dates
-        
+
         return sorted([dt.strftime("%Y-%m-%d") for dt in missing_dates])
 
 
 class FundingRateDetector:
     """Funding rate data missing detector"""
-    
-    def __init__(
-        self,
-        trade_type: TradeType,
-        base_dir: str,
-        contract_type=None  # Keep for compatibility
-    ):
+
+    def __init__(self, trade_type: TradeType, base_dir: str | Path):
         """Initialize with path-related parameters only, no BinanceFetcher needed"""
         self.trade_type = trade_type
+        base_dir = Path(base_dir)
         self.path_builder = AwsPathBuilder(
-            trade_type=trade_type,
-            data_freq=DataFrequency.monthly,
-            data_type=DataType.funding_rate
+            trade_type=trade_type, data_freq=DataFrequency.monthly, data_type=DataType.funding_rate
         )
-        self.local_client = LocalAwsClient(
-            base_dir=base_dir,
-            path_builder=self.path_builder
-        )
-    
+        self.local_client = LocalAwsClient(base_dir=base_dir, path_builder=self.path_builder)
+
     def detect(self, symbols: List[str], limit: int = 1000) -> List[Tuple[Callable, Dict, Path]]:
         """Detect funding rate data that needs updating
-        
+
         Args:
             symbols: List of trading symbols
             limit: Number of records to fetch
-            
+
         Returns:
             List[Tuple]: (unbound method, parameter dict, save path)
         """
         missing_tasks = []
-        
+
         for symbol in symbols:
             try:
                 # Build save path
                 symbol_dir = self.local_client.get_symbol_dir(symbol)
                 save_path = symbol_dir / "latest.parquet"
-                
+
                 # Create task tuple with unbound method
-                task = (
-                    BinanceFetcher.get_hist_funding_rate,
-                    {"symbol": symbol, "limit": limit},
-                    save_path
-                )
+                task = (BinanceFetcher.get_hist_funding_rate, {"symbol": symbol, "limit": limit}, save_path)
                 missing_tasks.append(task)
-                
+
             except Exception as e:
                 logger.exception(f"Failed to create funding task for {symbol}: {e}")
                 continue
-        
+
         logger.info(f"Detected {len(missing_tasks)} funding rate tasks")
         return missing_tasks
+
+
+def create_detector(
+    data_type: DataType, trade_type: TradeType, base_dir: str, interval: str = None
+) -> DailyKlineDetector | FundingRateDetector:
+    """
+    Factory method to create appropriate detector based on data type.
+
+    Args:
+        data_type: Market data type (kline/funding_rate)
+        trade_type: Trade type (spot/futures/um_futures/cm_futures)
+        base_dir: Base directory for parsed data
+        interval: Required for kline data type (1m, 5m, 1h, etc.)
+
+    Returns:
+        Appropriate detector instance
+
+    Raises:
+        ValueError: If required parameters are missing for specific data types
+    """
+    if data_type == DataType.kline:
+        if interval is None:
+            raise ValueError("interval is required for kline detector")
+        return DailyKlineDetector(trade_type=trade_type, interval=interval, base_dir=base_dir)
+    elif data_type == DataType.funding_rate:
+        return FundingRateDetector(trade_type=trade_type, base_dir=base_dir)
+    else:
+        raise ValueError(f"No detector available for data type: {data_type}")

@@ -252,15 +252,6 @@ class AwsCsvToParquetConverter:
             }
             results[symbol] = result
 
-            if self.verbose:
-                logger.info(
-                    f"Symbol {symbol} processing completed: "
-                    f"total={result['total_files']}, "
-                    f"processed={result['processed_files']}, "
-                    f"failed={result['failed_files']}, "
-                    f"skipped={result['skipped_files']}"
-                )
-
         # Output overall statistics
         self._log_summary(results)
         return results

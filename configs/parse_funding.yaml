@@ -1,0 +1,40 @@
+# Parse AWS funding rate data to parquet and optionally complete with API
+
+# Data type - must be "fundingRate" for funding rate data
+data_type: "fundingRate"
+
+# Trade type - "futures/um" or "futures/cm" for USDⓈ or Coin margined futures
+trade_type: "futures/um"
+
+# AWS data frequency - funding rates only support monthly
+# Note: API completion is supported for monthly frequency
+data_freq: "monthly"
+
+# Symbol selection - use either symbols list OR symbol_filter, not both
+# If symbols is non-empty, symbol_filter is ignored
+symbols: null
+
+# Symbol filtering options - used only when symbols list is empty
+symbol_filter:
+  quote: "USDT"
+  stable_pairs: false
+
+# Enable API completion for missing data
+enable_completion: true
+
+# Data directories
+# Use ~/crypto_data as $CRYPTO_BASE_DIR if not set
+
+# Source directory for AWS downloaded files
+# Use $CRYPTO_BASE_DIR/binance_data/aws_data/ if not set
+aws_data_dir: null
+
+# Output directory for parsed parquet files
+# Use $CRYPTO_BASE_DIR/binance_data/parsed_data/ if not set
+output_dir: null
+
+# Force re-processing of existing parquet files
+force_update: false
+
+# HTTP proxy, uses environment HTTP_PROXY if not set
+http_proxy: null

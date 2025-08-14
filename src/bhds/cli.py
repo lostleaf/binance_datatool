@@ -10,6 +10,7 @@ import asyncio
 import typer
 
 from bhds.tasks.aws_download import AwsDownloadTask
+from bhds.tasks.parse_aws_data import ParseAwsDataTask
 
 from . import __version__
 
@@ -26,6 +27,13 @@ def version():
 def aws_download(config_path: str = typer.Argument(..., help="Path to YAML config for AWS download task")):
     """Run AWS download task from a YAML configuration file."""
     task = AwsDownloadTask(config_path)
+    asyncio.run(task.run())
+
+
+@app.command()
+def parse_aws_data(config_path: str = typer.Argument(..., help="Path to YAML config for parse AWS data task")):
+    """Parse AWS downloaded data from CSV to Parquet with optional API completion."""
+    task = ParseAwsDataTask(config_path)
     asyncio.run(task.run())
 
 

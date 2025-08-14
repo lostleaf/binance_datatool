@@ -52,7 +52,6 @@ uv run python -c "from bhds.aws.downloader import AwsDownloader; ..."
 $CRYPTO_BASE_DIR/binance_data/
 ├── aws_data/           # Raw AWS downloads (.zip)
 ├── parsed_data/        # Processed AWS data (.parquet)
-├── api_data/           # Recent API data (.parquet)
 ├── results_data/       # Final datasets
 │   ├── klines/         # Merged kline data
 │   └── resampled_klines/ # Higher timeframes
@@ -84,11 +83,13 @@ uv lock && uv sync   # Update lockfile
 ```bash
 # YAML-based task execution (recommended)
 uv run bhds aws-download configs/download_spot_kline.yaml
+uv run bhds parse-aws-data configs/parse_klines.yaml
 
 # Available CLI commands
-uv run bhds --help                # Show all commands
-uv run bhds version               # Show version
-uv run bhds aws-download <config> # Download with YAML config
+uv run bhds --help                    # Show all commands
+uv run bhds version                   # Show version
+uv run bhds aws-download <config>     # Download with YAML config
+uv run bhds parse-aws-data <config>   # Parse AWS data to Parquet
 ```
 
 ### Library-Based Approach (Recommended)
@@ -161,33 +162,44 @@ aws_client:
 symbol_filter:
   quote: "USDT"
   stable_pairs: false
+
+# configs/parse_klines.yaml
+data_type: "klines"
+trade_type: "spot"
+data_freq: "daily"
+time_interval: "1m"
+enable_completion: true
+force_update: false
+
+# configs/parse_funding.yaml
+data_type: "fundingRate"
+trade_type: "um_futures"
+data_freq: "monthly"
+enable_completion: true
+force_update: false
 ```
 
 #### Data Completion API
 ```python
 from bdt_common.enums import TradeType, ContractType
 from bdt_common.rest_api.fetcher import BinanceFetcher
-from bhds.api.completion.kline import DailyKlineCompletion
-from bhds.api.completion.funding import RecentFundingCompletion
+from bhds.api.completion.detector import create_detector
+from bhds.api.completion.executor import DataExecutor
 
-# Kline data completion
-completion = DailyKlineCompletion(
+# Factory-based detector creation
+detector = create_detector(
+    data_type=DataType.kline,
     trade_type=TradeType.spot,
-    interval="1m",
     base_dir="/path/to/data",
-    fetcher=fetcher
+    interval="1m"
 )
 
-# Funding rate completion  
-completion = RecentFundingCompletion(
-    trade_type=TradeType.um_futures,
-    base_dir="/path/to/data",
-    fetcher=fetcher,
-    contract_type=ContractType.perpetual
-)
+# Detect missing data
+tasks = detector.detect(symbols=["BTCUSDT", "ETHUSDT"])
 
-# Complete missing data for symbols
-result = await completion.complete_multiple_symbols(symbols=["BTCUSDT", "ETHUSDT"])
+# Execute completion via DataExecutor
+executor = DataExecutor(fetcher)
+result = await executor.execute(tasks)
 ```
 
 #### Polars LazyFrame Processing
@@ -224,7 +236,7 @@ logger.ok("Download completed")
 
 ### Trade Types
 - `spot`: Spot trading pairs
-- `futures/um`: USD-margined futures
+- `futures/um`: USDⓈ-margined futures
 - `futures/cm`: Coin-margined futures
 
 ## Testing
