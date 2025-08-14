@@ -1,4 +1,4 @@
-# Parse AWS funding rate data to parquet and optionally complete with API
+# BHDS USDⓈ-Margined Futures Funding Rate Parsing Task - Convert AWS data to Parquet and optionally complete with API
 
 # Data type - must be "fundingRate" for funding rate data
 data_type: "fundingRate"
@@ -16,8 +16,8 @@ symbols: null
 
 # Symbol filtering options - used only when symbols list is empty
 symbol_filter:
-  quote: "USDT"
-  stable_pairs: false
+  quote: "USDT" # USDT quote asset
+  stable_pairs: false # Exclude stable pairs (e.g., USDC/USDT trading pairs)
 
 # Enable API completion for missing data
 enable_completion: true

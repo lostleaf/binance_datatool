@@ -1,4 +1,4 @@
-# BHDS swap(USDT perpetuals) Funding Rate Download Task
+# BHDS Coin-Margined Futures Funding Rate Download Task
 
 # Data type, Options: "klines", "fundingRate", "metrics", "aggTrades", "liquidationSnapshot"
 data_type: "fundingRate"
@@ -13,7 +13,7 @@ aws_client:
 
 # Symbol filtering
 symbol_filter:
-  contract_type: "PERPETUAL" # Exclude leverage token pairs
+  contract_type: "PERPETUAL" # Contract type: PERPETUAL or DELIVERY
 
 # Data configuration, local directory for downloads
 # Use $CRYPTO_BASE_DIR/binance_data/aws_data/ if not set

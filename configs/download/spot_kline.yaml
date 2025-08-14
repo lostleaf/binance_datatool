@@ -1,4 +1,4 @@
-# BHDS USDT Spot K-line Download Task
+# BHDS Spot K-line Download Task
 
 # Data type, Options: "klines", "fundingRate", "metrics", "aggTrades", "liquidationSnapshot"
 data_type: "klines"
@@ -11,14 +11,14 @@ aws_client:
   # Binance packaging frequency, Options: "daily", "monthly"
   data_freq: "daily"
 
-  # Binance supported Kline intervals, Options: "1m", "1h", "4h", "1d", etc.
+  # Supported intervals: "1m", "5m", "1h", "1d"
   time_interval: "1m"
 
 # Symbol filtering
 symbol_filter:
   quote: "USDT" # USDT quote asset
-  stable_pairs: false # Exclude stable coin pairs
-  leverage_tokens: false # Exclude leverage token pairs
+  stable_pairs: false # Exclude stable pairs (e.g., USDC/USDT trading pairs)
+  leverage_tokens: false # Exclude leverage tokens (tokens with UP/DOWN/BULL/BEAR in name)
 
 # Data configuration, local directory for downloads
 # Use $CRYPTO_BASE_DIR/binance_data/aws_data/ if not set

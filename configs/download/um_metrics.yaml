@@ -1,4 +1,4 @@
-# BHDS Swap (USDT perpetuals) Metrics Download Task
+# BHDS USDⓈ-Margined Futures Metrics Download Task
 
 # Data type, Options: "klines", "fundingRate", "metrics", "aggTrades", "liquidationSnapshot"
 data_type: "metrics"

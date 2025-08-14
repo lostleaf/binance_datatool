@@ -1,15 +1,16 @@
-# Parse AWS kline data to parquet and optionally complete with API
+# BHDS Spot K-line Parsing Task - Convert AWS data to Parquet and optionally complete with API
 
 # Data type - must be "klines" for candlestick data
 data_type: "klines"
 
-# Trade type - "spot", "um_futures", or "cm_futures"
+# Trade type - "spot", "futures/um", or "futures/cm"
 trade_type: "spot"
 
 # AWS data frequency - "daily" or "monthly"
 data_freq: "daily"
 
 # Kline interval - required for klines data type
+# Supported intervals: "1m", "5m", "1h", "1d"
 time_interval: "1m"
 
 # Symbol selection - use either symbols list OR symbol_filter, not both
@@ -18,9 +19,9 @@ symbols: null
 
 # Symbol filtering options - used only when symbols list is empty
 symbol_filter:
-  quote: "USDT"
-  stable_pairs: false
-  leverage_tokens: false
+  quote: "USDT" # USDT quote asset
+  stable_pairs: false # Exclude stable pairs (e.g., USDC/USDT trading pairs)
+  leverage_tokens: false # Exclude leverage tokens (tokens with UP/DOWN/BULL/BEAR in name)
 
 # Enable API completion for missing data, only supported for daily frequency
 enable_completion: true
