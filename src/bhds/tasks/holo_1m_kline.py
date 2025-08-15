@@ -5,15 +5,11 @@ Generate Holo 1m K-line Task
 Synthesizes holographic 1-minute klines from parsed AWS data with VWAP and funding rates
 support. Includes gap detection and automatic file splitting when gaps are detected.
 """
-import os
-from pathlib import Path
 import shutil
-from typing import List, Optional, Dict, Any
+from pathlib import Path
+from typing import Any, Dict, List
 
-import polars as pl
-import yaml
-
-from bdt_common.enums import DataFrequency, TradeType, DataType
+from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.log_kit import divider, logger
 from bdt_common.polars_utils import execute_polars_batch
 from bdt_common.symbol_filter import create_symbol_filter_from_config
@@ -21,27 +17,7 @@ from bhds.aws.path_builder import create_path_builder
 from bhds.holo_kline.gap_detector import HoloKlineGapDetector
 from bhds.holo_kline.merger import Holo1mKlineMerger
 from bhds.holo_kline.splitter import HoloKlineSplitter
-
-
-def load_config(config_path: str) -> dict:
-    """Load YAML configuration from file path."""
-    config_file = Path(config_path)
-    if not config_file.exists():
-        raise FileNotFoundError(f"Configuration file not found: {config_file}")
-    with open(config_file, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-def get_data_directory(data_dir_cfg: Optional[str], default_subdir: str) -> Path:
-    """Get data directory path from config or use default location."""
-    if data_dir_cfg is None:
-        default_base = os.path.join(os.path.expanduser("~"), "crypto_data")
-        base_dir = Path(os.getenv("CRYPTO_BASE_DIR", default_base))
-        data_dir = base_dir / "binance_data" / default_subdir
-    else:
-        data_dir = Path(data_dir_cfg)
-    data_dir.mkdir(parents=True, exist_ok=True)
-    return data_dir
+from bhds.tasks.common import get_data_directory, load_config
 
 
 class GenHolo1mKlineTask:

@@ -11,8 +11,6 @@ from itertools import chain
 from pathlib import Path
 from typing import Optional
 
-import yaml
-
 from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.log_kit import divider, logger
@@ -23,15 +21,7 @@ from bhds.aws.local import LocalAwsClient
 from bhds.aws.client import AwsClient
 from bhds.aws.path_builder import create_path_builder
 from bhds.aws.downloader import AwsDownloader
-
-
-def load_config(config_path: str) -> dict:
-    """Load YAML configuration from file path."""
-    config_file = Path(config_path)
-    if not config_file.exists():
-        raise FileNotFoundError(f"Configuration file not found: {config_file}")
-    with open(config_file, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+from bhds.tasks.common import load_config, get_data_directory
 
 
 def create_aws_client_from_config(
@@ -41,12 +31,9 @@ def create_aws_client_from_config(
 
     data_freq = DataFrequency(aws_cfg["data_freq"])  # e.g. "daily", "monthly"
     time_interval = aws_cfg.get("time_interval") if data_type == DataType.kline else None
-    
+
     path_builder = create_path_builder(
-        trade_type=trade_type,
-        data_freq=data_freq,
-        data_type=data_type,
-        time_interval=time_interval
+        trade_type=trade_type, data_freq=data_freq, data_type=data_type, time_interval=time_interval
     )
 
     return AwsClient(
@@ -54,19 +41,6 @@ def create_aws_client_from_config(
         session=session,
         http_proxy=http_proxy,
     )
-
-
-def get_data_directory(data_dir_cfg: Optional[str]) -> Path:
-    """Get data directory path from config or use default location."""
-    if data_dir_cfg is None:
-        default_base = os.path.join(os.path.expanduser("~"), "crypto_data")
-        base_dir = Path(os.getenv("CRYPTO_BASE_DIR", default_base))
-        data_dir = base_dir / "binance_data" / "aws_data"
-    else:
-        data_dir = Path(data_dir_cfg)
-    # Ensure base data directory exists
-    data_dir.mkdir(parents=True, exist_ok=True)
-    return data_dir
 
 
 class AwsDownloadTask:
@@ -78,7 +52,7 @@ class AwsDownloadTask:
             self.config = config
 
         # Get top-level params
-        self.data_dir = get_data_directory(self.config.get("data_dir"))
+        self.data_dir = get_data_directory(self.config.get("data_dir"), "aws_data")
         self.http_proxy = self.config.get("http_proxy") or os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
         logger.info(f"Data directory: {self.data_dir}, HTTP proxy: {self.http_proxy}")
 

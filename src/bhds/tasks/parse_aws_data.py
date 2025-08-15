@@ -8,9 +8,7 @@ funding rates data types with configurable symbol filtering.
 """
 import os
 from pathlib import Path
-from typing import List, Optional
-
-import yaml
+from typing import List
 
 from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, DataType, TradeType
@@ -23,29 +21,7 @@ from bhds.api.completion.executor import DataExecutor
 from bhds.aws.csv_conv import AwsCsvToParquetConverter
 from bhds.aws.local import LocalAwsClient
 from bhds.aws.path_builder import create_path_builder
-from bhds.api.completion.detector import create_detector
-
-
-def load_config(config_path: str) -> dict:
-    """Load YAML configuration from file path."""
-    config_file = Path(config_path)
-    if not config_file.exists():
-        raise FileNotFoundError(f"Configuration file not found: {config_file}")
-    with open(config_file, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-def get_data_directory(data_dir_cfg: Optional[str], default_subdir: str) -> Path:
-    """Get data directory path from config or use default location."""
-    if data_dir_cfg is None:
-        default_base = os.path.join(os.path.expanduser("~"), "crypto_data")
-        base_dir = Path(os.getenv("CRYPTO_BASE_DIR", default_base))
-        data_dir = base_dir / "binance_data" / default_subdir
-    else:
-        data_dir = Path(data_dir_cfg)
-    # Ensure base data directory exists
-    data_dir.mkdir(parents=True, exist_ok=True)
-    return data_dir
+from bhds.tasks.common import get_data_directory, load_config
 
 
 class ParseAwsDataTask:
