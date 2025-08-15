@@ -1,0 +1,36 @@
+# BHDS USDⓈ-Margined Futures 1m Holo K-line Synthesis Task
+# Generate holographic 1-minute klines with VWAP and funding rates
+
+# Trade type - "spot", "futures/um", or "futures/cm"
+trade_type: "futures/um"
+
+# Symbol selection - use either symbols list OR symbol_filter, not both
+# If symbols is not null, symbol_filter is ignored
+symbols: null
+
+# Symbol filtering options - used only when symbols list is empty
+symbol_filter:
+  quote: "USDT" # USDT quote asset
+  stable_pairs: false # Exclude stable pairs (e.g., USDC/USDT trading pairs)
+  contract_type: "PERPETUAL" # Contract type: PERPETUAL or DELIVERY
+
+# Holo kline features
+features:
+  include_vwap: true # Include Volume Weighted Average Price
+  include_funding: true # Include funding rates (futures only)
+
+# Gap detection parameters
+gap_detection:
+  min_days: 1 # Minimum gap duration in days
+  min_price_change: 0.1 # Minimum price change threshold (10%)
+
+# Data directories
+# Use ~/crypto_data as $CRYPTO_BASE_DIR if not set
+
+# Source directory for parsed AWS parquet files
+# Use $CRYPTO_BASE_DIR/binance_data/parsed_data/ if not set
+input_dir: null
+
+# Output directory for holo kline parquet files
+# Use $CRYPTO_BASE_DIR/binance_data/holo_1m_klines/ if not set
+output_dir: null

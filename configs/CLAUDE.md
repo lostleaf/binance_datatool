@@ -17,12 +17,16 @@ configs/
 │   ├── um_funding.yaml
 │   ├── cm_funding.yaml
 │   └── um_metrics.yaml
-└── parsing/            # Parsing task configurations
-    ├── spot_kline.yaml
-    ├── um_kline.yaml
-    ├── cm_kline.yaml
-    ├── um_funding.yaml
-    └── cm_funding.yaml
+├── parsing/            # Parsing task configurations
+│   ├── spot_kline.yaml
+│   ├── um_kline.yaml
+│   ├── cm_kline.yaml
+│   ├── um_funding.yaml
+│   └── cm_funding.yaml
+└── holo_1m/            # Holo 1-minute kline synthesis configurations
+    ├── spot.yaml       # Spot trading holographic 1m klines
+    ├── um.yaml         # USDⓈ-margined futures 1m klines
+    └── cm.yaml         # Coin-margined futures 1m klines
 ```
 
 ## Configuration Examples
@@ -47,6 +51,22 @@ data_freq: "daily"
 time_interval: "1m"
 enable_completion: true
 force_update: false
+```
+
+### Holo 1m K-line Synthesis Task
+```yaml
+# USDⓈ-margined futures 1m klines
+trade_type: "futures/um"
+features:
+  include_vwap: true
+  include_funding: true
+symbol_filter:
+  quote: "USDT"
+  stable_pairs: false
+  contract_type: "PERPETUAL"
+gap_detection:
+  min_days: 1
+  min_price_change: 0.1
 ```
 
 ## Configuration Reference
@@ -79,4 +99,7 @@ uv run bhds aws-download configs/download/spot_kline.yaml
 
 # Parse
 uv run bhds parse-aws-data configs/parsing/um_kline.yaml
+
+# Generate Holo 1m K-lines
+uv run bhds holo-1m-kline configs/holo_1m/cm.yaml
 ```
