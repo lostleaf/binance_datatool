@@ -76,10 +76,6 @@ class ParseAwsDataTask:
         self.output_dir = get_data_directory(self.config.get("output_dir"), "parsed_data")
         self.http_proxy = self.config.get("http_proxy") or os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
 
-        logger.info(f"AWS data directory: {self.aws_data_dir}")
-        logger.info(f"Output directory: {self.output_dir}")
-        logger.info(f"HTTP proxy: {self.http_proxy}")
-
         if "trade_type" not in self.config:
             raise KeyError("Missing 'trade_type' in config")
         self.trade_type = TradeType(self.config["trade_type"])
@@ -87,8 +83,17 @@ class ParseAwsDataTask:
         if "data_type" not in self.config:
             raise KeyError("Missing 'data_type' in config")
         self.data_type = DataType(self.config["data_type"])
-
         self.data_freq = DataFrequency(self.config["data_freq"])
+
+        logger.info(
+            f"Trade type: {self.trade_type.value}, "
+            f"Data type: {self.data_type.value}, "
+            f"Data frequency: {self.data_freq.value}"
+        )
+        logger.info(f"AWS data directory: {self.aws_data_dir}")
+        logger.info(f"Output directory: {self.output_dir}")
+        logger.info(f"HTTP proxy: {self.http_proxy}")
+
         self.enable_completion = self.config.get("enable_completion", False)
         self.force_update = self.config.get("force_update", False)
 
