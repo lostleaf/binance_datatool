@@ -21,7 +21,7 @@ from bdt_common.symbol_filter import create_symbol_filter_from_config
 from bhds.aws.checksum import ChecksumVerifier
 from bhds.aws.local import LocalAwsClient
 from bhds.aws.client import AwsClient
-from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
+from bhds.aws.path_builder import create_path_builder
 from bhds.aws.downloader import AwsDownloader
 
 
@@ -40,20 +40,14 @@ def create_aws_client_from_config(
     """Instantiate proper AwsClient based on config."""
 
     data_freq = DataFrequency(aws_cfg["data_freq"])  # e.g. "daily", "monthly"
-
-    if data_type == DataType.kline:
-        time_interval = aws_cfg["time_interval"]
-        path_builder = AwsKlinePathBuilder(
-            trade_type=trade_type,
-            data_freq=data_freq,
-            time_interval=time_interval,
-        )
-    else:
-        path_builder = AwsPathBuilder(
-            trade_type=trade_type,
-            data_freq=data_freq,
-            data_type=data_type,
-        )
+    time_interval = aws_cfg.get("time_interval") if data_type == DataType.kline else None
+    
+    path_builder = create_path_builder(
+        trade_type=trade_type,
+        data_freq=data_freq,
+        data_type=data_type,
+        time_interval=time_interval
+    )
 
     return AwsClient(
         path_builder=path_builder,
