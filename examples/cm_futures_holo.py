@@ -6,7 +6,7 @@ This script demonstrates:
 1. Using Holo1mKlineMerger.generate_all() for cm_futures
 2. Batch processing with execute_polars_batch
 3. Gap detection for all symbols
-4. Only showing symbols with actual gaps
+4. Splitting kline data based on detected gaps
 5. Summary statistics
 """
 
@@ -18,6 +18,7 @@ from bdt_common.enums import TradeType
 from bdt_common.polars_utils import execute_polars_batch
 from bhds.holo_kline.merger import Holo1mKlineMerger
 from bhds.holo_kline.gap_detector import HoloKlineGapDetector
+from bhds.holo_kline.splitter import HoloKlineSplitter
 
 
 def main():
@@ -41,7 +42,7 @@ def main():
     print(f"     Min days: {min_days}")
     print(f"     Min price change: {min_price_chg * 100}%")
     
-    with tempfile.TemporaryDirectory(prefix="cm_futures_holo_gap_") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="cm_futures_holo_") as temp_dir:
         temp_path = Path(temp_dir)
         print(f"\n📁 Temp directory: {temp_path}")
         
@@ -86,6 +87,11 @@ def main():
             total_symbols = len(generated_files)
             
             # Process gap results with symbols
+            symbols_with_gaps = 0
+            total_splits = 0
+            
+            splitter = HoloKlineSplitter(prefix="SP")
+            
             for file_path, gaps_df in zip(generated_files, gap_results):
                 if len(gaps_df) > 0:
                     symbol = file_path.stem
@@ -97,9 +103,21 @@ def main():
                     for gap in gaps_df.sort("time_diff", descending=True).iter_rows(named=True):
                         print(f"  {gap['prev_begin_time']} → {gap['candle_begin_time']}")
                         print(f"  Duration: {gap['time_diff']}, Change: {gap['price_change']:.2%}")
+                    
+                    # Step 4: Split kline data based on detected gaps
+                    print(f"  Splitting {symbol}...")
+                    split_files = splitter.split_file(file_path, gaps_df)
+                    total_splits += len(split_files)
+                    
+                    for split_file in split_files:
+                        seg_df = pl.read_parquet(split_file)
+                        min_begin_time = seg_df["candle_begin_time"].min()
+                        max_begin_time = seg_df["candle_begin_time"].max()
+                        print(f"    {split_file.name}: {len(seg_df)} rows, {min_begin_time} to {max_begin_time}")
             
             # Summary
             print(f"\n📈 Summary: {symbols_with_gaps}/{total_symbols} symbols have gaps")
+            print(f"         {total_splits} split files generated")
             
         except Exception as e:
             print(f"❌ Error: {e}")

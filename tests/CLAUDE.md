@@ -27,6 +27,7 @@ Test files are located in the `tests/` directory and cover all major components 
 ### Holographic Kline System
 - **`holo_merger.py`**: Holographic 1-minute kline synthesis tests - Tests Holo1mKlineMerger functionality
 - **`gap_detector.py`**: Gap detection for holographic kline data - Tests gap detection in kline data
+- **`splitter.py`**: Kline data splitting tests - Tests HoloKlineSplitter functionality for splitting kline data based on detected gaps
 
 ### Utilities
 - **`infer_exginfo.py`**: Exchange info tests - Tests exchange information inference
