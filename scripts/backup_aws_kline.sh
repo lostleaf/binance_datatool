@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Backup script for Binance AWS data
-# Backs up $CRYPTO_BASE_DIR/binance_data/aws_data directory
+# Backs up kline data from specific directories only
 # Excludes .verified files and creates compressed backup
 
 set -e
@@ -19,18 +19,25 @@ fi
 
 # Create backup filename with timestamp
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BACKUP_NAME="aws_data_backup_${TIMESTAMP}.tar"
+BACKUP_NAME="kline_data_backup_${TIMESTAMP}.tar"
 BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
 
-echo "Starting backup of AWS data..."
-echo "Source: $SOURCE_DIR"
+echo "Starting backup of kline data..."
+echo "Source directories:"
+echo "$SOURCE_DIR"
+echo "  - aws_data/data/spot/daily/klines"
+echo "  - aws_data/data/futures/um/daily/klines"
+echo "  - aws_data/data/futures/cm/daily/klines"
 echo "Backup: $BACKUP_PATH"
 
 # Create backup archive excluding .verified files
+# Only backup kline directories
 tar -cf "$BACKUP_PATH" \
     --exclude='*.verified' \
     -C "$BACKUP_DIR" \
-    aws_data
+    aws_data/data/spot/daily/klines \
+    aws_data/data/futures/um/daily/klines \
+    aws_data/data/futures/cm/daily/klines 2>/dev/null || true
 
 # Calculate backup size
 BACKUP_SIZE=$(du -h "$BACKUP_PATH" | cut -f1)
