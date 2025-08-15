@@ -6,7 +6,7 @@ VWAP and funding rate fields, and fills missing kline gaps to ensure time series
 """
 
 from pathlib import Path
-from typing import Dict
+from typing import Optional
 
 import polars as pl
 
@@ -107,12 +107,13 @@ class Holo1mKlineMerger:
         # Save result (maintain LazyFrame)
         return ldf.sink_parquet(output_path, lazy=True)
 
-    def generate_all(self, output_dir: Path) -> list[pl.LazyFrame]:
+    def generate_all(self, output_dir: Path, target_symbols: Optional[list[str]] = None) -> list[pl.LazyFrame]:
         """
         Generate holo_1m_kline for all symbols in batch
 
         Args:
             output_dir: Output directory
+            target_symbols: List of symbols to process
 
         Returns:
             list[pl.LazyFrame]: List of LazyFrames
@@ -120,6 +121,9 @@ class Holo1mKlineMerger:
         # Get all symbols from kline directory
         kline_base_dir = self.base_dir / self.kline_builder.base_dir
         symbols = [d.name for d in kline_base_dir.iterdir() if d.is_dir()]
+
+        if target_symbols is not None:
+            symbols = sorted(set(target_symbols).intersection(set(symbols)))
 
         results = []
         for symbol in symbols:

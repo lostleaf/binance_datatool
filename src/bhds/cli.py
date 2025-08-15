@@ -10,6 +10,7 @@ import asyncio
 import typer
 
 from bhds.tasks.aws_download import AwsDownloadTask
+from bhds.tasks.holo_1m_kline import GenHolo1mKlineTask
 from bhds.tasks.parse_aws_data import ParseAwsDataTask
 
 from . import __version__
@@ -24,17 +25,26 @@ def version():
 
 
 @app.command()
-def aws_download(config_path: str = typer.Argument(..., help="Path to YAML config for AWS download task")):
-    """Run AWS download task from a YAML configuration file."""
-    task = AwsDownloadTask(config_path)
-    asyncio.run(task.run())
+def aws_download(config_paths: list[str] = typer.Argument(..., help="Paths to YAML configs for AWS download tasks")):
+    """Run AWS download tasks from YAML configuration files."""
+    for config_path in config_paths:
+        task = AwsDownloadTask(config_path)
+        asyncio.run(task.run())
 
 
 @app.command()
-def parse_aws_data(config_path: str = typer.Argument(..., help="Path to YAML config for parse AWS data task")):
+def parse_aws_data(config_paths: list[str] = typer.Argument(..., help="Paths to YAML configs for parse AWS data tasks")):
     """Parse AWS downloaded data from CSV to Parquet with optional API completion."""
-    task = ParseAwsDataTask(config_path)
-    asyncio.run(task.run())
+    for config_path in config_paths:
+        task = ParseAwsDataTask(config_path)
+        asyncio.run(task.run())
+
+
+@app.command()
+def holo_1m_kline(config_paths: list[str] = typer.Argument(..., help="Paths to YAML configs for generate holo 1m kline tasks")):
+    """Generate holo 1m kline from parsed data."""
+    for config_path in config_paths:
+        GenHolo1mKlineTask(config_path).run()
 
 
 if __name__ == "__main__":
