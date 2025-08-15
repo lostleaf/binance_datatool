@@ -38,6 +38,8 @@ uv run python -c "from bhds.aws.downloader import AwsDownloader; ..."
 │   │   │   ├── local.py        # Local file management (LocalAwsClient)
 │   │   │   ├── checksum.py     # Checksum verification utilities
 │   │   │   └── ...             # Other AWS modules
+│   │   ├── holo_kline/         # Holographic 1-minute kline synthesis
+│   │   │   └── merger.py       # Holo1mKlineMerger implementation
 │   │   └── tasks/              # Task implementations
 │   └── bdt_common/             # Shared utilities
 ├── configs/                    # YAML task configurations
@@ -56,7 +58,8 @@ $CRYPTO_BASE_DIR/binance_data/
 ├── parsed_data/        # Processed AWS data (.parquet)
 ├── results_data/       # Final datasets
 │   ├── klines/         # Merged kline data
-│   └── resampled_klines/ # Higher timeframes
+│   ├── resampled_klines/ # Higher timeframes
+│   └── holo_1m_klines/ # Holographic 1-minute klines (with VWAP & funding)
 ```
 
 ## Environment Setup
@@ -203,6 +206,26 @@ executor = DataExecutor(fetcher)
 result = await executor.execute(tasks)
 ```
 
+#### Holo1mKlineMerger (Holographic 1-Minute Kline)
+```python
+from bdt_common.enums import TradeType
+from bhds.holo_kline.merger import Holo1mKlineMerger
+
+# Generate holographic 1-minute klines with VWAP and funding rates
+merger = Holo1mKlineMerger(
+    trade_type=TradeType.um_futures,  # spot, um_futures, cm_futures
+    base_dir=Path("/data/parsed"),
+    include_vwap=True,      # Add volume-weighted average price
+    include_funding=True    # Add funding rates (futures only)
+)
+
+# Single symbol processing
+ldf = merger.generate("BTCUSDT", Path("output/BTCUSDT.parquet"))
+
+# Batch processing for all symbols
+results = merger.generate_all(Path("output/holo_1m_klines/"))
+```
+
 #### Polars LazyFrame Processing
 ```python
 import polars as pl
@@ -252,6 +275,7 @@ Test files are in `tests/` directory:
 - `parser.py`: Unified CSV parser tests
 - `kline_comp.py`: Kline detector + DataExecutor integration tests
 - `funding_comp.py`: Funding rate detector + DataExecutor integration tests
+- `holo_merger.py`: Holographic 1-minute kline synthesis tests
 
 Run individual tests:
 ```bash
@@ -260,6 +284,7 @@ uv run python tests/local_aws_client.py  # Test local file management
 uv run python tests/parser.py  # Test parser with actual data
 uv run python tests/kline_comp.py  # Test kline detector + executor
 uv run python tests/funding_comp.py  # Test funding detector + executor
+uv run python tests/holo_merger.py  # Test holographic kline synthesis
 ```
 
 ## Migration Notes
