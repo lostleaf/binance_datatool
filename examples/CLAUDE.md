@@ -10,6 +10,7 @@ The examples directory contains complete working examples demonstrating how to u
 
 ### Core Examples
 - **`kline_download_task.py`**: Complete library-based download workflow example - Demonstrates AWS data downloading using the library API
+- **`cm_futures_holo_gap.py`**: Batch processing example for cm_futures 1m holo klines with gap detection - Demonstrates `generate_all()` and `execute_polars_batch` usage
 
 ## Library Usage Patterns
 
@@ -55,14 +56,53 @@ status = local_client.get_all_symbols_status()
 summary = local_client.get_summary()
 ```
 
+### Holo 1m Kline Generation with Gap Detection
+```python
+import tempfile
+from pathlib import Path
+from bdt_common.enums import TradeType
+from bdt_common.polars_utils import execute_polars_batch
+from bhds.holo_kline.merger import Holo1mKlineMerger
+from bhds.holo_kline.gap_detector import HoloKlineGapDetector
+
+# Generate cm_futures 1m holo klines with gap detection
+with tempfile.TemporaryDirectory() as temp_dir:
+    merger = Holo1mKlineMerger(
+        trade_type=TradeType.cm_futures,
+        base_dir=Path("/path/to/crypto_data/binance_data/parsed_data"),
+        include_vwap=True,
+        include_funding=True,
+    )
+    
+    # Generate all symbols
+    lazy_frames = merger.generate_all(Path(temp_dir))
+    execute_polars_batch(lazy_frames, "Collecting kline data")
+    
+    # Detect gaps in all generated files
+    detector = HoloKlineGapDetector(min_days=1, min_price_chg=0.1)
+    generated_files = list(Path(temp_dir).glob("*.parquet"))
+    
+    gap_tasks = [detector.detect(file_path) for file_path in generated_files]
+    gap_results = execute_polars_batch(gap_tasks, "Detecting gaps", return_results=True)
+    
+    # Process results
+    for file_path, gaps_df in zip(generated_files, gap_results):
+        if len(gaps_df) > 0:
+            symbol = file_path.stem
+            print(f"{symbol}: {len(gaps_df)} gaps detected")
+```
+
 ## Running Examples
 
 ### Basic Usage
 ```bash
 # Set HTTP_PROXY environment variable if needs HTTP proxy for downloads
 
-# Run example with custom data directory
+# Run kline download example
 uv run python examples/kline_download_task.py /path/to/crypto_data
+
+# Run cm_futures gap detection example
+uv run python examples/cm_futures_holo_gap.py
 
 # Or set CRYPTO_BASE_DIR environment variable (defaults to `~/crypto_data`)
 export CRYPTO_BASE_DIR=/path/to/crypto_data

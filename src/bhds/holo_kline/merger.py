@@ -107,7 +107,7 @@ class Holo1mKlineMerger:
         # Save result (maintain LazyFrame)
         return ldf.sink_parquet(output_path, lazy=True)
 
-    def generate_all(self, output_dir: Path) -> Dict[str, pl.LazyFrame]:
+    def generate_all(self, output_dir: Path) -> list[pl.LazyFrame]:
         """
         Generate holo_1m_kline for all symbols in batch
 
@@ -115,17 +115,17 @@ class Holo1mKlineMerger:
             output_dir: Output directory
 
         Returns:
-            Dict[str, pl.LazyFrame]: Symbol to LazyFrame mapping
+            list[pl.LazyFrame]: List of LazyFrames
         """
         # Get all symbols from kline directory
         kline_base_dir = self.base_dir / self.kline_builder.base_dir
         symbols = [d.name for d in kline_base_dir.iterdir() if d.is_dir()]
 
-        results = {}
+        results = []
         for symbol in symbols:
             output_path = output_dir / f"{symbol}.parquet"
             ldf = self.generate(symbol, output_path)
-            results[symbol] = ldf
+            results.append(ldf)
 
         return results
 

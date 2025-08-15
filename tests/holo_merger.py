@@ -11,9 +11,11 @@ Test symbols: BTCUSDT, ETHUSDT
 import random
 import tempfile
 from pathlib import Path
+
 import polars as pl
 
 from bdt_common.enums import TradeType
+from bdt_common.polars_utils import execute_polars_batch
 from bhds.holo_kline.merger import Holo1mKlineMerger
 
 
@@ -125,23 +127,23 @@ def test_holo_merger_generate_all():
 
             # Test generate_all method
             print(f"\n🔄 Running generate_all for all CM futures symbols...")
-            results = merger.generate_all(temp_path)
+            lazy_frames = merger.generate_all(temp_path)
 
             print(f"\n📊 Results Summary:")
-            print(f"     Total symbols processed: {len(results)}")
+            print(f"     Total symbols processed: {len(lazy_frames)}")
 
             # Trigger actual file writing by collecting LazyFrames
             print(f"\n🔄 Collecting LazyFrames to trigger file writing...")
+            execute_polars_batch(lazy_frames, "Collecting kline data")
+            generated_files = list(temp_path.glob("*.parquet"))
             collected_symbols = list()
-            for symbol, ldf in results.items():
+            for output_file in generated_files:
                 try:
                     # Collect the LazyFrame to trigger file writing
-                    ldf.collect()
-                    output_file = temp_path / f"{symbol}.parquet"
-                    if output_file.exists():
-                        df = pl.read_parquet(output_file)
-                        print(f"  ✅ {symbol}: Collected {len(df)} records")
-                        collected_symbols.append(symbol)
+                    symbol = output_file.stem
+                    df = pl.read_parquet(output_file)
+                    print(f"  ✅ {symbol}: Collected {len(df)} records")
+                    collected_symbols.append(symbol)
                 except Exception as e:
                     print(f"  ❌ {symbol}: Error collecting - {e}")
 
