@@ -132,7 +132,7 @@ class ParseAwsDataTask:
         logger.info(f"Found {len(all_symbols)} total symbols, filtered to {len(filtered_symbols)} symbols")
         return filtered_symbols
 
-    async def _convert_csv_to_parquet(self) -> List[str]:
+    def _convert_csv_to_parquet(self) -> List[str]:
         """Convert AWS CSV files to optimized Parquet format."""
         logger.debug("Converting AWS CSV files to Parquet...")
 
@@ -225,7 +225,7 @@ class ParseAwsDataTask:
 
         try:
             # Step 1: Convert CSV to Parquet
-            processed_symbols = await self._convert_csv_to_parquet()
+            processed_symbols = self._convert_csv_to_parquet()
 
             if not processed_symbols:
                 logger.warning("No symbols processed, skipping API completion")
