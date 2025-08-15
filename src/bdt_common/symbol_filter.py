@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable
-from typing import ClassVar, Optional
+from typing import Optional
 
 from bdt_common.enums import ContractType
 from bdt_common.infer_exginfo import infer_cm_futures_info, infer_spot_info, infer_um_futures_info
@@ -132,8 +131,6 @@ def create_symbol_filter_from_config(trade_type, filter_config: dict):
             stable_pairs=stable_pairs,
         )
     elif trade_type == TradeType.cm_futures:
-        return CmFuturesFilter(
-            contract_type=contract_type
-        )
+        return CmFuturesFilter(contract_type=contract_type)
     else:
         raise ValueError(f"Unsupported trade type for filtering: {trade_type}")

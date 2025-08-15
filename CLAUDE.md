@@ -6,25 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Binance Historical Data Service (BHDS) - Python CLI tool for downloading, processing, and maintaining Binance cryptocurrency market data using AWS historical archives and Binance APIs. Outputs optimized Parquet datasets for quantitative research.
 
-**⚠️ UNDER REFACTORING**: Legacy code in `legacy/` is being migrated to modern `src/` structure. New development should use the `src/` layout.
-
-## Quick Start
-
-```bash
-# Setup environment
-uv venv && source .venv/bin/activate
-uv sync
-sudo apt install aria2  # or brew install aria2 on macOS
-
-# Method 1: CLI with YAML config
-uv run bhds aws-download configs/download_spot_kline.yaml
-
-# Method 2: Library-based approach (see examples/kline_download_task.py)
-uv run python examples/kline_download_task.py /path/to/data
-
-# Method 3: Manual workflow with modern tools
-uv run python -c "from bhds.aws.downloader import AwsDownloader; ..."
-```
+## **⚠️ UNDER REFACTORING**:
+Legacy code in `legacy/` is being migrated to modern `src/` structure. 
+New development should use the `src/` layout.
 
 ## Architecture
 
@@ -39,7 +23,8 @@ uv run python -c "from bhds.aws.downloader import AwsDownloader; ..."
 │   │   │   ├── checksum.py     # Checksum verification utilities
 │   │   │   └── ...             # Other AWS modules
 │   │   ├── holo_kline/         # Holographic 1-minute kline synthesis
-│   │   │   └── merger.py       # Holo1mKlineMerger implementation
+│   │   │   ├── merger.py       # Holo1mKlineMerger implementation
+│   │   │   └── gap_detector.py # Gap detection for kline data
 │   │   └── tasks/              # Task implementations
 │   └── bdt_common/             # Shared utilities
 ├── configs/                    # YAML task configurations
@@ -57,8 +42,6 @@ $CRYPTO_BASE_DIR/binance_data/
 ├── aws_data/           # Raw AWS downloads (.zip)
 ├── parsed_data/        # Processed AWS data (.parquet)
 ├── results_data/       # Final datasets
-│   ├── klines/         # Merged kline data
-│   ├── resampled_klines/ # Higher timeframes
 │   └── holo_1m_klines/ # Holographic 1-minute klines (with VWAP & funding)
 ```
 
@@ -67,14 +50,20 @@ $CRYPTO_BASE_DIR/binance_data/
 ### Prerequisites
 - Python >=3.12
 - [uv](https://docs.astral.sh/uv/) package manager
-- aria2 download utility
+- aria2 download utility, installed via package manager `brew install aria2` or `sudo apt install aria2`
 
 ### Commands
+
 ```bash
-uv sync              # Install dependencies
-uv sync --dev        # Install dev dependencies
-uv add package       # Add new package
-uv lock && uv sync   # Update lockfile
+# Setup environment
+uv sync
+source .venv/bin/activate
+
+# Method 1: CLI with YAML config
+uv run bhds aws-download configs/download_spot_kline.yaml
+
+# Method 2: Library-based approach (see examples/kline_download_task.py)
+uv run python examples/kline_download_task.py /path/to/data
 ```
 
 ### Configuration
@@ -83,67 +72,20 @@ uv lock && uv sync   # Update lockfile
 
 ## Usage Patterns
 
-### Modern CLI Usage
+### Modern CLI Usage (Recommended)
 ```bash
 # YAML-based task execution (recommended)
 uv run bhds aws-download configs/download/spot_kline.yaml
 uv run bhds parse-aws-data configs/parsing/spot_kline.yaml
 
-# Available CLI commands
+# Other available CLI commands
 uv run bhds --help                    # Show all commands
 uv run bhds version                   # Show version
-uv run bhds aws-download <config>     # Download with YAML config
-uv run bhds parse-aws-data <config>   # Parse AWS data to Parquet
 ```
 
-### Library-Based Approach (Recommended)
-```python
-# See examples/kline_download_task.py for complete example
-from bdt_common.enums import DataFrequency, TradeType
-from bdt_common.symbol_filter import SpotFilter
-from bhds.aws.client import AwsKlineClient
-from bhds.aws.downloader import AwsDownloader
-
-# Custom workflow using library API
-async def custom_download():
-    client = AwsKlineClient(
-        trade_type=TradeType.spot,
-        data_freq=DataFrequency.daily,
-        time_interval="1m"
-    )
-    downloader = AwsDownloader(local_dir="/path/to/data")
-    # ... custom logic
-
-# Local file management (offline analysis)
-from bhds.aws.local import LocalAwsClient
-from bhds.aws.path_builder import AwsKlinePathBuilder
-
-# Manage local downloaded data
-path_builder = AwsKlinePathBuilder(
-    trade_type=TradeType.spot,
-    data_freq=DataFrequency.daily,
-    time_interval="1m"
-)
-local_client = LocalAwsClient(
-    base_dir=Path("/path/to/crypto_data"),
-    path_builder=path_builder
-)
-
-# Get verification status
-symbols = local_client.list_symbols()
-status = local_client.get_all_symbols_status()
-summary = local_client.get_summary()
-```
-
-### Running Examples
-```bash
-# Run example with custom data directory
-uv run python examples/kline_download_task.py /path/to/crypto_data
-
-# Or set CRYPTO_BASE_DIR environment variable
-export CRYPTO_BASE_DIR=/path/to/crypto_data
-uv run python examples/kline_download_task.py
-```
+### Library-Based Approach
+See [`examples/CLAUDE.md`](examples/CLAUDE.md) 
+for comprehensive library usage examples and custom workflow documentation.
 
 ## Development
 
@@ -156,32 +98,7 @@ uv run python tests/aws_downloader.py  # Run specific test
 ### Key Patterns
 
 #### YAML Configuration
-```yaml
-# configs/download/spot_kline.yaml
-data_type: "klines"
-trade_type: "spot"
-aws_client:
-  data_freq: "daily"
-  time_interval: "1m"
-symbol_filter:
-  quote: "USDT"
-  stable_pairs: false
-
-# configs/parsing/spot_kline.yaml
-data_type: "klines"
-trade_type: "spot"
-data_freq: "daily"
-time_interval: "1m"
-enable_completion: true
-force_update: false
-
-# configs/parsing/um_funding.yaml
-data_type: "fundingRate"
-trade_type: "um_futures"
-data_freq: "monthly"
-enable_completion: true
-force_update: false
-```
+See [`configs/CLAUDE.md`](configs/CLAUDE.md) for comprehensive YAML configuration documentation and examples.
 
 #### Data Completion API
 ```python
@@ -226,66 +143,25 @@ ldf = merger.generate("BTCUSDT", Path("output/BTCUSDT.parquet"))
 results = merger.generate_all(Path("output/holo_1m_klines/"))
 ```
 
-#### Polars LazyFrame Processing
-```python
-import polars as pl
-
-pl.scan_parquet(input_path)
-  .filter(pl.col("volume") > 0)
-  .group_by(pl.col("candle_begin_time").dt.date())
-  .agg([pl.col("close").last()])
-  .sink_parquet(output_path)
-```
+#### Polars Usage Guidelines
+1. Use LazyFrame/Lazy API whenever possible
+2. Use `from bdt_common.polars_utils import execute_polars_batch` for batch collection of multiple LazyFrames
 
 #### Logging
-```python
-# Legacy
-from util.log_kit import logger
+Use `from bdt_common.log_kit import logger` for all logging. 
+See [`tests/log_kit.py`](tests/log_kit.py) for usage examples.
 
-# New
-from bdt_common.log_kit import logger
+## Core Enums
 
-logger.info("Processing started")
-logger.ok("Download completed")
-```
-
-## Data Types & Trade Types
-
-### Data Types
-- `klines`: Candlestick data (OHLCV)
-- `fundingRate`: Funding rates
-- `metrics`: Market metrics
-- `aggTrades`: Aggregated trades
-- `liquidationSnapshot`: Liquidation data
-
-### Trade Types
-- `spot`: Spot trading pairs
-- `futures/um`: USDⓈ-margined futures
-- `futures/cm`: Coin-margined futures
+Core enums are defined in [`src/bdt_common/enums.py`](src/bdt_common/enums.py):
+- **TradeType**: `spot`, `futures/um`, `futures/cm`
+- **DataType**: `klines`, `fundingRate`, `aggTrades`, `liquidationSnapshot`, `metrics`
+- **DataFrequency**: `daily`, `monthly`
+- **ContractType**: `PERPETUAL`, `DELIVERY`
 
 ## Testing
 
-Test files are in `tests/` directory:
-- `aws_client.py`: AWS client tests
-- `aws_downloader.py`: Downloader tests
-- `local_aws_client.py`: Local file management tests
-- `infer_exginfo.py`: Exchange info tests
-- `checksum.py`: Checksum verification tests
-- `symbol_filter.py`: Symbol filtering tests
-- `parser.py`: Unified CSV parser tests
-- `kline_comp.py`: Kline detector + DataExecutor integration tests
-- `funding_comp.py`: Funding rate detector + DataExecutor integration tests
-- `holo_merger.py`: Holographic 1-minute kline synthesis tests
-
-Run individual tests:
-```bash
-uv run python tests/aws_downloader.py
-uv run python tests/local_aws_client.py  # Test local file management
-uv run python tests/parser.py  # Test parser with actual data
-uv run python tests/kline_comp.py  # Test kline detector + executor
-uv run python tests/funding_comp.py  # Test funding detector + executor
-uv run python tests/holo_merger.py  # Test holographic kline synthesis
-```
+See [`tests/CLAUDE.md`](tests/CLAUDE.md) for comprehensive testing documentation.
 
 ## Migration Notes
 

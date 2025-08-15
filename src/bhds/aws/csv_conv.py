@@ -15,7 +15,7 @@ from typing import Dict, List, Optional
 from tqdm import tqdm
 
 from bdt_common.enums import DataType
-from bdt_common.env import polars_mp_env
+from bdt_common.polars_utils import polars_mp_env
 from bdt_common.log_kit import logger
 from bhds.aws.local import LocalAwsClient
 from bhds.aws.parser import create_aws_parser

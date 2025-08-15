@@ -7,10 +7,8 @@ from bdt_common.log_kit import logger, divider
 
 def test_log_kit_examples():
     """Run log_kit usage examples to see different log levels and divider function"""
-    # Output log information
     logger.debug("Debug information without markers or colors, equivalent to print")
     logger.info("Informational message in blue, useful for recording intermediate results")
-    # noinspection PyUnresolvedReferences
     logger.ok("Completion message in green, typically indicating success")
     logger.warning("Warning message in yellow, typically used for alerts")
     logger.error("Error message in red, usually error-related hints")
