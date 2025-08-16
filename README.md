@@ -1,54 +1,96 @@
-# BHDS
+# Binance Datatool
 
-BHDS, short for Binance Historical Data Service, is an open-source project designed for downloading and locally maintaining historical market data from Binance. 
+Binance Datatool is an open-source project for cryptocurrency quantitative trading research, featuring **BHDS** (Binance Historical Data Service) as its core service.
 
-BHDS is primarily intended for cryptocurrency quantitative trading research using Python. It uses the open-source [Aria2](https://aria2.github.io/) downloader to retrieve historical market data, such as candlestick (K-line) and funding rates, from [Binance's official AWS historical data repository](https://data.binance.vision/). The data is then converted into a DataFrame using [Polars](https://pola.rs/) and stored in the Parquet format, facilitating efficient access for quantitative research.
+BHDS efficiently downloads and maintains historical market data from Binance using [Aria2](https://aria2.github.io/) for parallel downloads from [Binance's AWS repository](https://data.binance.vision/). Data is processed with [Polars](https://pola.rs/) and stored in Parquet format for optimal quantitative research workflows.
+
+The project uses [src layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/) with two main packages: 
+- `bhds`: CLI and core services
+- `bdt_common`: shared utilities
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architecture.
 
 This project is released under the **MIT License**.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for an overview of the project layout.
+## Environment Setup
 
-**Be careful, I'm refactoring this project, the code may be broken.**
+### Prerequisites
 
-## Environment
+- **Python ≥ 3.12** (required for modern type hints and performance optimizations)
+- **[uv](https://docs.astral.sh/uv/)** for fast Python package management
+- **[aria2](https://aria2.github.io/)** for efficient parallel downloads from Binance AWS
 
-### Python Environment Setup
+### Quick Setup
 
-This project uses [uv](https://docs.astral.sh/uv/) for Python package management. To set up the environment:
-
-1. **Install uv** (if not already installed):
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-
-2. **Create and activate a virtual environment**:
-   ```bash
-   uv venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-3. **Install project dependencies**:
-   ```bash
-   uv sync
-   ```
-
-### Aria2 Installation
-
-The BHDS service requires `aria2`, an efficient cross-platform command-line download utility, for downloading historical data from Binance's AWS repository.
-
-**Linux (Ubuntu/Debian):**
 ```bash
-sudo apt install aria2
+# Setup project environment
+uv sync && source .venv/bin/activate
+
+# Install aria2
+sudo apt install aria2  # Ubuntu/Debian
+# brew install aria2    # macOS
 ```
 
-**Linux (CentOS/RHEL/Fedora):**
+### Environment Variables
+
+Optional configuration for advanced users:
+
 ```bash
-sudo yum install aria2
+# Base Crypto data storage directory (default: ~/crypto_data)
+export CRYPTO_BASE_DIR="/path/to/your/crypto/data"
+
+# HTTP proxy if needed
+export HTTP_PROXY="http://127.0.0.1:7893"
 ```
 
-**macOS:**
+## Usage
+
+BHDS provides two interfaces for quantitative traders. **CLI interface is recommended for most use cases**.
+
+### 1. CLI Interface (Recommended)
+
+Built with [Typer](https://typer.tiangolo.com/), the CLI provides a streamlined workflow using YAML configurations:
+
 ```bash
-# Using Homebrew
-brew install aria2
+# Show available commands
+uv run bhds --help
+
+# Download historical data
+uv run bhds aws-download configs/download/spot_kline.yaml
+
+# Parse downloaded CSV to Parquet
+uv run bhds parse-aws-data configs/parsing/spot_kline.yaml
+
+# Generate holistic 1m klines
+uv run bhds holo-1m-kline configs/holo_1m/spot.yaml
+
+# Resample to higher timeframes
+uv run bhds resample configs/resample/spot.yaml
+```
+See [configs/](configs/) for YAML configuration templates.
+
+### 2. Library Interface (Advanced)
+
+For advanced users requiring programmatic access and custom workflows:
+
+``` python
+import asyncio
+import os
+
+from bdt_common.enums import DataFrequency, TradeType
+from bdt_common.network import create_aiohttp_session
+from bhds.aws.client import AwsClient
+from bhds.aws.path_builder import AwsKlinePathBuilder
+
+async def main():
+    async with create_aiohttp_session(5) as session:
+        http_proxy = os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
+        path_builder = AwsKlinePathBuilder(trade_type=TradeType.spot, data_freq=DataFrequency.daily, time_interval="1m")
+        client = AwsClient(path_builder=path_builder, session=session, http_proxy=http_proxy)
+        symbols = await client.list_symbols()
+        print('First 5 symbols of spot daily 1m kline:', symbols[:5])
+
+asyncio.run(main())
 ```
 
+See [examples/](examples/) for complete usage patterns including data download and processing workflows.
