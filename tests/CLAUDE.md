@@ -7,9 +7,6 @@ This file is part of the parent CLAUDE.md system. It contains comprehensive test
 Each script under `tests/` is executable on its own.
 
 ```bash
-# run every test script
-for f in tests/*.py; do uv run "$f"; done
-
 # run a single file
 uv run tests/aws_client.py
 ```
