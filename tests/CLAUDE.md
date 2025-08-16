@@ -38,6 +38,7 @@ Environment variables:
 - **`holo_merger.py`**: Generates holographic 1-minute klines.
 - **`gap_detector.py`**: Detects gaps in kline sequences.
 - **`splitter.py`**: Splits klines around detected gaps.
+- **`resampler.py`**: Resamples kline data to higher intervals.
 
 ### Utilities
 - **`infer_exginfo.py`**: Infers exchange information from symbols.
