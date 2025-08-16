@@ -14,6 +14,7 @@ from pathlib import Path
 import polars as pl
 
 from bdt_common.enums import DataType, TradeType, DataFrequency
+from bdt_common.log_kit import logger, divider
 from bhds.aws.csv_conv import AwsCsvToParquetConverter
 from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
 from bhds.aws.local import LocalAwsClient
@@ -32,20 +33,15 @@ def test_converter():
         (DataType.funding_rate, TradeType.um_futures, DataFrequency.monthly),
     ]
 
-    print("=" * 60)
-    print("Testing AwsCsvToParquetConverter")
-    print("=" * 60)
+    divider("Testing CSV to Parquet Conversion")
 
     for data_type, trade_type, data_freq in test_cases:
-        print(f"\n📊 Testing {data_type.value} - {trade_type.value} - {data_freq.value}")
-        print("-" * 40)
-
         # Create temporary output directory (automatically cleaned up)
         with tempfile.TemporaryDirectory(prefix="parquet_test_") as temp_dir:
             temp_path = Path(temp_dir)
-            print(f"📁 Temp directory: {temp_path}")
-            print(f"📝 Note: Temp directory will be automatically cleaned up after test")
-            print(f"📝 Note: Original CSV zip files will NOT be modified")
+            divider(
+                f"Testing {data_type.value} - {trade_type.value} - {data_freq.value}", sep="-"
+            )
 
             try:
                 # Create path builder and local AWS client
@@ -69,52 +65,43 @@ def test_converter():
                 )
 
                 # Process symbols
-                print(f"🚀 Processing symbols: {symbols}")
+                logger.debug(f"Processing symbols: {symbols}")
                 results = processor.process_symbols(symbols)
 
                 # Print results summary
-                print("\n📈 Processing Results:")
                 for symbol, result in results.items():
-                    print(
-                        f"  {symbol}: {result['processed_files']} processed, "
+                    logger.ok(
+                        f"{symbol}: {result['processed_files']} processed, "
                         f"{result['skipped_files']} skipped, {result['failed_files']} failed"
                     )
 
                 # Print directory structure (with limited files per directory)
-                print("\n📂 Output Directory Structure (showing max 5 files per directory):")
+                logger.info("Output Directory Structure (showing max 5 files per directory):")
                 print_directory_structure(temp_path, max_depth=10)
 
                 # Read and display sample data
-                print("\n📄 Sample Data (last 5 rows):")
+                logger.info("Sample Data (last 5 rows):")
                 parquet_files = list(temp_path.rglob("*.parquet"))
 
                 if parquet_files:
                     # Show samples from first few files
                     for i, parquet_file in enumerate(parquet_files[:3]):
-                        print(f"\n  📋 File: {parquet_file.relative_to(temp_path)}")
+                        logger.debug(f"File: {parquet_file.relative_to(temp_path)}")
                         try:
                             df = pl.read_parquet(parquet_file)
-                            print(f"     Shape: {df.shape}")
-                            print(f"     Columns: {df.columns}")
-                            print("     Last 5 rows:")
-                            tail_df = df.tail(5)
-                            print(tail_df)
+                            logger.debug(f"Shape: {df.shape}, Columns: {df.columns}, Last 5 rows:")
+                            logger.debug(str(df.tail(5)))
                         except Exception as e:
-                            print(f"     ❌ Error reading file: {e}")
+                            logger.error(f"     Error reading file: {e}")
                 else:
-                    print("  ⚠️  No parquet files found")
+                    logger.warning("  No parquet files found")
 
             except Exception as e:
-                print(f"❌ Error processing {data_type.value} - {trade_type.value} - {data_freq.value}: {e}")
-                import traceback
+                logger.exception(f"Error processing {data_type.value} - {trade_type.value} - {data_freq.value}: {e}")
 
-                traceback.print_exc()
+            logger.info(f"Temp directory {temp_path} will be cleaned up automatically")
 
-            print(f"\n🧹 Temp directory {temp_path} will be cleaned up automatically")
-
-    print("\n" + "=" * 60)
-    print("✅ Test completed")
-    print("=" * 60)
+    divider("All tests completed")
 
 
 if __name__ == "__main__":
