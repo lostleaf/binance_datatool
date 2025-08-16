@@ -15,25 +15,29 @@ from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.log_kit import divider, logger
 from bdt_common.network import create_aiohttp_session
-from bhds.tasks.common import create_symbol_filter_from_config
 from bhds.aws.checksum import ChecksumVerifier
-from bhds.aws.local import LocalAwsClient
 from bhds.aws.client import AwsClient
-from bhds.aws.path_builder import create_path_builder
 from bhds.aws.downloader import AwsDownloader
-from bhds.tasks.common import load_config, get_data_directory
+from bhds.aws.local import LocalAwsClient
+from bhds.aws.path_builder import create_path_builder
+from bhds.tasks.common import create_symbol_filter_from_config, get_data_directory, load_config
 
 
 def create_aws_client_from_config(
-    trade_type: TradeType, data_type: DataType, aws_cfg: dict, session, http_proxy: Optional[str]
+    trade_type: TradeType,
+    data_type: DataType,
+    data_freq: str,
+    time_interval: Optional[str],
+    session,
+    http_proxy: Optional[str],
 ) -> AwsClient:
-    """Instantiate proper AwsClient based on config."""
+    """Instantiate proper AwsClient based on parameters."""
 
-    data_freq = DataFrequency(aws_cfg["data_freq"])  # e.g. "daily", "monthly"
-    time_interval = aws_cfg.get("time_interval") if data_type == DataType.kline else None
+    data_freq_enum = DataFrequency(data_freq)  # e.g. "daily", "monthly"
+    time_interval_param = time_interval if data_type == DataType.kline else None
 
     path_builder = create_path_builder(
-        trade_type=trade_type, data_freq=data_freq, data_type=data_type, time_interval=time_interval
+        trade_type=trade_type, data_freq=data_freq_enum, data_type=data_type, time_interval=time_interval_param
     )
 
     return AwsClient(
@@ -64,7 +68,7 @@ class AwsDownloadTask:
             raise KeyError("Missing 'data_type' in config")
         self.data_type = DataType(self.config["data_type"])  # e.g. "klines"
 
-        self.verification_config: dict = self.config.get("verification")
+        self.verification_config: dict = self.config.get("checksum_verification")
 
     def _apply_symbol_filter(self, all_symbols: list[str]) -> list[str]:
         filter_cfg = self.config.get("symbol_filter")
@@ -129,7 +133,12 @@ class AwsDownloadTask:
         divider("BHDS: Start Binance AWS Download", with_timestamp=True)
         async with create_aiohttp_session(HTTP_TIMEOUT_SEC) as session:
             client = create_aws_client_from_config(
-                self.trade_type, self.data_type, self.config["aws_client"], session, self.http_proxy
+                self.trade_type,
+                self.data_type,
+                self.config["data_freq"],
+                self.config.get("time_interval"),
+                session,
+                self.http_proxy,
             )
 
             logger.debug("\U0001F50D Fetching available symbols...")

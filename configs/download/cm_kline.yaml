@@ -6,13 +6,11 @@ data_type: "klines"
 # Trade type, Options: "spot", "futures/um", "futures/cm"
 trade_type: "futures/cm"
 
-# AwsClient configuration
-aws_client:
-  # Binance packaging frequency, Options: "daily", "monthly"
-  data_freq: "daily"
+# Binance packaging frequency, Options: "daily", "monthly"
+data_freq: "daily"
 
-  # Supported intervals: "1m", "5m", "1h", "1d"
-  time_interval: "1m"
+# Supported intervals: "1m", "5m", "1h", "1d"
+time_interval: "1m"
 
 # Symbol filtering
 symbol_filter:
@@ -26,6 +24,6 @@ data_dir: null
 # HTTP proxy, uses environment HTTP_PROXY if not set
 http_proxy: null
 
-# Verification configuration
-verification:
+# Checksum verification configuration
+checksum_verification:
   delete_mismatch: true # Delete files on checksum mismatch

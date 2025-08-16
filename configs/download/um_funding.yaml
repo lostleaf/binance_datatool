@@ -6,10 +6,8 @@ data_type: "fundingRate"
 # Trade type, Options: "spot", "futures/um", "futures/cm"
 trade_type: "futures/um"
 
-# AwsClient configuration
-aws_client:
-  # Binance packaging frequency, Options: "daily", "monthly"
-  data_freq: "monthly"
+# Binance packaging frequency, Options: "daily", "monthly"
+data_freq: "monthly"
 
 # Symbol filtering
 symbol_filter:
@@ -25,6 +23,6 @@ data_dir: null
 # HTTP proxy, uses environment HTTP_PROXY if not set
 http_proxy: null
 
-# Verification configuration
-verification:
+# Checksum verification configuration
+checksum_verification:
   delete_mismatch: true # Delete files on checksum mismatch
