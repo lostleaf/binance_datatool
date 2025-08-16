@@ -27,6 +27,7 @@
 - `tests/` – executable scripts.
 
 ## Critical Docs
+- `docs/ARCHITECTURE.md` – project structure overview.
 - `configs/CLAUDE.md` – config fields & commands.
 - `tests/CLAUDE.md` – test catalog & usage.
 - `examples/CLAUDE.md` – library patterns.
