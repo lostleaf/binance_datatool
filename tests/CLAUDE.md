@@ -2,77 +2,56 @@
 
 This file is part of the parent CLAUDE.md system. It contains comprehensive testing documentation for the Binance Historical Data Service (BHDS).
 
-## Testing Overview
+## Running Tests
 
-Test files are located in the `tests/` directory and cover all major components of the system.
+Each script under `tests/` is executable on its own.
+
+```bash
+# run a single file
+uv run tests/aws_client.py
+```
+
+Environment variables:
+
+- `CRYPTO_BASE_DIR`: data storage path (defaults to `~/crypto_data`).
+- `HTTP_PROXY` (optional): set only when a network proxy is required.
 
 ## Test Files
 
-### Core AWS Components
-- **`aws_client.py`**: AWS S3 client tests - Tests Binance AWS data directory access and symbol file listing
-- **`aws_downloader.py`**: Downloader tests - Tests the AWS download functionality with actual data
-- **`local_aws_client.py`**: Local file management tests - Tests offline file management and verification
-- **`checksum.py`**: Checksum verification tests - Tests MD5 checksum validation for downloaded files
-- **`path_builder.py`**: Path building tests - Tests AWS path construction utilities
+### AWS Basics
+- **`aws_client.py`**: Accesses Binance AWS directories and lists symbol files.
+- **`aws_downloader.py`**: Downloads sample archives from AWS.
+- **`local_aws_client.py`**: Manages local AWS data and verifies files.
+- **`checksum.py`**: Validates MD5 checksums of downloaded archives.
+- **`path_builder.py`**: Constructs canonical AWS paths.
 
 ### Data Processing
-- **`parser.py`**: Unified CSV parser tests - Tests CSV parsing functionality
-- **`symbol_filter.py`**: Symbol filtering tests - Tests symbol filtering and selection logic
-- **`csv_conv.py`**: CSV conversion tests - Tests CSV to Parquet conversion utilities
+- **`parser.py`**: Parses unified CSV records.
+- **`symbol_filter.py`**: Selects symbols based on filtering rules.
+- **`csv_conv.py`**: Converts CSV data to Parquet.
 
-### API Completion System
-- **`kline_comp.py`**: Kline detector + DataExecutor integration tests - Tests kline data completion workflow
-- **`funding_comp.py`**: Funding rate detector + DataExecutor integration tests - Tests funding rate completion workflow
+### API Completion
+- **`kline_comp.py`**: Runs kline completion via detector and executor.
+- **`funding_comp.py`**: Completes missing funding rates.
 
-### Holographic Kline System
-- **`holo_merger.py`**: Holographic 1-minute kline synthesis tests - Tests Holo1mKlineMerger functionality
-- **`gap_detector.py`**: Gap detection for holographic kline data - Tests gap detection in kline data
-- **`splitter.py`**: Kline data splitting tests - Tests HoloKlineSplitter functionality for splitting kline data based on detected gaps
+### Holo kline
+- **`holo_merger.py`**: Generates holographic 1-minute klines.
+- **`gap_detector.py`**: Detects gaps in kline sequences.
+- **`splitter.py`**: Splits klines around detected gaps.
 
 ### Utilities
-- **`infer_exginfo.py`**: Exchange info tests - Tests exchange information inference
-- **`log_kit.py`**: Logging utilities tests - Tests logging system functionality
-- **`test_utils.py`**: Shared test utilities - Common testing helpers and fixtures
+- **`infer_exginfo.py`**: Infers exchange information from symbols.
+- **`log_kit.py`**: Shows logging utilities.
+- **`test_utils.py`**: Provides shared test helpers.
 
-## Running Tests
-
-### Individual Test Execution Examples
-```bash
-# Run specific test files
-uv run python tests/local_aws_client.py  # Test local file management
-uv run python tests/holo_merger.py  # Test holographic kline synthesis
-```
-
-## Testing Patterns
-
-Most tests work with sample data that gets automatically generated. For AWS-related tests:
-- Use `CRYPTO_BASE_DIR` from environment variable, `~/crypto_data` as default value if not set
-- Use `aws_data_dir = Path.home() / "crypto_data" / "binance_data" / "aws_data"` when needs to **read** data samples.
-    Assume some csv zips are already downloaded to this directory.
-- Use `http_proxy = os.getenv("HTTP_PROXY") or os.getenv("http_proxy")` when needs to **download** data samples.
-
-### Test Structure
-Each test file follows this pattern:
-1. **Setup**: Create test data or use existing fixtures
-2. **Execution**: Run the functionality being tested
-3. **Verification**: Assert expected outcomes
-4. **Cleanup**: Remove temporary files if needed
-
-### Test Isolation
-Each test is designed to be independent:
-- No dependencies between test files
-- Clean state for each test run
-- Proper cleanup of temporary resources
-
-### Debugging Tests
-Tests include detailed logging and error reporting:
-- Use `logger.debug()` for detailed test output
-- Check test files for specific debug flags
-- Most tests print sample data structures for verification
+## Test Style
+- Tests are isolated and avoid interdependencies.
+- Temporary files are removed during teardown.
+- Logging uses `logger` from `bdt_common.log_kit`; see [`tests/log_kit.py`](log_kit.py) for examples.
 
 ## Notes
+- Tests are self-contained and require minimal setup.
+- All tests use English for comments and logging.
+- Test files follow the same coding standards as the main codebase.
+- See individual test files for specific usage examples and edge cases.
 
-- Tests are designed to be self-contained and require minimal setup
-- All tests use English for comments and logging
-- Test files follow the same coding standards as the main codebase
-- See individual test files for specific usage examples and edge cases
