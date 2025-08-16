@@ -8,7 +8,8 @@ BHDS YAML configuration index, inheriting root @CLAUDE.md system rules.
 configs/
 ├── download/   Download task configs
 ├── parsing/    Parsing task configs
-└── holo_1m/    Holo 1-minute synthesis configs
+├── holo_1m/    Holo 1-minute synthesis configs
+└── resample/   Resample task configs
 ```
 
 ## Entry Points
@@ -16,6 +17,7 @@ configs/
 - **download**: [download/spot_kline.yaml](download/spot_kline.yaml), [download/um_kline.yaml](download/um_kline.yaml), etc.
 - **parsing**: [parsing/spot_kline.yaml](parsing/spot_kline.yaml), [parsing/um_kline.yaml](parsing/um_kline.yaml), etc.
 - **holo_1m**: [holo_1m/spot.yaml](holo_1m/spot.yaml), [holo_1m/um.yaml](holo_1m/um.yaml), [holo_1m/cm.yaml](holo_1m/cm.yaml)
+- **resample**: [resample/spot.yaml](resample/spot.yaml), [resample/um.yaml](resample/um.yaml), [resample/cm.yaml](resample/cm.yaml)
 
 ## Core Fields
 
