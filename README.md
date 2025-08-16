@@ -6,6 +6,8 @@ BHDS is primarily intended for cryptocurrency quantitative trading research usin
 
 This project is released under the **MIT License**.
 
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for an overview of the project layout.
+
 **Be careful, I'm refactoring this project, the code may be broken.**
 
 ## Environment
