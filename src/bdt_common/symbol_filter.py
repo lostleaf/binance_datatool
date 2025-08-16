@@ -98,13 +98,22 @@ class CmFuturesFilter(BaseSymbolFilter):
         return True
 
 
-def create_symbol_filter_from_config(trade_type, filter_config: dict):
+def create_symbol_filter(
+    trade_type,
+    quote: Optional[str] = None,
+    contract_type: Optional[ContractType] = None,
+    stable_pairs: bool = True,
+    leverage_tokens: bool = False
+):
     """
-    Create symbol filter based on trade type and filter configuration.
+    Create symbol filter based on trade type and filter parameters.
 
     Args:
         trade_type: TradeType enum value (spot, futures/um, futures/cm)
-        filter_config: Dictionary containing filter configuration
+        quote: Quote asset filter (e.g., 'USDT', 'BTC')
+        contract_type: Contract type filter for futures
+        stable_pairs: Whether to include stable pairs
+        leverage_tokens: Whether to include leverage tokens (spot only)
 
     Returns:
         Appropriate symbol filter instance
@@ -114,15 +123,11 @@ def create_symbol_filter_from_config(trade_type, filter_config: dict):
     """
     from bdt_common.enums import TradeType  # Import here to avoid circular imports
 
-    quote = filter_config.get("quote")
-    contract_type = filter_config.get("contract_type")
-    contract_type = ContractType(contract_type) if contract_type else None
-    stable_pairs = filter_config.get("stable_pairs", True)
     if trade_type == TradeType.spot:
         return SpotFilter(
             quote=quote,
             stable_pairs=stable_pairs,
-            leverage_tokens=filter_config.get("leverage_tokens", False),
+            leverage_tokens=leverage_tokens,
         )
     elif trade_type == TradeType.um_futures:
         return UmFuturesFilter(

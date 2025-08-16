@@ -15,7 +15,7 @@ from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.log_kit import divider, logger
 from bdt_common.network import create_aiohttp_session
 from bdt_common.rest_api.fetcher import BinanceFetcher
-from bdt_common.symbol_filter import create_symbol_filter_from_config
+from bhds.tasks.common import create_symbol_filter_from_config
 from bhds.api.completion.detector import create_detector
 from bhds.api.completion.executor import DataExecutor
 from bhds.aws.csv_conv import AwsCsvToParquetConverter

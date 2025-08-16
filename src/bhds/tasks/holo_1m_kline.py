@@ -12,7 +12,7 @@ from typing import Any, Dict, List
 from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.log_kit import divider, logger
 from bdt_common.polars_utils import execute_polars_batch
-from bdt_common.symbol_filter import create_symbol_filter_from_config
+from bhds.tasks.common import create_symbol_filter_from_config
 from bhds.aws.path_builder import create_path_builder
 from bhds.holo_kline.gap_detector import HoloKlineGapDetector
 from bhds.holo_kline.merger import Holo1mKlineMerger
