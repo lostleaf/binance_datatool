@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 
 from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, TradeType
+from bdt_common.log_kit import logger, divider
 from bdt_common.network import create_aiohttp_session
 from bhds.aws.client import AwsClient
 from bhds.aws.path_builder import AwsKlinePathBuilder
@@ -29,14 +30,13 @@ async def collect_1m_kline_files(
 
     # List symbols and pick target ones
     symbols = await client.list_symbols()
-    print(f"Total symbols: {len(symbols)}")
     target_candidates = {"BTCUSDT", "ETHUSDT", "BNBUSDT"}
     targets = list(target_candidates.intersection(symbols))
     if not targets:
         raise ValueError(f"No symbols of {target_candidates} found")
     else:
         targets = targets[:max_symbols]
-    print(f"Selected symbols: {targets}")
+    logger.info(f"Total symbols: {len(symbols)}, Selected: {targets}")
 
     files_map = await client.batch_list_data_files(targets)
 
@@ -46,21 +46,23 @@ async def collect_1m_kline_files(
         files = files_map.get(sym, [])
         zip_files = [p for p in files if p.name.endswith(".zip")]
         if not zip_files:
-            print(f"No .zip files found for {sym}, skipping.")
+            logger.warning(f"No .zip files found for {sym}, skipping.")
             continue
         aws_files.extend(zip_files[:files_per_symbol])
 
-    print(f"Collected {len(aws_files)} aws files to download")
+    logger.info(f"Collected {len(aws_files)} aws files to download")
     for p in aws_files:
-        print(f"  - {p}")
+        logger.debug(f"  - {p}")
 
     return aws_files
 
 
 async def test_aws_downloader_1m_klines():
+    divider("Testing AWS Downloader")
+
     # Check aria2c availability early
     if shutil.which("aria2c") is None:
-        print("aria2c not found in PATH. Please install aria2 to run this test.")
+        logger.error("aria2c not found in PATH. Please install aria2 to run this test.")
         return
 
     http_proxy = os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
@@ -75,16 +77,18 @@ async def test_aws_downloader_1m_klines():
                 files_per_symbol=2,
             )
         except Exception as e:
-            print(f"Failed to list files from AWS: {e}")
+            logger.exception(f"Failed to list files from AWS: {e}")
             return
 
         if not aws_files:
-            print("No files to download. Exiting test.")
+            logger.warning("No files to download. Exiting test.")
             return
+
+        divider("Step 1: Downloading files", sep="-")
 
         with TemporaryDirectory(prefix="bhds_dl_") as tmpdir:
             local_dir = Path(tmpdir)
-            print(f"Temporary download dir: {local_dir}")
+            logger.info(f"Temporary download dir: {local_dir}")
 
             # Ensure parent directories exist (aria2 usually creates them, but we prepare them to be safe)
             for p in aws_files:
@@ -94,8 +98,10 @@ async def test_aws_downloader_1m_klines():
             try:
                 downloader.aws_download(aws_files, max_tries=2)
             except Exception as e:
-                print(f"Downloader raised exception: {e}")
+                logger.exception(f"Downloader raised exception: {e}")
                 return
+
+            divider("Step 2: Verifying downloads", sep="-")
 
             # Verify all files exist locally
             missing = []
@@ -104,14 +110,14 @@ async def test_aws_downloader_1m_klines():
                 if not local_file.exists():
                     missing.append(str(local_file))
             if missing:
-                print("Some files are missing after download:")
+                logger.error("Some files are missing after download:")
                 for m in missing:
-                    print(f"  MISSING: {m}")
+                    logger.error(f"  MISSING: {m}")
             else:
-                print("All files downloaded successfully.")
+                logger.ok("All files downloaded successfully.")
 
             # Print details of successfully downloaded files
-            print("Downloaded files detail:")
+            logger.info("Downloaded files detail:")
             for p in aws_files:
                 local_file = local_dir / p
                 if local_file.exists():
@@ -119,15 +125,13 @@ async def test_aws_downloader_1m_klines():
                         size = local_file.stat().st_size
                     except Exception:
                         size = -1
-                    print(f"  OK: {p} -> {local_file} (size={size} bytes)")
+                    logger.debug(f"{p} -> {local_file} (size={size // 1024}KB)")
 
             # TemporaryDirectory context will clean up automatically
-            print("Cleaning up temporary directory.")
+            logger.info("Cleaning up temporary directory.")
 
-
-async def main():
-    await test_aws_downloader_1m_klines()
+    divider("All tests completed")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(test_aws_downloader_1m_klines())
