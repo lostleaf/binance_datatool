@@ -4,6 +4,7 @@ This module provides common utility functions used across test files.
 """
 
 from pathlib import Path
+from bdt_common.log_kit import logger
 
 
 def output_directory_structure(
@@ -30,14 +31,14 @@ def output_directory_structure(
     # Print directories first
     for item in dirs:
         indent = "  " * current_depth
-        print(f"{indent}{item.name}/")
+        logger.debug(f"{indent}{item.name}/")
         output_directory_structure(item, max_depth, current_depth + 1, max_files_per_dir)
 
     # Print limited number of files
     for i, item in enumerate(files):
         if i >= max_files_per_dir:
             indent = "  " * current_depth
-            print(f"{indent}... ({len(files) - max_files_per_dir} more files)")
+            logger.debug(f"{indent}... ({len(files) - max_files_per_dir} more files)")
             break
         indent = "  " * current_depth
-        print(f"{indent}{item.name}")
+        logger.debug(f"{indent}{item.name}")
