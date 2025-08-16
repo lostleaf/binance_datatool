@@ -7,9 +7,7 @@ class HoloKlineSplitter:
     """
     Split kline data based on detected gaps.
     
-    This class provides functionality to split kline DataFrames into segments
-    based on detected gaps, maintaining the exact behavior of the legacy
-    split_by_gaps function.
+    This class provides functionality to split kline DataFrames into segments based on detected gaps
     """
     
     def __init__(self, prefix: str = "SP"):

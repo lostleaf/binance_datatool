@@ -4,7 +4,6 @@ This document summarizes the main modules and data layout used by **BHDS**.
 
 ## Directory Structure
 ```
-├── legacy/                     # Legacy code (deprecated, moved from scripts/)
 ├── src/                        # Modern refactored structure
 │   ├── bhds/                   # New modular CLI and task implementations
 │   │   ├── cli.py              # CLI entry point (`uv run bhds`)

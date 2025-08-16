@@ -2,7 +2,7 @@
 
 ## MUST
 - Use English for code, comments, logs.
-- Keep diffs small; don't touch `legacy/`.
+- Keep diffs small.
 - Run at least one test script before commit.
 
 ## Environment
@@ -17,7 +17,6 @@
 - test: `uv run tests/aws_client.py`
 
 ## Code Style
-- Prefer `src/` over `legacy/`.
 - Use `logger` from `bdt_common.log_kit`.
 - Use Polars Lazy API; batch collect via `execute_polars_batch`.
 
@@ -34,4 +33,3 @@
 
 ## Don't
 - Don't bypass checks (`--no-verify`) or commit large unrelated changes.
-- Don't modify `legacy/` unless migrating.

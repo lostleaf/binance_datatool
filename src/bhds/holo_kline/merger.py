@@ -136,8 +136,6 @@ class Holo1mKlineMerger:
     def _fill_kline_gaps(self, ldf: pl.LazyFrame) -> pl.LazyFrame:
         """
         Fill missing data in 1-minute kline time series
-
-        Based on legacy fill_kline_gaps implementation, adapted for 1-minute interval
         """
         # Get time range
         bounds = ldf.select(
