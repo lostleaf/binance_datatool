@@ -18,7 +18,7 @@ from bdt_common.log_kit import logger, divider
 from bhds.aws.csv_conv import AwsCsvToParquetConverter
 from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
 from bhds.aws.local import LocalAwsClient
-from test_utils import print_directory_structure
+from test_utils import output_directory_structure
 
 
 def test_converter():
@@ -77,7 +77,7 @@ def test_converter():
 
                 # Print directory structure (with limited files per directory)
                 logger.info("Output Directory Structure (showing max 5 files per directory):")
-                print_directory_structure(temp_path, max_depth=10)
+                output_directory_structure(temp_path, max_depth=10)
 
                 # Read and display sample data
                 logger.info("Sample Data (last 5 rows):")

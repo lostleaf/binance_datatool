@@ -16,7 +16,7 @@ from pathlib import Path
 import polars as pl
 
 from bdt_common.log_kit import logger, divider
-from test_utils import print_directory_structure
+from test_utils import output_directory_structure
 
 from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, DataType, TradeType
@@ -195,7 +195,7 @@ async def test_api_kline_detector():
 
             # Print directory structure
             divider("Data Directory Structure", sep="-")
-            print_directory_structure(data_dir, max_depth=10)
+            output_directory_structure(data_dir, max_depth=10)
 
             # Step 2: Test detection only (offline)
             divider("TEST 1: Detection Only (Offline)", sep="-")
