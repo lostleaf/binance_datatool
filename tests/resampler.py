@@ -108,7 +108,7 @@ def test_resampler():
                             "max_end_time": max_cet,
                         }
                     )
-            print(pl.DataFrame(infos))
+            logger.debug(pl.DataFrame(infos))
 
             divider("All tests completed")
 

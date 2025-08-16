@@ -7,13 +7,12 @@ This example shows how to use the path builder after separating it from the HTTP
 
 from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
 from bdt_common.enums import TradeType, DataFrequency, DataType
+from bdt_common.log_kit import logger, divider
 
 
 def test_basic_path_builder():
     """Test the usage of basic path builder."""
-    print("=" * 60)
-    print("Basic Path Builder Test")
-    print("=" * 60)
+    divider("Basic Path Builder Test", sep="-")
 
     # Create different types of path builders
     builders = [
@@ -23,17 +22,15 @@ def test_basic_path_builder():
     ]
 
     for name, builder in builders:
-        print(f"\n{name}:")
-        print(f"  Base directory: {builder.base_dir}")
-        print(f"  BTCUSDT directory: {builder.get_symbol_dir('BTCUSDT')}")
-        print(f"  ETHUSDT directory: {builder.get_symbol_dir('ETHUSDT')}")
+        logger.info(f"{name}:")
+        logger.debug(f"  Base directory: {builder.base_dir}")
+        logger.debug(f"  BTCUSDT directory: {builder.get_symbol_dir('BTCUSDT')}")
+        logger.debug(f"  ETHUSDT directory: {builder.get_symbol_dir('ETHUSDT')}")
 
 
 def test_kline_path_builder():
     """Test the usage of kline path builder."""
-    print("\n" + "=" * 60)
-    print("Kline Path Builder Test")
-    print("=" * 60)
+    divider("Kline Path Builder Test", sep="-")
 
     # Create kline path builders with different time intervals
     intervals = ["1m", "5m", "1h", "1d"]
@@ -41,17 +38,15 @@ def test_kline_path_builder():
     for interval in intervals:
         builder = AwsKlinePathBuilder(trade_type=TradeType.spot, data_freq=DataFrequency.daily, time_interval=interval)
 
-        print(f"\n{interval} Kline data:")
-        print(f"  Base directory: {builder.base_dir}")
-        print(f"  BTCUSDT directory: {builder.get_symbol_dir('BTCUSDT')}")
-        print(f"  ETHUSDT directory: {builder.get_symbol_dir('ETHUSDT')}")
+        logger.info(f"{interval} Kline data:")
+        logger.debug(f"  Base directory: {builder.base_dir}")
+        logger.debug(f"  BTCUSDT directory: {builder.get_symbol_dir('BTCUSDT')}")
+        logger.debug(f"  ETHUSDT directory: {builder.get_symbol_dir('ETHUSDT')}")
 
 
 def test_path_usage_in_practice():
     """Test how to use path builder in practical applications."""
-    print("\n" + "=" * 60)
-    print("Practical Application Test")
-    print("=" * 60)
+    divider("Practical Application Test", sep="-")
 
     # Assume we have a local data directory
     from pathlib import Path
@@ -63,7 +58,7 @@ def test_path_usage_in_practice():
 
     symbols = ["BTCUSDT", "ETHUSDT", "ADAUSDT"]
 
-    print("\nLocal data directory structure:")
+    logger.info("Local data directory structure:")
     for symbol in symbols:
         # Get relative path
         relative_path = kline_builder.get_symbol_dir(symbol)
@@ -72,20 +67,18 @@ def test_path_usage_in_practice():
         # Build complete local path
         full_path = local_data_dir / clean_path
 
-        print(f"  {symbol}: {full_path}")
+        logger.debug(f"  {symbol}: {full_path}")
 
 
 def main():
     """Main function."""
-    print("🚀 AWS Path Builder Usage Test")
+    divider("AWS Path Builder Usage Test")
 
     test_basic_path_builder()
     test_kline_path_builder()
     test_path_usage_in_practice()
 
-    print("\n" + "=" * 60)
-    print("✅ Test completed!")
-    print("=" * 60)
+    divider("All tests completed")
 
 
 if __name__ == "__main__":
