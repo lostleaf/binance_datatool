@@ -41,6 +41,8 @@ ess_cm = [
     "BTCUSD_PERP",
     # Delivery (date suffix)
     "ETHUSD_240927",
+    # Splitted perpetual
+    "SP0_BCHUSD_PERP"
 ]
 
 

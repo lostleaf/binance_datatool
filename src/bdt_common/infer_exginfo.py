@@ -123,6 +123,11 @@ def infer_cm_futures_info(symbol: str):
     if "_" not in symbol:
         return None
 
+    symbol_original = symbol
+
+    # Remove SP_{number} prefix that appears when symbols are delisted/relisted in BHDS
+    symbol = re.sub(r"^SP\d+_", "", symbol)
+
     # Split symbol into underlying asset and contract suffix
     underlying, suffix = symbol.split("_")
 
@@ -140,7 +145,7 @@ def infer_cm_futures_info(symbol: str):
     base_asset = underlying[:-3]
 
     return {
-        "symbol": symbol,
+        "symbol": symbol_original,
         "quote_asset": "USD",
         "base_asset": base_asset,
         "contract_type": contract_type,
