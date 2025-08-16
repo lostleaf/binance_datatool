@@ -1,0 +1,32 @@
+# BHDS Coin-Margined Futures Holo K-line Resample Task
+# Resample 1m holo klines to higher time frames
+
+# Trade type - "spot", "futures/um", or "futures/cm"
+trade_type: "futures/cm"
+
+# Symbol selection - use either symbols list OR symbol_filter, not both
+# If symbols is not null, symbol_filter is ignored
+symbols: null
+
+# Symbol filtering options - used only when symbols list is empty
+symbol_filter:
+  contract_type: "PERPETUAL" # Contract type: PERPETUAL or DELIVERY
+
+# Target interval to resample to
+resample_interval: "1h"
+  
+# Base offset for generating multiple offset files
+# If null or "0m", only generate single file with 0m offset
+# Otherwise, generate multiple offset files using resample_offsets method
+base_offset: null
+
+# Data directories
+# Use ~/crypto_data as $CRYPTO_BASE_DIR if not set
+
+# Source directory for 1m holo kline parquet files
+# Use $CRYPTO_BASE_DIR/binance_data/holo_1m_klines/ if not set
+input_dir: null
+
+# Output directory for resampled kline parquet files
+# Use $CRYPTO_BASE_DIR/binance_data/resampled_klines/ if not set
+output_dir: null

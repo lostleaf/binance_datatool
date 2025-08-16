@@ -11,6 +11,7 @@ import typer
 
 from bhds.tasks.aws_download import AwsDownloadTask
 from bhds.tasks.holo_1m_kline import GenHolo1mKlineTask
+from bhds.tasks.holo_resample import HoloResampleTask
 from bhds.tasks.parse_aws_data import ParseAwsDataTask
 
 from . import __version__
@@ -33,7 +34,9 @@ def aws_download(config_paths: list[str] = typer.Argument(..., help="Paths to YA
 
 
 @app.command()
-def parse_aws_data(config_paths: list[str] = typer.Argument(..., help="Paths to YAML configs for parse AWS data tasks")):
+def parse_aws_data(
+    config_paths: list[str] = typer.Argument(..., help="Paths to YAML configs for parse AWS data tasks")
+):
     """Parse AWS downloaded data from CSV to Parquet with optional API completion."""
     for config_path in config_paths:
         task = ParseAwsDataTask(config_path)
@@ -41,10 +44,21 @@ def parse_aws_data(config_paths: list[str] = typer.Argument(..., help="Paths to 
 
 
 @app.command()
-def holo_1m_kline(config_paths: list[str] = typer.Argument(..., help="Paths to YAML configs for generate holo 1m kline tasks")):
+def holo_1m_kline(
+    config_paths: list[str] = typer.Argument(..., help="Paths to YAML configs for generate holo 1m kline tasks")
+):
     """Generate holo 1m kline from parsed data."""
     for config_path in config_paths:
         GenHolo1mKlineTask(config_path).run()
+
+
+@app.command()
+def resample(
+    config_paths: list[str] = typer.Argument(..., help="Paths to YAML configs for holo kline resample tasks")
+):
+    """Resample holo 1m klines to higher time frames."""
+    for config_path in config_paths:
+        HoloResampleTask(config_path).run()
 
 
 if __name__ == "__main__":
