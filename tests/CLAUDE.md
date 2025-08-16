@@ -1,6 +1,6 @@
 # tests/CLAUDE.md
 
-This file is part of the parent CLAUDE.md system. It contains comprehensive testing documentation for the Binance Historical Data Service (BHDS).
+Testing documentation for BHDS, inheriting root @CLAUDE.md system rules.
 
 ## Running Tests
 

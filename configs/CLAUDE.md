@@ -1,6 +1,6 @@
 # configs/CLAUDE.md
 
-BHDS YAML configuration index.
+BHDS YAML configuration index, inheriting root @CLAUDE.md system rules.
 
 ## Directory Tree
 
@@ -47,8 +47,6 @@ uv run bhds aws-download configs/download/spot_kline.yaml
 uv run bhds parse-aws-data configs/parsing/um_kline.yaml
 uv run bhds holo-1m-kline configs/holo_1m/cm.yaml
 ```
-
-Please follow the MUST/Do/Don't rules in the root documentation.
 
 Update this index when configuration files change.
 

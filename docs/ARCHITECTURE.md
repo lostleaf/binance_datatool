@@ -24,6 +24,5 @@ This document summarizes the main modules and data layout used by **BHDS**.
 $CRYPTO_BASE_DIR/binance_data/
 ├── aws_data/           # Raw AWS downloads (.zip)
 ├── parsed_data/        # Processed AWS data (.parquet)
-├── results_data/       # Final datasets
-│   └── holo_1m_klines/ # Holographic 1‑minute klines (with VWAP & funding)
+└── holo_1m_klines/     # Holographic 1‑minute klines (with VWAP & funding)
 ```
