@@ -68,7 +68,7 @@ uv run python examples/kline_download_task.py /path/to/data
 
 ### Configuration
 - `CRYPTO_BASE_DIR`: Data storage (default: $HOME/crypto_data)
-- `HTTP_PROXY`: HTTP proxy for downloads
+- `HTTP_PROXY` (optional): HTTP proxy for restricted network environments
 
 ## Usage Patterns
 
