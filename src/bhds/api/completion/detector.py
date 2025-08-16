@@ -60,7 +60,6 @@ class DailyKlineDetector:
                 logger.exception(f"Failed to detect missing dates for {symbol}: {e}")
                 continue
 
-        logger.info(f"Detected {len(missing_tasks)} missing kline tasks")
         return missing_tasks
 
     def _get_missing_dates(self, symbol: str) -> List[str]:

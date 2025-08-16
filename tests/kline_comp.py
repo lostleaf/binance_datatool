@@ -15,6 +15,7 @@ from pathlib import Path
 
 import polars as pl
 
+from bdt_common.log_kit import logger, divider
 from test_utils import print_directory_structure
 
 from bdt_common.constants import HTTP_TIMEOUT_SEC
@@ -30,7 +31,7 @@ from bhds.aws.path_builder import AwsKlinePathBuilder
 
 def prepare_kline_data(temp_dir: Path, symbols: list[str], interval: str = "1m"):
     """Prepare kline data by converting CSV to Parquet"""
-    print("📊 Preparing kline data...")
+    divider("Preparing kline data...", sep="-")
 
     # AWS data directory
     aws_data_dir = Path.home() / "crypto_data" / "binance_data" / "aws_data"
@@ -47,17 +48,15 @@ def prepare_kline_data(temp_dir: Path, symbols: list[str], interval: str = "1m")
         data_type=DataType.kline,
         output_base_dir=temp_dir,
         force_update=True,
-        verbose=True,
+        verbose=False,
     )
 
     # Process symbols
-    print(f"🚀 Converting CSV to Parquet for symbols: {symbols}")
     results = processor.process_symbols(symbols)
 
     # Print results summary
-    print("\n📈 Conversion Results:")
     for symbol, result in results.items():
-        print(
+        logger.debug(
             f"  {symbol}: {result['processed_files']} processed, "
             f"{result['skipped_files']} skipped, {result['failed_files']} failed"
         )
@@ -67,8 +66,6 @@ def prepare_kline_data(temp_dir: Path, symbols: list[str], interval: str = "1m")
 
 def test_detection_only(data_dir: Path, symbols: list[str], interval: str = "1m"):
     """Test DailyKlineDetector.detect method (offline)"""
-    print("🔍 Testing DailyKlineDetector.detect...")
-
     # Create detector instance (no fetcher needed!)
     detector = DailyKlineDetector(
         trade_type=TradeType.spot,
@@ -77,43 +74,39 @@ def test_detection_only(data_dir: Path, symbols: list[str], interval: str = "1m"
     )
 
     # Test detect method
-    print(f"📋 Detecting missing data for symbols: {symbols}")
     tasks = detector.detect(symbols)
     random.shuffle(tasks)
 
-    print(f"\n📊 Found {len(tasks)} missing data tasks:")
+    logger.info(f"Found {len(tasks)} missing data tasks for {symbols}:")
     for i, (fetch_func, kwargs, output_path) in enumerate(tasks[:3], 1):
-        print(f"  Task {i}:")
-        print(f"    Function: {fetch_func.__name__}")
-        print(f"    Arguments: {kwargs}")
-        print(f"    Output path: {output_path}")
+        logger.debug(f"  Task {i}:")
+        logger.debug(f"    Function: {fetch_func.__name__}")
+        logger.debug(f"    Arguments: {kwargs}")
+        logger.debug(f"    Output path: {output_path}")
 
         # Convert to Path object if needed
         output_path = Path(output_path)
-        print(f"    Output path exists: {output_path.exists()}")
+        logger.debug(f"    Output path exists: {output_path.exists()}")
 
         # Check if parent directory exists
         parent_dir = output_path.parent
-        print(f"    Parent directory: {parent_dir}")
-        print(f"    Parent directory exists: {parent_dir.exists()}")
+        logger.debug(f"    Parent directory: {parent_dir}")
+        logger.debug(f"    Parent directory exists: {parent_dir.exists()}")
 
         if parent_dir.exists():
             # List files in parent directory
             files = list(parent_dir.glob("*.parquet"))
-            print(f"    Existing parquet files in parent: {len(files)}")
+            logger.debug(f"    Existing parquet files in parent: {len(files)}")
             for file in files[:3]:  # Show first 3 files
-                print(f"      - {file.name}")
+                logger.debug(f"      - {file.name}")
             if len(files) > 3:
-                print(f"      ... and {len(files) - 3} more files")
-        print()
+                logger.debug(f"      ... and {len(files) - 3} more files")
 
     return tasks
 
 
 async def test_data_executor(data_dir: Path, symbols: list[str], interval: str = "1m"):
     """Test DataExecutor with real API calls"""
-    print("⚙️ Testing DataExecutor...")
-
     # Create detector and detect missing tasks
     detector = DailyKlineDetector(
         trade_type=TradeType.spot,
@@ -122,10 +115,9 @@ async def test_data_executor(data_dir: Path, symbols: list[str], interval: str =
     )
 
     tasks = detector.detect(symbols)
-    print(f"\n📊 Found {len(tasks)} missing data tasks")
 
     if not tasks:
-        print("✅ No missing data found, creating artificial task for testing")
+        logger.info("No missing data found, creating artificial task for testing")
         # Create a test task
         test_date = "2023-01-01"
         symbol_dir = Path(data_dir) / "parsed_data" / "klines" / "spot" / "1m" / symbols[0]
@@ -141,66 +133,46 @@ async def test_data_executor(data_dir: Path, symbols: list[str], interval: str =
 
     # Step 3: Create executor and execute tasks
     http_proxy = os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
-    print(f"HTTP_PROXY: {http_proxy}")
 
     async with create_aiohttp_session(HTTP_TIMEOUT_SEC) as session:
         fetcher = BinanceFetcher(trade_type=TradeType.spot, session=session, http_proxy=http_proxy)
         executor = DataExecutor(fetcher)
 
-        print("\n🚀 Executing tasks...")
+        logger.info("Executing %d tasks with http_proxy: %s", len(tasks), http_proxy)
         result = await executor.execute(tasks)
 
-        print(f"\n📊 Execution result:")
-        print(f"  Total tasks: {result['total']}")
-        print(f"  Successful tasks: {result['success']}")
-        print(
-            f"  Success rate: {result['success']}/{result['total']} ({result['success']/result['total']*100:.1f}%)"
-            if result["total"] > 0
-            else "N/A"
-        )
-
         # Check created files
-        print(f"\n📁 Checking created files:")
         random.shuffle(tasks)
         for _, _, save_path in tasks[:10]:
             if save_path.exists():
-                print(f"  ✅ {save_path.name} created successfully")
                 try:
                     df = pl.read_parquet(save_path)
-                    print(f"     Shape: {df.shape}, Columns: {len(df.columns)}")
+                    logger.debug(f"{save_path.name} created, Shape: {df.shape}, Columns: {len(df.columns)}")
                     if len(df) > 0:
-                        print(
-                            f"     Date range: {df['candle_begin_time'].min()} ~ {df['candle_begin_time'].max()}"
-                        )
+                        logger.debug(f"Date range: {df['candle_begin_time'].min()} ~ {df['candle_begin_time'].max()}")
                 except Exception as e:
-                    print(f"     Error reading file: {e}")
+                    logger.error(f"Error reading file: {e}")
             else:
-                print(f"  ❌ {save_path.name} not found")
+                logger.error(f"{save_path.name} not found")
 
         return result
 
 
 async def test_full_workflow(data_dir: Path, symbols: list[str], interval: str = "1m"):
     """Test complete workflow: detection + execution"""
-    print("🔄 Testing full workflow: detection + execution...")
-    
     # Step 1: Detection
-    print("Step 1: Detecting missing data...")
+    logger.info("Step 1: Detecting missing data...")
     tasks = test_detection_only(data_dir, symbols, interval)
-    
+
     if not tasks:
-        print("✅ No missing data detected, workflow complete")
+        logger.info("No missing data detected, workflow complete")
         return {"detected": 0, "executed": 0, "successful": 0}
-    
+
     # Step 2: Execution
-    print("\nStep 2: Executing completion tasks...")
+    logger.info("Step 2: Executing completion tasks...")
     result = await test_data_executor(data_dir, symbols, interval)
-    
-    return {
-        "detected": len(tasks),
-        "executed": result["total"],
-        "successful": result["success"]
-    }
+
+    return {"detected": len(tasks), "executed": result["total"], "successful": result["success"]}
 
 
 async def test_api_kline_detector():
@@ -209,61 +181,48 @@ async def test_api_kline_detector():
     symbols = ["LUNAUSDT", "FTTUSDT"]
     interval = "1m"
 
-    print("=" * 80)
-    print("Testing API Kline Detector and Executor Modules")
-    print("=" * 80)
-    print(f"Test symbols: {symbols}")
-    print(f"Test interval: {interval}")
-    print(f"Test trade type: {TradeType.spot.value}")
+    divider("Testing API Kline Detector and Executor Modules", sep="=")
+    logger.info(f"Test symbols: {symbols}, interval: {interval}, trade type: {TradeType.spot.value}")
 
     # Create temporary directory for test data
     with tempfile.TemporaryDirectory(prefix="api_kline_detector_test_") as temp_dir:
         temp_path = Path(temp_dir)
-        print(f"📁 Temp directory: {temp_path}")
-        print(f"📝 Note: Temp directory will be automatically cleaned up after test")
+        logger.info(f"Temp directory: {temp_path}, will be cleaned up automatically after test")
 
         try:
             # Step 1: Prepare kline data
             data_dir = prepare_kline_data(temp_path, symbols, interval)
 
             # Print directory structure
-            print("\n📂 Data Directory Structure:")
+            divider("Data Directory Structure", sep="-")
             print_directory_structure(data_dir, max_depth=10)
 
             # Step 2: Test detection only (offline)
-            print("\n" + "-" * 60)
-            print("TEST 1: Detection Only (Offline)")
-            print("-" * 60)
+            divider("TEST 1: Detection Only (Offline)", sep="-")
             tasks = test_detection_only(data_dir, symbols, interval)
-            print(f"\n✅ Detection test completed - {len(tasks)} tasks found")
+            logger.ok(f"Detection test completed - {len(tasks)} tasks found")
 
             # Step 3: Test execution only
-            print("\n" + "-" * 60)
-            print("TEST 2: Execution Only (Online)")
-            print("-" * 60)
+            divider("TEST 2: Execution Only (Online)", sep="-")
             exec_result = await test_data_executor(data_dir, symbols, interval)
-            print(f"\n✅ Execution test completed - {exec_result['success']}/{exec_result['total']} successful")
+            logger.ok(f"Execution test completed - {exec_result['success']}/{exec_result['total']} successful")
 
             # Step 4: Test full workflow
-            print("\n" + "-" * 60)
-            print("TEST 3: Full Workflow (Detection + Execution)")
-            print("-" * 60)
+            divider("TEST 3: Full Workflow (Detection + Execution)", sep="-")
             workflow_result = await test_full_workflow(data_dir, symbols, interval)
-            print(f"\n✅ Full workflow completed - "
-                    f"detected: {workflow_result['detected']}, "
-                    f"executed: {workflow_result['executed']}, "
-                    f"successful: {workflow_result['successful']}")
+            logger.ok(
+                f"Full workflow completed - "
+                f"detected: {workflow_result['detected']}, "
+                f"executed: {workflow_result['executed']}, "
+                f"successful: {workflow_result['successful']}"
+            )
 
         except Exception as e:
-            print(f"❌ Error during testing: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.exception(f"Error during testing: {e}")
 
-        print(f"\n🧹 Temp directory {temp_path} will be cleaned up automatically")
+        logger.info(f"Temp directory {temp_path} will be cleaned up automatically")
 
-    print("\n" + "=" * 80)
-    print("✅ API Kline Detector and Executor Test completed")
-    print("=" * 80)
+    divider("API Kline Detector and Executor Test completed", sep="=")
 
 
 if __name__ == "__main__":
