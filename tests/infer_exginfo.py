@@ -1,6 +1,7 @@
 import json
 
 from bdt_common.infer_exginfo import infer_cm_futures_info, infer_spot_info, infer_um_futures_info
+from bdt_common.log_kit import logger, divider
 
 
 def pretty(obj) -> str:
@@ -44,33 +45,32 @@ ess_cm = [
 
 
 def run_spot_tests():
-    print("=== Spot ===")
+    divider("Spot Exchange Info Inference", sep="-")
     for s in ess_spot:
         res = infer_spot_info(s)
-        print(f"Symbol: {s}")
-        print(pretty(res))
-        print("-")
+        logger.info(f"Symbol: {s}")
+        logger.debug(pretty(res))
 
 
 def run_um_tests():
-    print("=== USDⓈ-M Futures (UM) ===")
+    divider("USDⓈ-M Futures (UM) Exchange Info Inference", sep="-")
     for s in ess_um:
         res = infer_um_futures_info(s)
-        print(f"Symbol: {s}")
-        print(pretty(res))
-        print("-")
+        logger.info(f"Symbol: {s}")
+        logger.debug(pretty(res))
 
 
 def run_cm_tests():
-    print("=== Coin-Margined Futures (CM) ===")
+    divider("Coin-Margined Futures (CM) Exchange Info Inference", sep="-")
     for s in ess_cm:
         res = infer_cm_futures_info(s)
-        print(f"Symbol: {s}")
-        print(pretty(res))
-        print("-")
+        logger.info(f"Symbol: {s}")
+        logger.debug(pretty(res))
 
 
 if __name__ == "__main__":
+    divider("Testing Exchange Info Inference")
     run_spot_tests()
     run_um_tests()
     run_cm_tests()
+    divider("All tests completed")
