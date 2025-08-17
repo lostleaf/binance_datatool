@@ -11,11 +11,11 @@ from typing import Optional
 
 import yaml
 
-from bdt_common.enums import ContractType
-from bdt_common.symbol_filter import create_symbol_filter
+from bdt_common.enums import ContractType, TradeType
+from bdt_common.symbol_filter import BaseSymbolFilter, create_symbol_filter
 
 
-def load_config(config_path: str) -> dict:
+def load_config(config_path: str | Path) -> dict:
     """Load YAML configuration from file path."""
     config_file = Path(config_path)
     if not config_file.exists():
@@ -26,11 +26,11 @@ def load_config(config_path: str) -> dict:
 
 def get_data_directory(data_dir_cfg: Optional[str], default_subdir: str) -> Path:
     """Get data directory path from config or use default location.
-    
+
     Args:
         data_dir_cfg: Optional directory path from config
         default_subdir: Default subdirectory name under binance_data
-        
+
     Returns:
         Path object for the data directory
     """
@@ -45,7 +45,7 @@ def get_data_directory(data_dir_cfg: Optional[str], default_subdir: str) -> Path
     return data_dir
 
 
-def create_symbol_filter_from_config(trade_type, filter_config: dict):
+def create_symbol_filter_from_config(trade_type: TradeType, filter_config: dict) -> BaseSymbolFilter:
     """
     Create symbol filter based on trade type and filter configuration.
 
@@ -64,11 +64,11 @@ def create_symbol_filter_from_config(trade_type, filter_config: dict):
     contract_type = ContractType(contract_type) if contract_type else None
     stable_pairs = filter_config.get("stable_pairs", True)
     leverage_tokens = filter_config.get("leverage_tokens", False)
-    
+
     return create_symbol_filter(
         trade_type=trade_type,
         quote=quote,
         contract_type=contract_type,
         stable_pairs=stable_pairs,
-        leverage_tokens=leverage_tokens
+        leverage_tokens=leverage_tokens,
     )
