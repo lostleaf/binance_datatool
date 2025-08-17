@@ -1,8 +1,10 @@
-from abc import ABC, abstractmethod
-from typing import Tuple
+from abc import abstractmethod
+from typing import Optional, Tuple
 
-from bdt_common.rest_api.base import BinanceBaseApi
+import aiohttp
+
 from bdt_common.enums import TradeType
+from bdt_common.rest_api.base import BinanceBaseApi
 
 
 class BinanceBaseMarketApi(BinanceBaseApi):
@@ -169,7 +171,33 @@ class BinanceMarketSpotApi(BinanceBaseMarketApi):
         return await self._aio_get(url, None)
 
 
-def create_binance_market_api(trade_type: TradeType, session, http_proxy) -> BinanceBaseMarketApi:
+def create_binance_market_api(
+    trade_type: TradeType, session: aiohttp.ClientSession, http_proxy: Optional[str]
+) -> BinanceBaseMarketApi:
+    """Create a Binance market API client based on trade type.
+
+    Factory function to instantiate the appropriate market API client for different
+    Binance trading segments (spot, UM futures, CM futures).
+
+    Args:
+        trade_type: The market segment type (spot, um_futures, cm_futures).
+        session: Aiohttp client session for making HTTP requests.
+        http_proxy: Optional HTTP proxy URL for requests.
+
+    Returns:
+        BinanceBaseMarketApi: Configured market API client instance.
+
+    Raises:
+        ValueError: If the trade type is not supported.
+
+    Examples:
+        >>> import aiohttp
+        >>> from bdt_common.enums import TradeType
+        >>>
+        >>> async with aiohttp.ClientSession() as session:
+        ...     api = create_binance_market_api(TradeType.spot, session, None)
+        ...     exchange_info = await api.aioreq_exchange_info()
+    """
     match trade_type:
         case TradeType.spot:
             return BinanceMarketSpotApi(session, http_proxy)
@@ -177,3 +205,5 @@ def create_binance_market_api(trade_type: TradeType, session, http_proxy) -> Bin
             return BinanceMarketUMFapi(session, http_proxy)
         case TradeType.cm_futures:
             return BinanceMarketCMDapi(session, http_proxy)
+        case _:
+            raise ValueError(f"Unsupported trade type: {trade_type}")
