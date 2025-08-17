@@ -3,9 +3,10 @@
 Provides independent detector classes for identifying missing data without BinanceFetcher dependency.
 """
 
+from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Callable
 
 from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.log_kit import logger
@@ -14,20 +15,64 @@ from bhds.aws.local import LocalAwsClient
 from bhds.aws.path_builder import AwsKlinePathBuilder, AwsPathBuilder
 
 
-class DailyKlineDetector:
+class BaseDetector(ABC):
+    """Abstract base class for data missing detectors"""
+
+    def __init__(self, trade_type: TradeType, base_dir: Path):
+        """Initialize base detector with common parameters
+        
+        Args:
+            trade_type: Trade type (spot/um_futures/cm_futures)
+            base_dir: Base directory for parsed data
+        """
+        self.trade_type = trade_type
+        self.base_dir = Path(base_dir)
+        self.path_builder = self._create_path_builder()
+        self.local_client = LocalAwsClient(base_dir=self.base_dir, path_builder=self.path_builder)
+
+    @abstractmethod
+    def _create_path_builder(self):
+        """Create appropriate path builder for the detector type
+        
+        Returns:
+            Path builder instance
+        """
+        pass
+
+    @abstractmethod
+    def detect(self, symbols: list[str]) -> list[tuple[Callable, dict, Path]]:
+        """Detect missing data for given symbols
+        
+        Args:
+            symbols: List of trading symbols
+            
+        Returns:
+            List[Tuple]: (unbound method, parameter dict, save path)
+        """
+        pass
+
+
+class DailyKlineDetector(BaseDetector):
     """Daily kline data missing detector"""
 
-    def __init__(self, trade_type: TradeType, interval: str, base_dir: str | Path):
-        """Initialize with path-related parameters only, no BinanceFetcher needed"""
-        self.trade_type = trade_type
+    def __init__(self, trade_type: TradeType, interval: str, base_dir: Path):
+        """Initialize with path-related parameters only, no BinanceFetcher needed
+        
+        Args:
+            trade_type: Trade type (spot/um_futures/cm_futures)
+            interval: Time interval for kline data (1m, 5m, 1h, etc.)
+            base_dir: Base directory for parsed data
+        """
         self.interval = interval
-        base_dir = Path(base_dir)
-        self.path_builder = AwsKlinePathBuilder(
-            trade_type=trade_type, data_freq=DataFrequency.daily, time_interval=interval
-        )
-        self.local_client = LocalAwsClient(base_dir=base_dir, path_builder=self.path_builder)
+        super().__init__(trade_type, base_dir)
 
-    def detect(self, symbols: List[str]) -> List[Tuple[Callable, Dict, Path]]:
+    def _create_path_builder(self):
+        """Create kline path builder"""
+        return AwsKlinePathBuilder(
+            trade_type=self.trade_type, data_freq=DataFrequency.daily, time_interval=self.interval
+        )
+
+    def detect(self, symbols: list[str]) -> list[tuple[Callable, dict, Path]]:
         """Detect missing daily kline data
 
         Args:
@@ -62,7 +107,7 @@ class DailyKlineDetector:
 
         return missing_tasks
 
-    def _get_missing_dates(self, symbol: str) -> List[str]:
+    def _get_missing_dates(self, symbol: str) -> list[str]:
         """Get missing date list for specified symbol
 
         Infer date range from existing data files and find missing dates
@@ -107,28 +152,34 @@ class DailyKlineDetector:
         return sorted([dt.strftime("%Y-%m-%d") for dt in missing_dates])
 
 
-class FundingRateDetector:
+class FundingRateDetector(BaseDetector):
     """Funding rate data missing detector"""
 
-    def __init__(self, trade_type: TradeType, base_dir: str | Path):
-        """Initialize with path-related parameters only, no BinanceFetcher needed"""
-        self.trade_type = trade_type
-        base_dir = Path(base_dir)
-        self.path_builder = AwsPathBuilder(
-            trade_type=trade_type, data_freq=DataFrequency.monthly, data_type=DataType.funding_rate
-        )
-        self.local_client = LocalAwsClient(base_dir=base_dir, path_builder=self.path_builder)
+    def __init__(self, trade_type: TradeType, base_dir: Path):
+        """Initialize with path-related parameters only, no BinanceFetcher needed
+        
+        Args:
+            trade_type: Trade type (spot/um_futures/cm_futures)
+            base_dir: Base directory for parsed data
+        """
+        super().__init__(trade_type, base_dir)
 
-    def detect(self, symbols: List[str], limit: int = 1000) -> List[Tuple[Callable, Dict, Path]]:
+    def _create_path_builder(self):
+        """Create funding rate path builder"""
+        return AwsPathBuilder(
+            trade_type=self.trade_type, data_freq=DataFrequency.monthly, data_type=DataType.funding_rate
+        )
+
+    def detect(self, symbols: list[str]) -> list[tuple[Callable, dict, Path]]:
         """Detect funding rate data that needs updating
 
         Args:
             symbols: List of trading symbols
-            limit: Number of records to fetch
 
         Returns:
             List[Tuple]: (unbound method, parameter dict, save path)
         """
+        limit = 1000
         missing_tasks = []
 
         for symbol in symbols:
@@ -150,14 +201,14 @@ class FundingRateDetector:
 
 
 def create_detector(
-    data_type: DataType, trade_type: TradeType, base_dir: str, interval: str = None
-) -> DailyKlineDetector | FundingRateDetector:
+    data_type: DataType, trade_type: TradeType, base_dir: str | Path, interval: str = None
+) -> BaseDetector:
     """
     Factory method to create appropriate detector based on data type.
 
     Args:
         data_type: Market data type (kline/funding_rate)
-        trade_type: Trade type (spot/futures/um_futures/cm_futures)
+        trade_type: Trade type (spot/um_futures/cm_futures)
         base_dir: Base directory for parsed data
         interval: Required for kline data type (1m, 5m, 1h, etc.)
 
@@ -167,11 +218,13 @@ def create_detector(
     Raises:
         ValueError: If required parameters are missing for specific data types
     """
-    if data_type == DataType.kline:
-        if interval is None:
-            raise ValueError("interval is required for kline detector")
-        return DailyKlineDetector(trade_type=trade_type, interval=interval, base_dir=base_dir)
-    elif data_type == DataType.funding_rate:
-        return FundingRateDetector(trade_type=trade_type, base_dir=base_dir)
-    else:
-        raise ValueError(f"No detector available for data type: {data_type}")
+    base_dir = Path(base_dir)
+    match data_type:
+        case DataType.kline:
+            if interval is None:
+                raise ValueError("interval is required for kline detector")
+            return DailyKlineDetector(trade_type=trade_type, interval=interval, base_dir=base_dir)
+        case DataType.funding_rate:
+            return FundingRateDetector(trade_type=trade_type, base_dir=base_dir)
+        case _:
+            raise ValueError(f"No detector available for data type: {data_type}")
