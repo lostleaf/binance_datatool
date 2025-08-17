@@ -30,7 +30,28 @@ async def async_retry_getter(func, _max_times=5, _sleep_seconds=1, **kwargs):
             _sleep_seconds *= 2
 
 
-def create_aiohttp_session(timeout_sec):
+def create_aiohttp_session(timeout_sec: int | float) -> aiohttp.ClientSession:
+    """Create an aiohttp ClientSession with specified timeout.
+
+    Factory function to create a configured aiohttp ClientSession with a total timeout.
+    The session should be used as an async context manager to ensure proper cleanup.
+
+    Args:
+        timeout_sec: Total timeout in seconds for HTTP requests.
+
+    Returns:
+        aiohttp.ClientSession: Configured HTTP client session.
+
+    Examples:
+        >>> async with create_aiohttp_session(30) as session:
+        ...     async with session.get('https://api.example.com') as response:
+        ...         data = await response.json()
+        
+        >>> # Or for use in other async functions
+        >>> session = create_aiohttp_session(10)
+        >>> # Remember to close the session when done
+        >>> await session.close()
+    """
     timeout = aiohttp.ClientTimeout(total=timeout_sec)
     session = aiohttp.ClientSession(timeout=timeout)
     return session
