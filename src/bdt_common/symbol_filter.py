@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from bdt_common.enums import ContractType
+from bdt_common.enums import ContractType, TradeType
 from bdt_common.infer_exginfo import infer_cm_futures_info, infer_spot_info, infer_um_futures_info
 
 
@@ -99,12 +99,12 @@ class CmFuturesFilter(BaseSymbolFilter):
 
 
 def create_symbol_filter(
-    trade_type,
+    trade_type: TradeType,
     quote: Optional[str] = None,
     contract_type: Optional[ContractType] = None,
     stable_pairs: bool = True,
     leverage_tokens: bool = False
-):
+) -> BaseSymbolFilter:
     """
     Create symbol filter based on trade type and filter parameters.
 
@@ -121,21 +121,20 @@ def create_symbol_filter(
     Raises:
         ValueError: If trade type is not supported for filtering
     """
-    from bdt_common.enums import TradeType  # Import here to avoid circular imports
-
-    if trade_type == TradeType.spot:
-        return SpotFilter(
-            quote=quote,
-            stable_pairs=stable_pairs,
-            leverage_tokens=leverage_tokens,
-        )
-    elif trade_type == TradeType.um_futures:
-        return UmFuturesFilter(
-            quote=quote,
-            contract_type=contract_type,
-            stable_pairs=stable_pairs,
-        )
-    elif trade_type == TradeType.cm_futures:
-        return CmFuturesFilter(contract_type=contract_type)
-    else:
-        raise ValueError(f"Unsupported trade type for filtering: {trade_type}")
+    match trade_type:
+        case TradeType.spot:
+            return SpotFilter(
+                quote=quote,
+                stable_pairs=stable_pairs,
+                leverage_tokens=leverage_tokens,
+            )
+        case TradeType.um_futures:
+            return UmFuturesFilter(
+                quote=quote,
+                contract_type=contract_type,
+                stable_pairs=stable_pairs,
+            )
+        case TradeType.cm_futures:
+            return CmFuturesFilter(contract_type=contract_type)
+        case _:
+            raise ValueError(f"Unsupported trade type for filtering: {trade_type}")
