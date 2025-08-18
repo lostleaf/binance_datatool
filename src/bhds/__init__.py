@@ -1,3 +1,3 @@
 """Binance Historical Data Service"""
 
-__version__ = "2.0.0"
+from bdt_common import __version__

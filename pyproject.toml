@@ -1,7 +1,7 @@
 [project]
 name = "binance-datatool"
-version = "0.1.0"
 requires-python = ">=3.12"
+dynamic = ["version"]
 dependencies = [
     "aiohttp>=3.12.9",
     "colorama>=0.4.6",
@@ -23,8 +23,11 @@ default-groups = []
 bhds = "bhds.cli:app"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/bdt_common/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/bhds", "src/bdt_common"]
