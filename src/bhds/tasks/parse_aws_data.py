@@ -21,7 +21,7 @@ from bhds.api.completion.executor import DataExecutor
 from bhds.aws.csv_conv import AwsCsvToParquetConverter
 from bhds.aws.local import LocalAwsClient
 from bhds.aws.path_builder import create_path_builder
-from bhds.tasks.common import get_data_directory, load_config
+from bhds.tasks.common import get_bhds_home, load_config
 
 
 class ParseAwsDataTask:
@@ -40,16 +40,14 @@ class ParseAwsDataTask:
     - HTTP proxy support
     """
 
-    def __init__(self, config: str | dict | Path):
-        if isinstance(config, str) or isinstance(config, Path):
-            self.config = load_config(str(config))
-            logger.info(f"Loaded configuration from: {config}")
-        else:
-            self.config = config
+    def __init__(self, config_path: str | Path):
+        self.config = load_config(config_path)
+        logger.info(f"Loaded configuration from: {config_path}")
 
         # Get top-level params
-        self.aws_data_dir = get_data_directory(self.config.get("aws_data_dir"), "aws_data")
-        self.output_dir = get_data_directory(self.config.get("output_dir"), "parsed_data")
+        bhds_home = get_bhds_home(self.config.get("bhds_home"))
+        self.aws_data_dir = bhds_home / "aws_data"
+        self.parsed_data_dir = bhds_home / "parsed_data"
         self.http_proxy = self.config.get("http_proxy") or os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
 
         if "trade_type" not in self.config:
@@ -67,7 +65,7 @@ class ParseAwsDataTask:
             f"Data frequency: {self.data_freq.value}"
         )
         logger.info(f"AWS data directory: {self.aws_data_dir}")
-        logger.info(f"Output directory: {self.output_dir}")
+        logger.info(f"Output directory: {self.parsed_data_dir}")
         logger.info(f"HTTP proxy: {self.http_proxy}")
 
         self.enable_completion = self.config.get("enable_completion", False)
@@ -141,7 +139,7 @@ class ParseAwsDataTask:
         converter = AwsCsvToParquetConverter(
             local_aws_client=local_aws_client,
             data_type=self.data_type,
-            output_base_dir=self.output_dir,
+            output_base_dir=self.parsed_data_dir,
             force_update=self.force_update,
             verbose=True,
         )
@@ -175,11 +173,11 @@ class ParseAwsDataTask:
             detector = create_detector(
                 data_type=self.data_type,
                 trade_type=self.trade_type,
-                base_dir=str(self.output_dir),
+                base_dir=self.parsed_data_dir,
                 interval=self.config.get("time_interval"),
             )
         except ValueError as e:
-            logger.warning(str(e))
+            logger.warning(f"Error creating detector: {e}")
             return
 
         # Detect missing data

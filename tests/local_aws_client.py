@@ -6,21 +6,13 @@ Tests the LocalAwsClient class which manages downloaded Binance historical data 
 including symbol listing, file verification status tracking, and summary statistics.
 """
 
-import os
 from pathlib import Path
 
 from bdt_common.enums import DataFrequency, DataType, TradeType
-from bdt_common.log_kit import logger, divider
+from bdt_common.log_kit import divider, logger
 from bhds.aws.local import LocalAwsClient
-from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
-
-
-def get_data_directory() -> Path:
-    """Get the default data directory path."""
-    default_base = os.path.join(os.path.expanduser("~"), "crypto_data")
-    base_dir = Path(os.getenv("CRYPTO_BASE_DIR", default_base))
-    data_dir = base_dir / "binance_data" / "aws_data"
-    return data_dir
+from bhds.aws.path_builder import AwsKlinePathBuilder, AwsPathBuilder
+from bhds.tasks.common import get_bhds_home
 
 
 def test_local_client(base_dir: Path, trade_type: TradeType, data_freq: DataFrequency, data_type: DataType, title: str):
@@ -172,7 +164,7 @@ def main():
     """Run all LocalAwsClient tests."""
     divider("Testing LocalAwsClient Module")
 
-    base_dir = get_data_directory()
+    base_dir = get_bhds_home(None) / "aws_data"
     logger.info(f"Base directory: {base_dir}, Directory exists: {base_dir.exists()}")
 
     if not base_dir.exists():

@@ -18,6 +18,7 @@ from bdt_common.enums import TradeType
 from bdt_common.log_kit import divider, logger
 from bdt_common.polars_utils import execute_polars_batch
 from bhds.holo_kline.merger import Holo1mKlineMerger
+from bhds.tasks.common import get_bhds_home
 
 
 def test_holo_merger_generate(symbol: str, trade_type: TradeType):
@@ -30,7 +31,7 @@ def test_holo_merger_generate(symbol: str, trade_type: TradeType):
                    For spot type, include_funding=False
     """
     # Test configuration
-    parsed_data_dir = Path.home() / "crypto_data" / "binance_data" / "parsed_data"
+    parsed_data_dir = get_bhds_home(None) / "parsed_data"
 
     include_vwap = True
     # Set include_funding based on trade_type
@@ -84,7 +85,7 @@ def test_holo_merger_generate(symbol: str, trade_type: TradeType):
 def test_holo_merger_generate_all():
     """Test the Holo1mKlineMerger generate_all method for CM futures"""
     # Test configuration
-    parsed_data_dir = Path.home() / "crypto_data" / "binance_data" / "parsed_data"
+    parsed_data_dir = get_bhds_home(None) / "parsed_data"
     trade_type = TradeType.cm_futures
 
     include_vwap = True

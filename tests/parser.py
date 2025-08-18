@@ -6,22 +6,19 @@ This script tests the parser functionality with actual BTCUSDT data files
 from the AWS data directory. It verifies both klines and funding rate parsing.
 """
 
-import os
-from pathlib import Path
 import random
 
+from bdt_common.enums import DataFrequency, DataType, TradeType
+from bdt_common.log_kit import divider, logger
+from bhds.aws.local import AwsDataFileManager
 from bhds.aws.parser import create_aws_parser
 from bhds.aws.path_builder import AwsKlinePathBuilder, AwsPathBuilder
-from bhds.aws.local import AwsDataFileManager
-from bdt_common.enums import TradeType, DataFrequency, DataType
-from bdt_common.log_kit import logger, divider
+from bhds.tasks.common import get_bhds_home
 
 
 def get_aws_data_dir():
     """Get the AWS data directory path."""
-    # Check if CRYPTO_BASE_DIR is set, otherwise use default
-    crypto_base = os.environ.get("CRYPTO_BASE_DIR", str(Path.home() / "crypto_data"))
-    return Path(crypto_base) / "binance_data" / "aws_data"
+    return get_bhds_home(None) / "aws_data"
 
 
 def test_klines_parser():

@@ -39,7 +39,7 @@ configs/
 
 ### Environment Variables
 
-- `CRYPTO_BASE_DIR`: Data root directory (default `~/crypto_data`)
+- `BHDS_HOME`: BHDS home directory (default `~/crypto_data/bhds`)
 - `HTTP_PROXY`: Proxy for downloads (optional)
 
 ## Common Commands

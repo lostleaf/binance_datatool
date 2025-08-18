@@ -5,9 +5,12 @@ Test how to use the new path builder to get AWS data paths without HTTP session.
 This example shows how to use the path builder after separating it from the HTTP client.
 """
 
-from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
-from bdt_common.enums import TradeType, DataFrequency, DataType
-from bdt_common.log_kit import logger, divider
+from pathlib import Path
+
+from bdt_common.enums import DataFrequency, DataType, TradeType
+from bdt_common.log_kit import divider, logger
+from bhds.aws.path_builder import AwsKlinePathBuilder, AwsPathBuilder
+from bhds.tasks.common import get_bhds_home
 
 
 def test_basic_path_builder():
@@ -17,7 +20,10 @@ def test_basic_path_builder():
     # Create different types of path builders
     builders = [
         ("Spot Daily Kline", AwsPathBuilder(TradeType.spot, DataFrequency.daily, DataType.kline)),
-        ("Futures Monthly Funding Rate", AwsPathBuilder(TradeType.um_futures, DataFrequency.monthly, DataType.funding_rate)),
+        (
+            "Futures Monthly Funding Rate",
+            AwsPathBuilder(TradeType.um_futures, DataFrequency.monthly, DataType.funding_rate),
+        ),
         ("Spot Monthly Aggregate Trade", AwsPathBuilder(TradeType.spot, DataFrequency.monthly, DataType.agg_trade)),
     ]
 
@@ -48,10 +54,7 @@ def test_path_usage_in_practice():
     """Test how to use path builder in practical applications."""
     divider("Practical Application Test", sep="-")
 
-    # Assume we have a local data directory
-    from pathlib import Path
-
-    local_data_dir = Path("/home/user/crypto_data/binance_data/aws_data/data")
+    local_data_dir = get_bhds_home(None) / "aws_data"
 
     # Use path builder to get complete paths for specific data
     kline_builder = AwsKlinePathBuilder(trade_type=TradeType.spot, data_freq=DataFrequency.daily, time_interval="1m")
@@ -62,10 +65,9 @@ def test_path_usage_in_practice():
     for symbol in symbols:
         # Get relative path
         relative_path = kline_builder.get_symbol_dir(symbol)
-        # Remove the leading 'data/' part
-        clean_path = Path(*relative_path.parts[1:])
+
         # Build complete local path
-        full_path = local_data_dir / clean_path
+        full_path = local_data_dir / relative_path
 
         logger.debug(f"  {symbol}: {full_path}")
 

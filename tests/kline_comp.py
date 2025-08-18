@@ -14,12 +14,11 @@ import tempfile
 from pathlib import Path
 
 import polars as pl
-
-from bdt_common.log_kit import logger, divider
 from test_utils import output_directory_structure
 
 from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, DataType, TradeType
+from bdt_common.log_kit import divider, logger
 from bdt_common.network import create_aiohttp_session
 from bdt_common.rest_api.fetcher import BinanceFetcher
 from bhds.api.completion.detector import DailyKlineDetector
@@ -27,6 +26,7 @@ from bhds.api.completion.executor import DataExecutor
 from bhds.aws.csv_conv import AwsCsvToParquetConverter
 from bhds.aws.local import LocalAwsClient
 from bhds.aws.path_builder import AwsKlinePathBuilder
+from bhds.tasks.common import get_bhds_home
 
 
 def prepare_kline_data(temp_dir: Path, symbols: list[str], interval: str = "1m"):
@@ -34,7 +34,7 @@ def prepare_kline_data(temp_dir: Path, symbols: list[str], interval: str = "1m")
     divider("Preparing kline data...", sep="-")
 
     # AWS data directory
-    aws_data_dir = Path.home() / "crypto_data" / "binance_data" / "aws_data"
+    aws_data_dir = get_bhds_home(None) / "aws_data"
 
     # Create path builder for spot 1m klines
     path_builder = AwsKlinePathBuilder(trade_type=TradeType.spot, data_freq=DataFrequency.daily, time_interval=interval)

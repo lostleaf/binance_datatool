@@ -26,16 +26,10 @@ symbol_filter:
 # Enable API completion for missing data, only supported for daily frequency
 enable_completion: true
 
-# Data directories
-# Use ~/crypto_data as $CRYPTO_BASE_DIR if not set
-
-# Source directory for AWS downloaded files
-# Use $CRYPTO_BASE_DIR/binance_data/aws_data/ if not set
-aws_data_dir: null
-
-# Output directory for parsed parquet files
-# Use $CRYPTO_BASE_DIR/binance_data/parsed_data/ if not set
-output_dir: null
+# BHDS home directory for data storage
+# If not set, uses environment variable BHDS_HOME, defaults to ~/crypto_data/bhds
+# Reads raw data from bhds_home/aws_data as input, outputs to bhds_home/parsed_data
+bhds_home: null
 
 # Force re-processing of existing parquet files
 force_update: false

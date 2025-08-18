@@ -17,29 +17,27 @@ from bhds.aws.path_builder import create_path_builder
 from bhds.holo_kline.gap_detector import HoloKlineGapDetector
 from bhds.holo_kline.merger import Holo1mKlineMerger
 from bhds.holo_kline.splitter import HoloKlineSplitter
-from bhds.tasks.common import get_data_directory, load_config
+from bhds.tasks.common import get_bhds_home, load_config
 
 
 class GenHolo1mKlineTask:
     """Task for synthesizing holographic 1-minute klines from parsed AWS data."""
 
-    def __init__(self, config: str | dict | Path):
-        if isinstance(config, str) or isinstance(config, Path):
-            self.config = load_config(str(config))
-            logger.info(f"Loaded configuration from: {config}")
-        else:
-            self.config = config
+    def __init__(self, config_path: str | Path):
+        self.config = load_config(config_path)
+        logger.info(f"Loaded configuration from: {config_path}")
 
-        # Get base data directory
-        self.input_dir = get_data_directory(self.config.get("input_dir"), "parsed_data")
+        # Get directories from bhds_home
+        bhds_home = get_bhds_home(self.config.get("bhds_home"))
+        self.parsed_data_dir = bhds_home / "parsed_data"
 
         if "trade_type" not in self.config:
             raise KeyError("Missing 'trade_type' in config")
         self.trade_type = TradeType(self.config["trade_type"])
         self.data_freq = DataFrequency.daily
 
-        holo_kline_dir = get_data_directory(self.config.get("output_dir"), "holo_1m_klines")
-        self.output_dir = holo_kline_dir / str(self.trade_type.value).replace("/", "_")
+        holo_kline_dir = bhds_home / "holo_1m_klines"
+        self.output_dir = holo_kline_dir / self.trade_type.value.replace("/", "_")
 
         # Create path builders for different data types
         self.kline_path_builder = create_path_builder(
@@ -52,7 +50,7 @@ class GenHolo1mKlineTask:
         self.include_funding = features.get("include_funding", False)
 
         logger.info(f"Trade type: {self.trade_type}")
-        logger.info(f"Input directory: {self.input_dir}")
+        logger.info(f"Input directory: {self.parsed_data_dir}")
         logger.info(f"Output directory: {self.output_dir}")
         logger.info(f"Include VWAP: {self.include_vwap}, Include Funding: {self.include_funding}")
 
@@ -81,7 +79,7 @@ class GenHolo1mKlineTask:
         # Initialize merger
         self.merger = Holo1mKlineMerger(
             trade_type=self.trade_type,
-            base_dir=self.input_dir,
+            base_dir=self.parsed_data_dir,
             include_vwap=self.include_vwap,
             include_funding=self.include_funding,
         )
@@ -108,7 +106,7 @@ class GenHolo1mKlineTask:
     def _get_available_symbols(self) -> List[str]:
         """Get available symbols from kline directory using path builder."""
         # Get kline directory using path builder
-        kline_dir = self.input_dir / self.kline_path_builder.base_dir
+        kline_dir = self.parsed_data_dir / self.kline_path_builder.base_dir
 
         if not kline_dir.exists():
             logger.warning(f"Kline directory does not exist: {kline_dir}")
@@ -191,13 +189,13 @@ class GenHolo1mKlineTask:
                 results[symbol] = {
                     "gaps": len(gaps_df),
                     "splits": split_count,
-                    "split_files": [str(f) for f in split_files],
                 }
             else:
-                results[symbol] = {"gaps": 0, "splits": 0, "split_files": []}
+                results[symbol] = {"gaps": 0, "splits": 0}
 
         logger.ok(
-            f"Gap detection complete: {symbols_with_gaps}/{total_symbols} symbols have gaps, {total_splits} split files generated"
+            f"Gap detection complete: {symbols_with_gaps}/{total_symbols} symbols have gaps, "
+            f"{total_splits} split files generated"
         )
         return results
 

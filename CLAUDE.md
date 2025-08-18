@@ -7,7 +7,7 @@
 
 ## Environment
 - Python ≥ 3.12, [uv](https://docs.astral.sh/uv/), `aria2`.
-- `CRYPTO_BASE_DIR` (default `~/crypto_data`); optional `HTTP_PROXY`.
+- `BHDS_HOME`: BHDS home directory (default: `~/crypto_data/bhds`); optional `HTTP_PROXY`.
 
 ## Commands
 - setup: `uv sync && source .venv/bin/activate`

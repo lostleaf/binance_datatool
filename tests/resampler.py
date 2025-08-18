@@ -12,15 +12,16 @@ from pathlib import Path
 import polars as pl
 
 from bdt_common.enums import TradeType
-from bdt_common.log_kit import logger, divider
+from bdt_common.log_kit import divider, logger
 from bhds.holo_kline.merger import Holo1mKlineMerger
 from bhds.holo_kline.resampler import HoloKlineResampler
+from bhds.tasks.common import get_bhds_home
 
 
 def test_resampler():
     """Test kline resampling for UM Futures 1m BTCUSDT klines"""
     # Test configuration
-    parsed_data_dir = Path.home() / "crypto_data" / "binance_data" / "parsed_data"
+    parsed_data_dir = get_bhds_home(None) / "parsed_data"
     symbol = "BTCUSDT"
     trade_type = TradeType.um_futures
 

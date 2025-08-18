@@ -12,12 +12,11 @@ import tempfile
 from pathlib import Path
 
 import polars as pl
-
-from bdt_common.log_kit import logger, divider
 from test_utils import output_directory_structure
 
 from bdt_common.constants import HTTP_TIMEOUT_SEC
 from bdt_common.enums import DataFrequency, DataType, TradeType
+from bdt_common.log_kit import divider, logger
 from bdt_common.network import create_aiohttp_session
 from bdt_common.rest_api.fetcher import BinanceFetcher
 from bhds.api.completion.detector import FundingRateDetector
@@ -25,6 +24,7 @@ from bhds.api.completion.executor import DataExecutor
 from bhds.aws.csv_conv import AwsCsvToParquetConverter
 from bhds.aws.local import LocalAwsClient
 from bhds.aws.path_builder import AwsPathBuilder
+from bhds.tasks.common import get_bhds_home
 
 
 def prepare_funding_data(temp_dir: Path, symbols: list[str]):
@@ -32,7 +32,7 @@ def prepare_funding_data(temp_dir: Path, symbols: list[str]):
     divider("Preparing funding rate data", sep="-")
 
     # AWS data directory
-    aws_data_dir = Path.home() / "crypto_data" / "binance_data" / "aws_data"
+    aws_data_dir = get_bhds_home(None) / "aws_data"
 
     # Create path builder for funding rates
     path_builder = AwsPathBuilder(

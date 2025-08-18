@@ -21,13 +21,7 @@ resample_interval: "1h"
 # Only used when generate_offsets is true
 base_offset: "5m"
 
-# Data directories
-# Use ~/crypto_data as $CRYPTO_BASE_DIR if not set
-
-# Source directory for 1m holo kline parquet files
-# Use $CRYPTO_BASE_DIR/binance_data/holo_1m_klines/ if not set
-input_dir: null
-
-# Output directory for resampled kline parquet files
-# Use $CRYPTO_BASE_DIR/binance_data/resampled_klines/ if not set
-output_dir: null
+# BHDS home directory - main data storage directory
+# If not set, uses environment variable BHDS_HOME, defaults to ~/crypto_data/bhds
+# Input data from bhds_home/holo_1m_klines, output data to bhds_home/resampled_klines
+bhds_home: null

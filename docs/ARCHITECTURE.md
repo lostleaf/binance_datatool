@@ -20,7 +20,7 @@ This document summarizes the main modules and data layout used by **BHDS**.
 
 ## Storage Structure
 ```
-$CRYPTO_BASE_DIR/binance_data/
+bhds_home/
 ├── aws_data/           # Raw AWS downloads (.zip)
 ├── parsed_data/        # Processed AWS data (.parquet)
 ├── holo_1m_klines/     # Holographic 1‑minute klines (with VWAP & funding)

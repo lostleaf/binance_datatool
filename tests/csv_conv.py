@@ -11,20 +11,22 @@ Test symbols: BTCUSDT, ETHUSDT, BNBUSDT
 
 import tempfile
 from pathlib import Path
-import polars as pl
 
-from bdt_common.enums import DataType, TradeType, DataFrequency
-from bdt_common.log_kit import logger, divider
-from bhds.aws.csv_conv import AwsCsvToParquetConverter
-from bhds.aws.path_builder import AwsPathBuilder, AwsKlinePathBuilder
-from bhds.aws.local import LocalAwsClient
+import polars as pl
 from test_utils import output_directory_structure
+
+from bdt_common.enums import DataFrequency, DataType, TradeType
+from bdt_common.log_kit import divider, logger
+from bhds.aws.csv_conv import AwsCsvToParquetConverter
+from bhds.aws.local import LocalAwsClient
+from bhds.aws.path_builder import AwsKlinePathBuilder, AwsPathBuilder
+from bhds.tasks.common import get_bhds_home
 
 
 def test_converter():
     """Test the AwsCsvToParquetConverter"""
     # Test configuration
-    aws_data_dir = Path.home() / "crypto_data" / "binance_data" / "aws_data"
+    aws_data_dir = get_bhds_home(None) / "aws_data"
     symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
 
     # Test cases: (data_type, trade_type, data_freq)
@@ -39,9 +41,7 @@ def test_converter():
         # Create temporary output directory (automatically cleaned up)
         with tempfile.TemporaryDirectory(prefix="parquet_test_") as temp_dir:
             temp_path = Path(temp_dir)
-            divider(
-                f"Testing {data_type.value} - {trade_type.value} - {data_freq.value}", sep="-"
-            )
+            divider(f"Testing {data_type.value} - {trade_type.value} - {data_freq.value}", sep="-")
 
             try:
                 # Create path builder and local AWS client

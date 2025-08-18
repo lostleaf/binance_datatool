@@ -33,11 +33,11 @@ sudo apt install aria2  # Ubuntu/Debian
 
 ### Environment Variables
 
-Optional configuration for advanced users:
+Optional configurations:
 
 ```bash
-# Base Crypto data storage directory (default: ~/crypto_data)
-export CRYPTO_BASE_DIR="/path/to/your/crypto/data"
+# BHDS main data storage directory (default: ~/crypto_data/bhds)
+export BHDS_HOME="/path/to/your/bhds/data"
 
 # HTTP proxy if needed
 export HTTP_PROXY="http://127.0.0.1:7893"

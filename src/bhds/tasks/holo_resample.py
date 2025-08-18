@@ -7,7 +7,7 @@ Supports both single offset and multiple offset generation based on configuratio
 """
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import polars as pl
 
@@ -15,18 +15,15 @@ from bdt_common.enums import TradeType
 from bdt_common.log_kit import divider, logger
 from bdt_common.polars_utils import execute_polars_batch
 from bhds.holo_kline.resampler import HoloKlineResampler
-from bhds.tasks.common import create_symbol_filter_from_config, get_data_directory, load_config
+from bhds.tasks.common import create_symbol_filter_from_config, get_bhds_home, load_config
 
 
 class HoloResampleTask:
     """Task for resampling holographic 1-minute klines to higher time frames."""
 
-    def __init__(self, config: str | dict | Path):
-        if isinstance(config, str) or isinstance(config, Path):
-            self.config = load_config(str(config))
-            logger.info(f"Loaded configuration from: {config}")
-        else:
-            self.config = config
+    def __init__(self, config_path: str | Path):
+        self.config = load_config(config_path)
+        logger.info(f"Loaded configuration from: {config_path}")
 
         # Get trade type
         if "trade_type" not in self.config:
@@ -45,13 +42,14 @@ class HoloResampleTask:
         # Initialize resampler
         self.resampler = HoloKlineResampler(self.resample_interval)
 
-        # Get input directory (holo_1m output)
-        holo_1m_dir = get_data_directory(self.config.get("input_dir"), "holo_1m_klines")
-        self.input_dir = holo_1m_dir / str(self.trade_type.value).replace("/", "_")
+        # Get directories from bhds_home
+        bhds_home = get_bhds_home(self.config.get("bhds_home"))
+        holo_1m_dir = bhds_home / "holo_1m_klines"
+        self.input_dir = holo_1m_dir / self.trade_type.value.replace("/", "_")
 
         # Get output directory
-        resample_base_dir = get_data_directory(self.config.get("output_dir"), "resampled_klines")
-        trade_type_str = str(self.trade_type.value).replace("/", "_")
+        resample_base_dir = bhds_home / "resampled_klines"
+        trade_type_str = self.trade_type.value.replace("/", "_")
         self.output_base_dir = resample_base_dir / trade_type_str / self.resample_interval
 
         logger.info(
@@ -148,7 +146,7 @@ class HoloResampleTask:
             # Prepare write tasks for this symbol
             write_tasks = self._prepare_write_tasks(symbol, resampled_data)
             all_write_tasks.extend(write_tasks)
-            
+
             # Track file mapping
             for offset in resampled_data.keys():
                 symbol_file_map[f"{offset}/{symbol}"] = True

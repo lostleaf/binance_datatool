@@ -8,19 +8,21 @@ This script tests kline data splitting based on detected gaps for:
 
 import tempfile
 from pathlib import Path
+
 import polars as pl
 
 from bdt_common.enums import TradeType
-from bdt_common.log_kit import logger, divider
-from bhds.holo_kline.merger import Holo1mKlineMerger
+from bdt_common.log_kit import divider, logger
 from bhds.holo_kline.gap_detector import HoloKlineGapDetector
+from bhds.holo_kline.merger import Holo1mKlineMerger
 from bhds.holo_kline.splitter import HoloKlineSplitter
+from bhds.tasks.common import get_bhds_home
 
 
 def test_splitter():
     """Test kline splitting for spot 1m LUNAUSDT klines"""
     # Test configuration
-    parsed_data_dir = Path.home() / "crypto_data" / "binance_data" / "parsed_data"
+    parsed_data_dir = get_bhds_home(None) / "parsed_data"
     symbol = "LUNAUSDT"
     trade_type = TradeType.spot
     include_vwap = True

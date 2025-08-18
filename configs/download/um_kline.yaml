@@ -18,10 +18,10 @@ symbol_filter:
   stable_pairs: false # Exclude stable pairs (e.g., USDC/USDT trading pairs)
   contract_type: "PERPETUAL" # Contract type: PERPETUAL or DELIVERY
 
-# Data configuration, local directory for downloads
-# Use $CRYPTO_BASE_DIR/binance_data/aws_data/ if not set
-# Use ~/crypto_data as $CRYPTO_BASE_DIR if not set
-data_dir: null
+# BHDS home directory for data storage
+# If not set, uses environment variable BHDS_HOME, defaults to ~/crypto_data/bhds
+# AWS data will be downloaded to bhds_home/aws_data
+bhds_home: null
 
 # HTTP proxy, uses environment HTTP_PROXY if not set
 http_proxy: null

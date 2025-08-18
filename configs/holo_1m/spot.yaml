@@ -23,13 +23,7 @@ gap_detection:
   min_days: 1 # Minimum gap duration in days
   min_price_change: 0.1 # Minimum price change threshold (10%)
 
-# Data directories
-# Use ~/crypto_data as $CRYPTO_BASE_DIR if not set
-
-# Source directory for parsed AWS parquet files
-# Use $CRYPTO_BASE_DIR/binance_data/parsed_data/ if not set
-input_dir: null
-
-# Output directory for holo kline parquet files
-# Use $CRYPTO_BASE_DIR/binance_data/results_data/holo_1m_klines/ if not set
-output_dir: null
+# BHDS home directory - main data storage directory
+# If not set, uses environment variable BHDS_HOME, defaults to ~/crypto_data/bhds
+# Input data from bhds_home/parsed_data, output data to bhds_home/holo_1m_klines
+bhds_home: null
