@@ -8,8 +8,10 @@ set -e
 
 # Determine CRYPTO_BASE_DIR from environment or default to $HOME/crypto_data
 CRYPTO_BASE_DIR=${CRYPTO_BASE_DIR:-$HOME/crypto_data}
-SOURCE_DIR="$CRYPTO_BASE_DIR/binance_data/aws_data"
-BACKUP_DIR="$CRYPTO_BASE_DIR/binance_data"
+SOURCE_DIR="$CRYPTO_BASE_DIR/bhds/aws_data"
+BACKUP_DIR="$CRYPTO_BASE_DIR/bhds/aws_backup"
+
+mkdir -p $BACKUP_DIR
 
 # Check if source directory exists
 if [ ! -d "$SOURCE_DIR" ]; then
@@ -25,19 +27,19 @@ BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
 echo "Starting backup of kline data..."
 echo "Source directories:"
 echo "$SOURCE_DIR"
-echo "  - aws_data/data/spot/daily/klines"
-echo "  - aws_data/data/futures/um/daily/klines"
-echo "  - aws_data/data/futures/cm/daily/klines"
+echo "  - data/spot/daily/klines"
+echo "  - data/futures/um/daily/klines"
+echo "  - data/futures/cm/daily/klines"
 echo "Backup: $BACKUP_PATH"
 
 # Create backup archive excluding .verified files
 # Only backup kline directories
 tar -cf "$BACKUP_PATH" \
     --exclude='*.verified' \
-    -C "$BACKUP_DIR" \
-    aws_data/data/spot/daily/klines \
-    aws_data/data/futures/um/daily/klines \
-    aws_data/data/futures/cm/daily/klines 2>/dev/null || true
+    -C "$SOURCE_DIR" \
+    data/spot/daily/klines \
+    data/futures/um/daily/klines \
+    data/futures/cm/daily/klines 2>/dev/null || true
 
 # Calculate backup size
 BACKUP_SIZE=$(du -h "$BACKUP_PATH" | cut -f1)
