@@ -1,3 +1,5 @@
+import os
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path, PurePosixPath
@@ -5,6 +7,14 @@ from typing import Optional
 
 from bdt_common.constants import BINANCE_AWS_PREFIX
 from bdt_common.log_kit import divider, logger
+
+
+def get_aria2c_exec() -> str:
+    # Check if aria2c exists in the PATH
+    aria2c_path = shutil.which("aria2c")
+    if not aria2c_path:
+        raise FileNotFoundError(f"aria2c executable not found in system PATH: {os.getenv('PATH')}")
+    return aria2c_path
 
 
 def aria2_download_files(download_infos: list[tuple[str, Path]], http_proxy: Optional[str] = None) -> int:
@@ -26,7 +36,8 @@ def aria2_download_files(download_infos: list[tuple[str, Path]], http_proxy: Opt
         aria_file.close()
 
         # Build aria2c command with optimized settings for parallel downloads
-        cmd = ["aria2c", "-i", aria_file.name, "-j32", "-x4", "-q"]
+        aria2c_path = get_aria2c_exec()
+        cmd = [aria2c_path, "-i", aria_file.name, "-j32", "-x4", "-q"]
 
         # Add proxy configuration if provided
         if http_proxy is not None:
@@ -63,11 +74,11 @@ class AwsDownloader:
     """
     AWS S3 file downloader for Binance data with retry and batching capabilities.
     """
-    
+
     def __init__(self, local_dir: Path, http_proxy: str = None, verbose: bool = True):
         """
         Initialize the AWS downloader with configuration parameters.
-        
+
         Args:
             local_dir: Local directory path where files will be downloaded
             http_proxy: HTTP proxy URL string for downloads, or None for direct connection
@@ -113,14 +124,14 @@ class AwsDownloader:
                 # Extract current batch of files to download
                 batch_infos = missing_infos[i : i + batch_size]
                 batch_idx = i // batch_size + 1
-                
+
                 # Log batch information if verbose mode is enabled
                 if self.verbose:
                     logger.info(
                         f"Download Batch{batch_idx}, num_files={len(batch_infos)}, "
                         f"{batch_infos[0][1].name} -- {batch_infos[-1][1].name}"
                     )
-                
+
                 # Execute download for current batch using aria2c
                 returncode = aria2_download_files(batch_infos, self.http_proxy)
 

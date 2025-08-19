@@ -46,9 +46,11 @@ class DataType(str, Enum):
     kline = "klines"
     # Funding rates for perpetual futures
     funding_rate = "fundingRate"
-    # Aggregated trades stream
+    # Aggregated trades
     agg_trade = "aggTrades"
-    # Liquidation snapshot stream
+    # Liquidation snapshot
     liquidation_snapshot = "liquidationSnapshot"
     # Metrics data
     metrics = "metrics"
+    # Tick-by-Tick Trades
+    trade = "trades"
