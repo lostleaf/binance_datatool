@@ -20,6 +20,9 @@ bhds_home: null
 # HTTP proxy, uses environment HTTP_PROXY if not set
 http_proxy: null
 
+# Whether to apply HTTP proxy for aria2c downloads
+use_proxy_for_aria2c: true
+
 # Checksum verification configuration
 checksum_verification:
   delete_mismatch: true # Delete files on checksum mismatch

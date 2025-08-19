@@ -30,7 +30,11 @@ class AwsDownloadTask:
         bhds_home = get_bhds_home(self.config.get("bhds_home"))
         self.aws_data_dir = bhds_home / "aws_data"
         self.http_proxy = self.config.get("http_proxy") or os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
-        logger.info(f"Data directory: {self.aws_data_dir}, HTTP proxy: {self.http_proxy}")
+        self.use_proxy_for_aria2c = self.config.get("use_proxy_for_aria2c", False)
+        logger.info(
+            f"Data directory: {self.aws_data_dir}, HTTP proxy: {self.http_proxy}, "
+            f"Use proxy for aria2c: {self.use_proxy_for_aria2c}"
+        )
 
         if "trade_type" not in self.config:
             raise KeyError("Missing 'trade_type' in config")
@@ -83,7 +87,9 @@ class AwsDownloadTask:
             return
 
         logger.debug(f"📥 Total files found: {len(all_files)}, downloading missings...")
-        downloader = AwsDownloader(local_dir=self.aws_data_dir, http_proxy=self.http_proxy, verbose=True)
+        # Only pass http_proxy to AwsDownloader if use_proxy_for_aria2c is True
+        proxy_for_downloader = self.http_proxy if self.use_proxy_for_aria2c else None
+        downloader = AwsDownloader(local_dir=self.aws_data_dir, http_proxy=proxy_for_downloader, verbose=True)
         downloader.aws_download(all_files)
 
     def _verify_files(self, client: AwsClient) -> None:
