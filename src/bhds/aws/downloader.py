@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path, PurePosixPath
 from typing import Optional
 
-from bdt_common.constants import BINANCE_AWS_PREFIX
+from bdt_common.constants import BINANCE_AWS_DATA_PREFIX
 from bdt_common.log_kit import divider, logger
 
 
@@ -102,7 +102,7 @@ class AwsDownloader:
             # Construct local file path by combining local_dir with AWS file path
             local_file = self.local_dir / aws_file
             # Construct full AWS URL using the predefined prefix
-            aws_url = f"{BINANCE_AWS_PREFIX}/{str(aws_file)}"
+            aws_url = f"{BINANCE_AWS_DATA_PREFIX}/{str(aws_file)}"
             download_infos.append((aws_url, local_file))
 
         # Retry loop for handling failed downloads
