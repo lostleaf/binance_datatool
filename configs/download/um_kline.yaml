@@ -27,7 +27,7 @@ bhds_home: null
 http_proxy: null
 
 # Whether to apply HTTP proxy for aria2c downloads
-use_proxy_for_aria2c: true
+use_proxy_for_aria2c: false
 
 # Checksum verification configuration
 checksum_verification:

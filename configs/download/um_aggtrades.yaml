@@ -25,4 +25,4 @@ use_proxy_for_aria2c: true
 
 # Checksum verification configuration
 checksum_verification:
-  delete_mismatch: true # Delete files on checksum mismatch
+  delete_mismatch: falset # Delete files on checksum mismatch
