@@ -1,30 +1,60 @@
 import asyncio
+from collections.abc import Awaitable, Callable
+from typing import Any, TypeVar
 
 import aiohttp
 
 from bdt_common.exceptions import BinanceAPIException
-
 from bdt_common.log_kit import logger
 
-BINANCE_CODES = {-1122, -1121}
+GetterRetType = TypeVar("T")
+
+BINANCE_CODES: set[int] = {-1122, -1121}
 
 
-async def async_retry_getter(func, _max_times=5, _sleep_seconds=1, **kwargs):
+async def async_retry_getter(
+    func: Callable[..., Awaitable[GetterRetType]],
+    _max_times: int = 5,
+    _sleep_seconds: float = 1,
+    **kwargs: Any,
+) -> GetterRetType | None:
+    """Call an async function with retries using exponential backoff.
 
+    This helper retries the given async callable when generic exceptions occur, doubling the sleep between attempts.
+    If a BinanceAPIException is raised with a code in ``BINANCE_CODES``, the error is considered non-retryable and
+    ``None`` is returned; otherwise the exception is re-raised.
+
+    Args:
+        func: Async callable to execute. It will be awaited as ``func(**kwargs)``.
+        _max_times: Maximum number of retries on generic exceptions. Zero means raise immediately on next failure.
+        _sleep_seconds: Initial backoff sleep in seconds; it doubles after each failed attempt.
+        **kwargs: Keyword arguments passed through to ``func``.
+
+    Returns:
+        The awaited result of ``func`` on success, or ``None`` when a non-retryable BinanceAPIException code is hit.
+
+    Raises:
+        BinanceAPIException: Re-raised when the error code is not in ``BINANCE_CODES``.
+        Exception: The last exception after exhausting retries.
+    """
+    # Loop until success or until retries are exhausted.
     while True:
         try:
+            # Attempt the async call with provided kwargs.
             return await func(**kwargs)
         except BinanceAPIException as e:
+            # Non-retryable Binance error codes: log and return None to signal "handled but no data".
             if e.code in BINANCE_CODES:
                 logger.warning(e)
                 return None
-
-            raise e
-        except Exception as e:
+            # Other Binance errors are propagated to the caller.
+            raise
+        except Exception:
+            # If no retries left, log with stacktrace and propagate the last exception.
             if _max_times == 0:
                 logger.exception("Error occurred, 0 times retry left")
-                raise e
-
+                raise
+            # Exponential backoff then decrement retries and continue.
             await asyncio.sleep(_sleep_seconds)
             _max_times -= 1
             _sleep_seconds *= 2
