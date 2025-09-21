@@ -16,7 +16,14 @@ from bdt_common.symbol_filter import BaseSymbolFilter, create_symbol_filter
 
 
 def load_config(config_path: str | Path) -> dict:
-    """Load YAML configuration from file path."""
+    """Load YAML configuration from file path.
+    
+    Args:
+        config_path: Path to the YAML config file.
+
+    Returns:
+        A dictionary containing the configuration data.
+    """
     config_file = Path(config_path)
     if not config_file.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_file}")
