@@ -1,3 +1,5 @@
+import json
+
 class BinanceRequestException(Exception):
 
     def __init__(self, message):
