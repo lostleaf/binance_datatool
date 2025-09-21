@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-AWS Download Task
+BHDS AWS Download Task.
 
-Downloads cryptocurrency data from Binance AWS historical data archives 
-using configuration from YAML files. Supports both spot and futures markets
-with configurable symbol filtering and data verification.
+This module implements the download workflow to fetch historical market data from Binance's official AWS data center.
+It loads a YAML config, resolves symbols, downloads missing files, and optionally verifies checksums.
 """
 import os
 from itertools import chain
@@ -22,7 +21,20 @@ from bhds.tasks.common import create_symbol_filter_from_config, get_bhds_home, l
 
 
 class AwsDownloadTask:
+    """
+    Coordinates downloading historical Binance data from the official AWS data center for the public bhds application.
+
+    The task loads config, filters target symbols, downloads missing archives, and optionally verifies checksums.
+    """
     def __init__(self, config_path: str | Path):
+        """Initialize the download task from a YAML configuration.
+
+        Args:
+            config_path: Path to the YAML config file.
+
+        Raises:
+            KeyError: If required fields (trade_type, data_type, data_freq) are missing.
+        """
         self.config = load_config(config_path)
         logger.info(f"Loaded configuration from: {config_path}")
 
@@ -51,6 +63,14 @@ class AwsDownloadTask:
         self.verification_config: dict = self.config.get("checksum_verification")
 
     def _apply_symbol_filter(self, all_symbols: list[str]) -> list[str]:
+        """Apply the configured symbol filter to the full symbol list.
+
+        Args:
+            all_symbols: All available symbols returned by the AWS client.
+
+        Returns:
+            The filtered list of symbols. If no filter is configured, returns the input list unchanged.
+        """
         filter_cfg = self.config.get("symbol_filter")
 
         if filter_cfg is None or not filter_cfg:
@@ -62,8 +82,16 @@ class AwsDownloadTask:
         return filtered_symbols
 
     def _get_target_symbols(self, all_symbols: list[str]) -> list[str]:
-        """Return the final symbols to process.
-        If config['symbols'] is provided and non-empty, use it; otherwise apply filter.
+        """Determine the final set of symbols to process.
+
+        If config['symbols'] is provided and non-empty, intersect it with the available symbols.
+        Otherwise, apply the configured symbol filter.
+
+        Args:
+            all_symbols: All available symbols returned by the AWS client.
+
+        Returns:
+            A sorted list of target symbols to be processed.
         """
         symbols = self.config.get("symbols")
         if symbols:
@@ -71,13 +99,21 @@ class AwsDownloadTask:
             logger.info(f"Using {len(valid)} user-specified symbols")
             return valid
 
-        # Fallback to filter logic
+        # Fallback to configured symbol filter
         filtered = self._apply_symbol_filter(all_symbols)
         logger.info(f"Found {len(all_symbols)} total symbols, Filtered to {len(filtered)} symbols")
         return filtered
 
     async def _download_files(self, client: AwsClient, symbols: list[str]) -> None:
-        """Download files for symbols."""
+        """Download data files for the given symbols.
+
+        Lists files via the AWS client, then downloads only the missing files into aws_data_dir.
+        Optionally routes aria2c traffic through an HTTP proxy when enabled.
+
+        Args:
+            client: AWS data client used to list and build file paths.
+            symbols: Symbols to download.
+        """
         logger.debug(f"📊 Processing symbols: {symbols[:5]}{'...' if len(symbols) > 5 else ''}")
 
         files_map = await client.batch_list_data_files(symbols)
@@ -93,7 +129,11 @@ class AwsDownloadTask:
         downloader.aws_download(all_files)
 
     def _verify_files(self, client: AwsClient) -> None:
-        """Verify checksums for downloaded files."""
+        """Verify checksums for downloaded files and optionally delete mismatches.
+
+        Args:
+            client: AWS data client (used for path building when scanning local files).
+        """
         divider("BHDS: Verifying Downloaded Files", sep="-")
 
         verifier = ChecksumVerifier(delete_mismatch=self.verification_config.get("delete_mismatch", False))
@@ -114,6 +154,15 @@ class AwsDownloadTask:
             logger.ok("All files already verified")
 
     async def run(self):
+        """Execute the end-to-end download workflow.
+
+        Steps:
+            1. Create HTTP session.
+            2. Create AWS client from config.
+            3. List available symbols and compute targets.
+            4. Download missing files.
+            5. Optionally verify checksums.
+        """
         divider("BHDS: Start Binance AWS Download", with_timestamp=True)
         async with create_aiohttp_session(HTTP_TIMEOUT_SEC) as session:
             client = create_aws_client_from_config(
