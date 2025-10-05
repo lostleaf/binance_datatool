@@ -20,7 +20,7 @@ class BaseDetector(ABC):
 
     def __init__(self, trade_type: TradeType, base_dir: Path):
         """Initialize base detector with common parameters
-        
+
         Args:
             trade_type: Trade type (spot/um_futures/cm_futures)
             base_dir: Base directory for parsed data
@@ -31,9 +31,9 @@ class BaseDetector(ABC):
         self.local_client = LocalAwsClient(base_dir=self.base_dir, path_builder=self.path_builder)
 
     @abstractmethod
-    def _create_path_builder(self):
+    def _create_path_builder(self) -> AwsPathBuilder:
         """Create appropriate path builder for the detector type
-        
+
         Returns:
             Path builder instance
         """
@@ -42,10 +42,10 @@ class BaseDetector(ABC):
     @abstractmethod
     def detect(self, symbols: list[str]) -> list[tuple[Callable, dict, Path]]:
         """Detect missing data for given symbols
-        
+
         Args:
             symbols: List of trading symbols
-            
+
         Returns:
             List[Tuple]: (unbound method, parameter dict, save path)
         """
@@ -57,7 +57,7 @@ class DailyKlineDetector(BaseDetector):
 
     def __init__(self, trade_type: TradeType, interval: str, base_dir: Path):
         """Initialize with path-related parameters only, no BinanceFetcher needed
-        
+
         Args:
             trade_type: Trade type (spot/um_futures/cm_futures)
             interval: Time interval for kline data (1m, 5m, 1h, etc.)
@@ -66,7 +66,7 @@ class DailyKlineDetector(BaseDetector):
         self.interval = interval
         super().__init__(trade_type, base_dir)
 
-    def _create_path_builder(self):
+    def _create_path_builder(self) -> AwsKlinePathBuilder:
         """Create kline path builder"""
         return AwsKlinePathBuilder(
             trade_type=self.trade_type, data_freq=DataFrequency.daily, time_interval=self.interval
@@ -157,14 +157,14 @@ class FundingRateDetector(BaseDetector):
 
     def __init__(self, trade_type: TradeType, base_dir: Path):
         """Initialize with path-related parameters only, no BinanceFetcher needed
-        
+
         Args:
             trade_type: Trade type (spot/um_futures/cm_futures)
             base_dir: Base directory for parsed data
         """
         super().__init__(trade_type, base_dir)
 
-    def _create_path_builder(self):
+    def _create_path_builder(self) -> AwsPathBuilder:
         """Create funding rate path builder"""
         return AwsPathBuilder(
             trade_type=self.trade_type, data_freq=DataFrequency.monthly, data_type=DataType.funding_rate
@@ -201,7 +201,7 @@ class FundingRateDetector(BaseDetector):
 
 
 def create_detector(
-    data_type: DataType, trade_type: TradeType, base_dir: str | Path, interval: str = None
+    data_type: DataType, trade_type: TradeType, base_dir: str | Path, interval: str | None = None
 ) -> BaseDetector:
     """
     Factory method to create appropriate detector based on data type.
