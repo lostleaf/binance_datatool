@@ -1,0 +1,28 @@
+# BHDS Spot Holo K-line Resample Task
+# Resample 1m holo klines to higher time frames
+
+# Trade type - "spot", "futures/um", or "futures/cm"
+trade_type: "spot"
+
+# Symbol selection - use either symbols list OR symbol_filter, not both
+# If symbols is not null, symbol_filter is ignored
+symbols: null
+
+# Symbol filtering options - used only when symbols list is empty
+symbol_filter:
+  quote: "USDT" # USDT quote asset
+  stable_pairs: false # Exclude stable pairs (e.g., USDC/USDT trading pairs)
+  leverage_tokens: false # Exclude leverage tokens (tokens with UP/DOWN/BULL/BEAR in name)
+
+# Target interval to resample to
+resample_interval: "8h"
+  
+# Base offset for generating multiple offset files
+# If null or "0m", only generate single file with 0m offset
+# Otherwise, generate multiple offset files using resample_offsets method
+base_offset: "5m"
+
+# BHDS home directory - main data storage directory
+# If not set, uses environment variable BHDS_HOME, defaults to ~/crypto_data/bhds
+# Input data from bhds_home/holo_1m_klines, output data to bhds_home/resampled_klines
+bhds_home: null
