@@ -21,8 +21,7 @@ from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.log_kit import divider, logger
 from bdt_common.network import create_aiohttp_session
 from bdt_common.rest_api.fetcher import BinanceFetcher
-from bhds.api.completion.detector import DailyKlineDetector
-from bhds.api.completion.executor import DataExecutor
+from bhds.api.completion import CompletionOperation, CompletionTask, DailyKlineDetector, DataExecutor
 from bhds.aws.csv_conv import AwsCsvToParquetConverter
 from bhds.aws.local import LocalAwsClient
 from bhds.aws.path_builder import AwsKlinePathBuilder
@@ -78,14 +77,14 @@ def test_detection_only(data_dir: Path, symbols: list[str], interval: str = "1m"
     random.shuffle(tasks)
 
     logger.info(f"Found {len(tasks)} missing data tasks for {symbols}:")
-    for i, (fetch_func, kwargs, output_path) in enumerate(tasks[:3], 1):
+    for i, task in enumerate(tasks[:3], 1):
         logger.debug(f"  Task {i}:")
-        logger.debug(f"    Function: {fetch_func.__name__}")
-        logger.debug(f"    Arguments: {kwargs}")
-        logger.debug(f"    Output path: {output_path}")
+        logger.debug(f"    Operation: {task.operation.value}")
+        logger.debug(f"    Arguments: {dict(task.params)}")
+        logger.debug(f"    Output path: {task.save_path}")
 
         # Convert to Path object if needed
-        output_path = Path(output_path)
+        output_path = Path(task.save_path)
         logger.debug(f"    Output path exists: {output_path.exists()}")
 
         # Check if parent directory exists
@@ -124,10 +123,10 @@ async def test_data_executor(data_dir: Path, symbols: list[str], interval: str =
         symbol_dir.mkdir(parents=True, exist_ok=True)
         save_path = symbol_dir / f"{symbols[0]}-{interval}-{test_date}.parquet"
         tasks = [
-            (
-                BinanceFetcher.get_kline_df_of_day,
-                {"symbol": symbols[0], "interval": interval, "dt": test_date},
-                save_path,
+            CompletionTask(
+                operation=CompletionOperation.GET_KLINE_DF_OF_DAY,
+                params={"symbol": symbols[0], "interval": interval, "dt": test_date},
+                save_path=save_path,
             )
         ]
 
@@ -143,7 +142,8 @@ async def test_data_executor(data_dir: Path, symbols: list[str], interval: str =
 
         # Check created files
         random.shuffle(tasks)
-        for _, _, save_path in tasks[:10]:
+        for task in tasks[:10]:
+            save_path = task.save_path
             if save_path.exists():
                 try:
                     df = pl.read_parquet(save_path)
