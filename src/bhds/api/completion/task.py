@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -28,11 +29,14 @@ class CompletionTask:
     params: Mapping[str, Any]
     save_path: Path
 
-    def execute(self, fetcher: BinanceFetcher) -> Any:
+    async def execute(self, fetcher: BinanceFetcher) -> Any:
         """Execute the task using the provided fetcher."""
 
         operation = getattr(fetcher, self.operation.value)
-        return operation(**self.params)
+        result = operation(**self.params)
+        if inspect.isawaitable(result):
+            return await result
+        return result
 
     @property
     def description(self) -> str:
