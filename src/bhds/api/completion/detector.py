@@ -6,13 +6,12 @@ Provides independent detector classes for identifying missing data without Binan
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Callable
-
 from bdt_common.enums import DataFrequency, DataType, TradeType
 from bdt_common.log_kit import logger
-from bdt_common.rest_api.fetcher import BinanceFetcher
 from bhds.aws.local import LocalAwsClient
 from bhds.aws.path_builder import AwsKlinePathBuilder, AwsPathBuilder
+
+from .task import CompletionOperation, CompletionTask
 
 
 class BaseDetector(ABC):
@@ -40,14 +39,14 @@ class BaseDetector(ABC):
         pass
 
     @abstractmethod
-    def detect(self, symbols: list[str]) -> list[tuple[Callable, dict, Path]]:
+    def detect(self, symbols: list[str]) -> list[CompletionTask]:
         """Detect missing data for given symbols
 
         Args:
             symbols: List of trading symbols
 
         Returns:
-            List[Tuple]: (unbound method, parameter dict, save path)
+            List[CompletionTask]: Tasks describing missing data fetch operations
         """
         pass
 
@@ -72,16 +71,16 @@ class DailyKlineDetector(BaseDetector):
             trade_type=self.trade_type, data_freq=DataFrequency.daily, time_interval=self.interval
         )
 
-    def detect(self, symbols: list[str]) -> list[tuple[Callable, dict, Path]]:
+    def detect(self, symbols: list[str]) -> list[CompletionTask]:
         """Detect missing daily kline data
 
         Args:
             symbols: List of trading symbols
 
         Returns:
-            List[Tuple]: (unbound method, parameter dict, save path)
+            List[CompletionTask]: Tasks describing missing data fetch operations
         """
-        missing_tasks = []
+        missing_tasks: list[CompletionTask] = []
 
         for symbol in symbols:
             try:
@@ -93,13 +92,14 @@ class DailyKlineDetector(BaseDetector):
                     filename = f"{symbol}-{self.interval}-{date_str}.parquet"
                     save_path = symbol_dir / filename
 
-                    # Create task tuple with unbound method
-                    task = (
-                        BinanceFetcher.get_kline_df_of_day,
-                        {"symbol": symbol, "interval": self.interval, "dt": date_str},
-                        save_path,
+                    # Create completion task describing the fetch operation
+                    missing_tasks.append(
+                        CompletionTask(
+                            operation=CompletionOperation.GET_KLINE_DF_OF_DAY,
+                            params={"symbol": symbol, "interval": self.interval, "dt": date_str},
+                            save_path=save_path,
+                        )
                     )
-                    missing_tasks.append(task)
 
             except Exception as e:
                 logger.exception(f"Failed to detect missing dates for {symbol}: {e}")
@@ -170,17 +170,17 @@ class FundingRateDetector(BaseDetector):
             trade_type=self.trade_type, data_freq=DataFrequency.monthly, data_type=DataType.funding_rate
         )
 
-    def detect(self, symbols: list[str]) -> list[tuple[Callable, dict, Path]]:
+    def detect(self, symbols: list[str]) -> list[CompletionTask]:
         """Detect funding rate data that needs updating
 
         Args:
             symbols: List of trading symbols
 
         Returns:
-            List[Tuple]: (unbound method, parameter dict, save path)
+            List[CompletionTask]: Tasks describing missing data fetch operations
         """
         limit = 1000
-        missing_tasks = []
+        missing_tasks: list[CompletionTask] = []
 
         for symbol in symbols:
             try:
@@ -188,9 +188,14 @@ class FundingRateDetector(BaseDetector):
                 symbol_dir = self.local_client.get_symbol_dir(symbol)
                 save_path = symbol_dir / "latest.parquet"
 
-                # Create task tuple with unbound method
-                task = (BinanceFetcher.get_hist_funding_rate, {"symbol": symbol, "limit": limit}, save_path)
-                missing_tasks.append(task)
+                # Create completion task describing the fetch operation
+                missing_tasks.append(
+                    CompletionTask(
+                        operation=CompletionOperation.GET_HIST_FUNDING_RATE,
+                        params={"symbol": symbol, "limit": limit},
+                        save_path=save_path,
+                    )
+                )
 
             except Exception as e:
                 logger.exception(f"Failed to create funding task for {symbol}: {e}")
