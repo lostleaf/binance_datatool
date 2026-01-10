@@ -93,7 +93,7 @@ class Holo1mKlineMerger:
         if self.include_funding and self.trade_type != TradeType.spot:
             funding_dir = self.base_dir / self.funding_builder.get_symbol_dir(symbol)
             if funding_dir.exists():
-                funding_ldf = pl.scan_parquet(funding_dir).unique("candle_begin_time")
+                funding_ldf = pl.scan_parquet(funding_dir, extra_columns="ignore").unique("candle_begin_time")
                 ldf = ldf.join(
                     funding_ldf.select(["candle_begin_time", "funding_rate"]), on="candle_begin_time", how="left"
                 ).with_columns(pl.col("funding_rate").fill_null(0))
