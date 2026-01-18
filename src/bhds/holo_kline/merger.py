@@ -98,8 +98,8 @@ class Holo1mKlineMerger:
                     funding_ldf.select(["candle_begin_time", "funding_rate"]), on="candle_begin_time", how="left"
                 ).with_columns(pl.col("funding_rate").fill_null(0))
             else:
-                logger.warning(f"Funding directory not found for {symbol}: {funding_dir}")
-                self.include_funding = False
+                logger.warning(f"Funding data not found for {symbol}, filling funding_rate with 0: {funding_dir}")
+                ldf = ldf.with_columns(pl.lit(0).alias("funding_rate"))
 
         # Fill kline gaps (ensure time continuity)
         ldf = self._fill_kline_gaps(ldf)
