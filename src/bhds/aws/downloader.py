@@ -3,7 +3,6 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path, PurePosixPath
-from typing import Optional
 
 from bdt_common.constants import BINANCE_AWS_DATA_PREFIX
 from bdt_common.log_kit import divider, logger
@@ -17,7 +16,7 @@ def get_aria2c_exec() -> str:
     return aria2c_path
 
 
-def aria2_download_files(download_infos: list[tuple[str, Path]], http_proxy: Optional[str] = None) -> int:
+def aria2_download_files(download_infos: list[tuple[str, Path]], http_proxy: str | None = None) -> int:
     """
     Download files from AWS S3 using aria2c command-line tool.
 
@@ -75,7 +74,7 @@ class AwsDownloader:
     AWS S3 file downloader for Binance data with retry and batching capabilities.
     """
 
-    def __init__(self, local_dir: Path, http_proxy: str = None, verbose: bool = True):
+    def __init__(self, local_dir: Path, http_proxy: str | None = None, verbose: bool = True):
         """
         Initialize the AWS downloader with configuration parameters.
 
