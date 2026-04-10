@@ -1,0 +1,70 @@
+# AGENTS.md
+
+## Purpose
+- This repository hosts the `binance_datatool` Python package.
+- Treat checked-in source code, tests, configuration, and public documentation as the source of
+  truth for current behavior.
+- Keep the repository easy for both human developers and AI agents to navigate.
+
+## Local Instructions
+- Before making changes, check whether `.AGENTS.local.md` exists at the repository root.
+- If `.AGENTS.local.md` exists, read it and follow it as additional local guidance.
+- Public instructions in this file apply to everyone; local instructions add developer-specific context.
+
+## Working Model
+- Build the project as a modern Python package named `binance_datatool`.
+- Use the intended package layout: shared code under `binance_datatool.common` and historical
+  data functionality under `binance_datatool.bhds`.
+- Prefer clear, composable workflows and thin CLI entrypoints.
+- Keep the root package minimal. Export only version metadata from `binance_datatool.__init__`.
+
+## Toolchain
+- Package and dependency management: `uv`
+- Build backend: `hatchling`
+- Linting and formatting: `ruff`
+- Testing: `pytest`
+- Git hooks: `pre-commit`
+- External downloader: `aria2`
+
+## Expected Commands
+- Environment setup: `uv sync`
+- Lint: `uv run ruff check .`
+- Format: `uv run ruff format .`
+- Tests: `uv run pytest`
+- Targeted tests: `uv run pytest tests/path_to_test.py`
+- CLI entrypoint target: `uv run bhds --help`
+
+## Code Standards
+- Use written English for code comments, docstrings, logs, CLI text, and developer-facing messages.
+- Write clear comments only where they add real value; do not narrate obvious code.
+- Use Google-style docstrings for public modules, classes, and functions.
+- Use modern Python syntax compatible with Python 3.11. Do not require syntax newer than 3.11.
+- Keep line length at 100 characters or less.
+- Keep imports at module top level unless a local import is technically necessary.
+- Prefer explicit types and clear names over implicit behavior.
+- Prefer small, focused modules with straightforward responsibilities.
+- Follow a let-it-crash mindset. Do not add casual fallback logic, silent recovery, or defensive
+  branches unless there is a concrete and justified failure mode.
+- Replace hand-rolled infrastructure with mature third-party libraries when the design already
+  names a standard dependency.
+
+## Architecture Expectations
+- Keep CLI modules thin: parse arguments, construct workflows, and present output.
+- Put business logic in importable workflow or domain modules, not inside CLI command functions.
+- Prefer Polars LazyFrame-based data processing when working with tabular pipelines.
+- Preserve a clear separation between shared utilities, archive access, parsing, completion,
+  metadata tracking, and holographic kline generation.
+- Design commands to be atomic and composable so an agent can inspect state and then choose the
+  next step.
+
+## Testing Expectations
+- Add or update tests for every meaningful behavior change.
+- Prefer the smallest test scope that proves the change.
+- Use `pytest` as the test runner and keep tests readable enough for agent-assisted maintenance.
+- When adding data-processing behavior, include representative fixtures or focused regression
+  coverage.
+
+## Repository Boundaries
+- `temp/` is git-ignored and may contain temporary or non-public materials.
+- Do not treat `temp/` as part of the public package surface or public project documentation.
+- Keep checked-in guidance focused on the package and stable workflows, not on transient working files.

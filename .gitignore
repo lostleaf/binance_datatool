@@ -218,3 +218,4 @@ __marimo__/
 .DS_Store
 temp/
 .codex
+.AGENTS.local.md
