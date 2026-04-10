@@ -156,7 +156,8 @@ To add a command group alongside `archive` (for example, `bhds holo ...`):
 tests/
 ├── conftest.py                 # Shared fixtures and pytest configuration
 ├── test_archive_client.py      # Archive client unit and integration tests
-└── test_cli.py                 # CLI smoke tests
+├── test_cli.py                 # CLI smoke tests
+└── test_symbols.py             # Symbol inference unit and integration tests
 ```
 
 **Conventions:**

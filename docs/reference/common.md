@@ -15,6 +15,47 @@ public symbol so callers can write `from binance_datatool.common import TradeTyp
 |----------|------|-------|-------------|
 | `S3_LISTING_PREFIX` | `str` | `https://s3-ap-northeast-1.amazonaws.com/data.binance.vision` | Base URL for the S3 listing endpoint. |
 | `S3_HTTP_TIMEOUT_SECONDS` | `int` | `15` | Default timeout per HTTP request. |
+| `QUOTE_ASSETS` | `tuple[str, ...]` | 48-item tuple | Quote suffixes used by spot and USD-M parsing. The tuple is ordered by descending length, then alphabetically within the same length. |
+| `STABLECOINS` | `frozenset[str]` | 24-item set | Stablecoin and fiat-pegged assets used for `is_stable_pair` detection. |
+| `LEVERAGE_SUFFIXES` | `tuple[str, ...]` | `("UP", "DOWN", "BULL", "BEAR")` | Leveraged-token suffixes for spot symbols. |
+| `LEVERAGE_EXCLUDES` | `frozenset[str]` | `{"JUP", "SYRUP"}` | Base assets that would otherwise be false positives for leveraged-token detection. |
+| `QUOTE_BASE_EXCLUDES` | `dict[str, tuple[str, frozenset[str]]]` | 4-entry mapping | Known cases where greedy long-quote matching must fall back to a shorter quote for specific base assets. |
+
+### Quote Parsing Rules
+
+`infer_spot_info()` and `infer_um_info()` parse symbols by walking `QUOTE_ASSETS` from longest suffix to
+shortest suffix. This is necessary because Binance has overlapping quote tokens such as `RLUSD` and
+`USD`; without greedy matching, `XRPRLUSD` would be misparsed as `XRPRL + USD` instead of `XRP + RLUSD`.
+
+Greedy matching is necessary, but it is not sufficient. A smaller set of live Binance symbols also
+creates the reverse ambiguity: the symbol ends with a longer quote token, but the correct parse uses a
+shorter quote. `ADAEUR` is the canonical example. The string ends with `AEUR`, but Binance's
+`exchangeInfo` defines the pair as `ADA + EUR`, not `AD + AEUR`.
+
+`QUOTE_BASE_EXCLUDES` captures those known fallback rules explicitly. Each entry has this shape:
+
+```python
+LONG_QUOTE: (FALLBACK_QUOTE, {VALID_BASES_FOR_FALLBACK})
+```
+
+Interpretation:
+
+- Try `LONG_QUOTE` first because it is longer.
+- If the same symbol also ends with `FALLBACK_QUOTE` and the base asset derived from that fallback is
+  listed in `VALID_BASES_FOR_FALLBACK`, reject the greedy `LONG_QUOTE` match.
+- Continue parsing with the shorter quote.
+
+Example:
+
+```python
+"AEUR": ("EUR", {"ADA", "ENA", "GALA", "LUNA", "THETA"})
+```
+
+This means symbols such as `ADAEUR` and `LUNAEUR` should not be accepted as `AD + AEUR` or
+`LUN + AEUR`. They must fall back to `ADA + EUR` and `LUNA + EUR`.
+
+The mapping is intentionally small and evidence-driven. It is not a general symbol registry. Add new
+entries only when live Binance metadata proves that a greedy long-quote match is wrong.
 
 ## `common.enums`
 
@@ -50,6 +91,56 @@ public symbol so callers can write `from binance_datatool.common import TradeTyp
 | `liquidation_snapshot` | `liquidationSnapshot` |
 
 > Member names use `snake_case`; values match the S3 path segment exactly.
+
+**`ContractType(StrEnum)`** — Futures contract settlement style.
+
+| Member | Value | Description |
+|--------|-------|-------------|
+| `perpetual` | `perpetual` | Perpetual futures contract. |
+| `delivery` | `delivery` | Dated delivery futures contract. |
+
+## `common.types`
+
+**`SymbolInfoBase`** — Shared fields for parsed symbol metadata.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `symbol` | `str` | Original input symbol, including any settled suffix. |
+| `base_asset` | `str` | Parsed base asset. |
+| `quote_asset` | `str` | Parsed quote asset. |
+
+**`SpotSymbolInfo(SymbolInfoBase)`**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `is_leverage` | `bool` | Whether the base asset is a leveraged token such as `BTCUP`. |
+| `is_stable_pair` | `bool` | Whether both base and quote assets are in `STABLECOINS`. |
+
+**`UmSymbolInfo(SymbolInfoBase)`**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `contract_type` | `ContractType` | Whether the contract is perpetual or delivery. |
+| `is_stable_pair` | `bool` | Whether both base and quote assets are in `STABLECOINS`. |
+
+**`CmSymbolInfo(SymbolInfoBase)`**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `contract_type` | `ContractType` | Whether the contract is perpetual or delivery. |
+
+**`SymbolInfo`** — Union alias for `SpotSymbolInfo | UmSymbolInfo | CmSymbolInfo`.
+
+## `common.symbols`
+
+The symbol helpers accept raw Binance symbols and return typed metadata objects. They support the
+settled suffix forms `_SETTLED`, `_SETTLED1`, and `SETTLED` across spot, USD-M, and COIN-M inputs.
+
+| Function | Return Type | Description |
+|----------|-------------|-------------|
+| `infer_spot_info(symbol)` | `SpotSymbolInfo \| None` | Parse a spot symbol by matching `QUOTE_ASSETS` suffixes. |
+| `infer_um_info(symbol)` | `UmSymbolInfo \| None` | Parse a USD-M futures symbol and infer perpetual vs delivery from the remaining underscore suffix. |
+| `infer_cm_info(symbol)` | `CmSymbolInfo \| None` | Parse a COIN-M futures symbol in `BASEUSD_PERP` or `BASEUSD_YYMMDD` form. |
 
 ---
 

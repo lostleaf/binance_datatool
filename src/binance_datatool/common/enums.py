@@ -55,3 +55,10 @@ class DataType(StrEnum):
     premium_index_klines = "premiumIndexKlines"
     metrics = "metrics"
     liquidation_snapshot = "liquidationSnapshot"
+
+
+class ContractType(StrEnum):
+    """Futures contract settlement style."""
+
+    perpetual = "perpetual"  # No expiry date; position stays open until closed
+    delivery = "delivery"  # Expires on a fixed settlement date (e.g. 240927)

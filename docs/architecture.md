@@ -12,8 +12,10 @@ src/binance_datatool/
 │
 ├── common/                  # Shared types and constants
 │   ├── __init__.py          # Re-exports public symbols
-│   ├── constants.py         # S3_LISTING_PREFIX, S3_HTTP_TIMEOUT_SECONDS
-│   └── enums.py             # TradeType, DataFrequency, DataType
+│   ├── constants.py         # S3 settings, quote assets, stablecoins, leverage rules
+│   ├── enums.py             # TradeType, DataFrequency, DataType, ContractType
+│   ├── types.py             # SymbolInfoBase, SpotSymbolInfo, UmSymbolInfo, CmSymbolInfo
+│   └── symbols.py           # infer_spot_info, infer_um_info, infer_cm_info
 │
 └── bhds/                    # Binance Historical Data Service
     ├── __init__.py

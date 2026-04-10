@@ -28,6 +28,7 @@ classifiers = [
 ]
 dependencies = [
   "aiohttp>=3.13.5",
+  "python-binance>=1.0.32",
   "tenacity>=9.1.4",
   "typer>=0.24.1",
   "xmltodict>=1.0.4",
@@ -70,5 +71,5 @@ addopts = "-ra"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 markers = [
-  "integration: tests that make real network requests to data.binance.vision",
+  "integration: tests that make real network requests to Binance public endpoints",
 ]
