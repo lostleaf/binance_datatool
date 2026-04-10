@@ -22,7 +22,10 @@ def list_symbols_command(
         typer.Option("--type", help="Dataset type."),
     ] = DataType.klines,
 ) -> None:
-    """List symbol directories under a Binance archive prefix."""
+    """List symbol directories under a Binance archive prefix.
+
+    Prints one symbol per line to stdout.
+    """
     workflow = ArchiveListSymbolsWorkflow(trade_type, data_freq, data_type)
     for symbol in asyncio.run(workflow.run()):
         typer.echo(symbol)

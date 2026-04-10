@@ -83,7 +83,12 @@ def _extract_symbol(prefix: str) -> str:
 
 
 class ArchiveClient:
-    """Client for browsing Binance public archive prefixes."""
+    """Client for listing directory contents on the Binance public data archive.
+
+    Communicates with data.binance.vision over its S3-compatible XML listing
+    API.  Set ``trust_env=True`` (the default) to honour ``http_proxy`` /
+    ``https_proxy`` environment variables.
+    """
 
     def __init__(
         self,
@@ -91,6 +96,14 @@ class ArchiveClient:
         timeout_seconds: int | float = S3_HTTP_TIMEOUT_SECONDS,
         trust_env: bool = True,
     ) -> None:
+        """Initialise the archive client.
+
+        Args:
+            timeout_seconds: Total timeout in seconds for each HTTP request.
+            trust_env: When ``True``, the underlying ``aiohttp`` session reads
+                proxy configuration from standard environment variables
+                (``http_proxy``, ``https_proxy``, ``no_proxy``).
+        """
         self.timeout_seconds = timeout_seconds
         self.trust_env = trust_env
 
@@ -117,7 +130,19 @@ class ArchiveClient:
         raise RuntimeError(msg)
 
     async def list_dir(self, session: aiohttp.ClientSession, prefix: str) -> list[str]:
-        """List all child prefixes under an S3 prefix."""
+        """List all child prefixes under an S3 directory prefix.
+
+        Automatically follows S3 pagination when the result set exceeds a
+        single response page.
+
+        Args:
+            session: An active ``aiohttp`` client session.
+            prefix: S3 object key prefix to list
+                (e.g. ``"data/spot/daily/klines/"``).
+
+        Returns:
+            Full S3 prefix strings for each child directory.
+        """
         prefixes: list[str] = []
         marker: str | None = None
 
@@ -141,7 +166,19 @@ class ArchiveClient:
         data_freq: DataFrequency,
         data_type: DataType,
     ) -> list[str]:
-        """List available symbols from the Binance archive."""
+        """List available symbols from the Binance archive.
+
+        Queries data.binance.vision's S3 XML API and returns a sorted list
+        of symbol directory names under the given path parameters.
+
+        Args:
+            trade_type: Market segment (spot, um, cm).
+            data_freq: Partition frequency (daily, monthly).
+            data_type: Dataset type (klines, fundingRate, etc.).
+
+        Returns:
+            Sorted list of symbol names (e.g. ``["BTCUSDT", "ETHUSDT"]``).
+        """
         prefix = _build_prefix(trade_type, data_freq, data_type)
 
         async with self._create_session() as session:
@@ -155,5 +192,17 @@ async def list_symbols(
     data_freq: DataFrequency,
     data_type: DataType,
 ) -> list[str]:
-    """List available symbols using the default archive client."""
+    """List available symbols using the default archive client.
+
+    Convenience wrapper that creates a temporary :class:`ArchiveClient` and
+    delegates to :meth:`ArchiveClient.list_symbols`.
+
+    Args:
+        trade_type: Market segment (spot, um, cm).
+        data_freq: Partition frequency (daily, monthly).
+        data_type: Dataset type (klines, fundingRate, etc.).
+
+    Returns:
+        Sorted list of symbol names.
+    """
     return await ArchiveClient().list_symbols(trade_type, data_freq, data_type)

@@ -6,4 +6,5 @@ app = typer.Typer(name="bhds", help="Binance Historical Data Service CLI.", add_
 archive_app = typer.Typer(name="archive", help="Browse data.binance.vision archive paths.")
 app.add_typer(archive_app)
 
+# Register sub-command modules (side-effect import).
 from binance_datatool.bhds.cli import archive as _archive  # noqa: F401,E402

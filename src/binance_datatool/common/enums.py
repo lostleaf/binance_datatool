@@ -4,29 +4,45 @@ from enum import StrEnum
 
 
 class TradeType(StrEnum):
-    """Binance market segment."""
+    """Binance market segment.
 
-    spot = "spot"
-    um = "um"
-    cm = "cm"
+    Each member corresponds to a trading venue on the Binance exchange.
+    Use the ``s3_path`` property to obtain the directory component for
+    data.binance.vision archive URLs.
+    """
+
+    spot = "spot"  # Spot trading market
+    um = "um"  # USD-M perpetual and delivery futures
+    cm = "cm"  # COIN-M perpetual and delivery futures
 
     @property
     def s3_path(self) -> str:
-        """Return the path component used in data.binance.vision."""
+        """Return the S3 directory path component for this trade type.
+
+        Returns:
+            Path segment such as ``"spot"`` or ``"futures/um"``.
+        """
         if self is TradeType.spot:
             return "spot"
         return f"futures/{self.value}"
 
 
 class DataFrequency(StrEnum):
-    """Partition frequency on data.binance.vision."""
+    """Partition frequency on data.binance.vision.
+
+    Determines whether archive files are partitioned by day or by month.
+    """
 
     daily = "daily"
     monthly = "monthly"
 
 
 class DataType(StrEnum):
-    """Dataset type on data.binance.vision."""
+    """Dataset type on data.binance.vision.
+
+    Each member name uses ``snake_case`` while the value matches the
+    S3 path segment exactly (e.g. ``"fundingRate"``).
+    """
 
     klines = "klines"
     agg_trades = "aggTrades"
