@@ -38,7 +38,7 @@
 - Use written English for code comments, docstrings, logs, CLI text, and developer-facing messages.
 - Write clear comments only where they add real value; do not narrate obvious code.
 - Use Google-style docstrings for public modules, classes, and functions.
-- Use modern Python syntax compatible with Python 3.11. Do not require syntax newer than 3.11.
+- Use modern Python syntax compatible with Python 3.11, but **MUST NOT** use syntax introduced after 3.11
 - Keep line length at 100 characters or less.
 - Keep imports at module top level unless a local import is technically necessary.
 - Prefer explicit types and clear names over implicit behavior.
