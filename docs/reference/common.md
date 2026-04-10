@@ -3,34 +3,6 @@
 Shared types and constants imported by all other packages. The `__init__.py` re-exports every
 public symbol so callers can write `from binance_datatool.common import TradeType`.
 
-## Package Tree
-
-```
-src/binance_datatool/
-├── __init__.py              # Package root — exports __version__
-├── py.typed                 # PEP 561 type stub marker
-│
-├── common/                  # Shared types and constants
-│   ├── __init__.py          # Re-exports public symbols
-│   ├── constants.py         # S3_LISTING_PREFIX, S3_HTTP_TIMEOUT_SECONDS
-│   └── enums.py             # TradeType, DataFrequency, DataType
-│
-└── bhds/                    # Binance Historical Data Service
-    ├── __init__.py
-    │
-    ├── archive/             # S3 data access
-    │   ├── __init__.py      # Re-exports ArchiveClient, list_symbols
-    │   └── client.py        # HTTP client and XML parsing
-    │
-    ├── workflow/            # Business logic orchestration
-    │   ├── __init__.py
-    │   └── archive.py       # ArchiveListSymbolsWorkflow
-    │
-    └── cli/                 # Typer CLI layer
-        ├── __init__.py      # App definition and sub-command registration
-        └── archive.py       # list-symbols command
-```
-
 ## Root Package
 
 | Symbol | Type | Description |
