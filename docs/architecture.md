@@ -22,6 +22,8 @@ CLI  (bhds/cli/)
 | **Workflow** | `binance_datatool.bhds.workflow` | Business logic orchestration; decouples CLI from the client. |
 | **CLI** | `binance_datatool.bhds.cli` | Typer command definitions, argument parsing, output formatting. |
 
+For detailed API docs see the [module reference](reference/).
+
 ### Why Three Layers?
 
 - **Testability.** Workflows and clients can be tested independently of CLI parsing.
