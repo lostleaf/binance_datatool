@@ -74,7 +74,7 @@ class ArchiveListDatesWorkflow:
         symbol: str,
         client: ArchiveClient | None = None,
     ) -> None:
-        """Initialise the workflow.
+        """Initialize the workflow.
 
         Args:
             trade_type: Market segment to query.
@@ -123,7 +123,7 @@ def list_dates_command(
 Add tests at each layer:
 
 - **Unit test** — Monkeypatch `_fetch_xml` to supply mock XML responses and verify client logic
-  (pagination, normalisation, sorting).
+  (pagination, normalization, sorting).
 - **CLI test** — Use `typer.testing.CliRunner` with a monkeypatched workflow `run()` method.
 - **Integration test** *(optional)* — Mark with `@pytest.mark.integration` for real network
   requests. These are skipped by default; run them with `pytest --run-integration`.
@@ -156,7 +156,9 @@ To add a command group alongside `archive` (for example, `bhds holo ...`):
 tests/
 ├── conftest.py                 # Shared fixtures and pytest configuration
 ├── test_archive_client.py      # Archive client unit and integration tests
+├── test_archive_workflow.py    # Workflow unit and integration tests
 ├── test_cli.py                 # CLI smoke tests
+├── test_filter.py              # Symbol filter unit tests
 └── test_symbols.py             # Symbol inference unit and integration tests
 ```
 

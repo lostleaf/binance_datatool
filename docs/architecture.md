@@ -20,13 +20,14 @@ src/binance_datatool/
 └── bhds/                    # Binance Historical Data Service
     ├── __init__.py
     │
-    ├── archive/             # S3 data access
-    │   ├── __init__.py      # Re-exports ArchiveClient, list_symbols
-    │   └── client.py        # HTTP client and XML parsing
+    ├── archive/             # S3 data access and typed filters
+    │   ├── __init__.py      # Re-exports ArchiveClient, list_symbols, symbol filters
+    │   ├── client.py        # HTTP client and XML parsing
+    │   └── filter.py        # Spot/Um/Cm symbol filters and build_symbol_filter()
     │
     ├── workflow/            # Business logic orchestration
     │   ├── __init__.py
-    │   └── archive.py       # ArchiveListSymbolsWorkflow
+    │   └── archive.py       # ArchiveListSymbolsWorkflow, ListSymbolsResult
     │
     └── cli/                 # Typer CLI layer
         ├── __init__.py      # App definition and sub-command registration
@@ -67,31 +68,44 @@ The `list-symbols` command is the only implemented command. Below is its end-to-
 
 ```
 User runs:
-  bhds archive list-symbols spot --freq daily --type klines
+  bhds archive list-symbols spot --quote USDT --exclude-leverage
 
-  ┌─────────────────────────────────────────────────────┐
-  │ CLI layer  (bhds/cli/archive.py)                    │
-  │  • Typer parses arguments into typed enum values.   │
-  │  • Creates ArchiveListSymbolsWorkflow.              │
+  ┌──────────────────────────────────────────────────────┐
+  │ CLI layer  (bhds/cli/archive.py)                     │
+  │  • Typer parses arguments into typed enum values.    │
+  │  • Uppercases --quote values into a frozenset.       │
+  │  • build_symbol_filter() returns a market-specific   │
+  │    filter or None when no flag is active.            │
+  │  • Creates ArchiveListSymbolsWorkflow with filter.   │
   │  • Calls asyncio.run(workflow.run()).                │
-  │  • Prints each symbol to stdout, one per line.      │
-  └──────────────────────┬──────────────────────────────┘
+  │  • Prints result.matched[*].symbol, one per line.    │
+  └──────────────────────┬───────────────────────────────┘
                          │
-  ┌──────────────────────▼──────────────────────────────┐
+  ┌──────────────────────▼───────────────────────────────┐
   │ Workflow layer  (bhds/workflow/archive.py)           │
-  │  • ArchiveListSymbolsWorkflow.run() delegates       │
-  │    to ArchiveClient.list_symbols().                  │
-  └──────────────────────┬──────────────────────────────┘
+  │  • Fetches raw symbols via ArchiveClient.            │
+  │  • Routes each raw symbol through infer_spot_info /  │
+  │    infer_um_info / infer_cm_info by trade_type.      │
+  │  • Splits results into inferred / unmatched.         │
+  │  • Applies symbol_filter.matches() to inferred,      │
+  │    splitting into matched / filtered_out.            │
+  │  • Returns ListSymbolsResult(matched, unmatched,     │
+  │    filtered_out).                                    │
+  └──────────────────────┬───────────────────────────────┘
                          │
-  ┌──────────────────────▼──────────────────────────────┐
-  │ Archive Client  (bhds/archive/client.py)            │
-  │  • Builds S3 prefix: data/spot/daily/klines/        │
-  │  • Creates aiohttp session (trust_env=True).        │
-  │  • Fetches S3 XML listing pages with pagination.    │
-  │  • Parses XML via xmltodict; normalises edge cases. │
-  │  • Extracts and sorts symbol names from prefixes.   │
-  └─────────────────────────────────────────────────────┘
+  ┌──────────────────────▼───────────────────────────────┐
+  │ Archive Client  (bhds/archive/client.py)             │
+  │  • Builds S3 prefix: data/spot/daily/klines/         │
+  │  • Creates aiohttp session (trust_env=True).         │
+  │  • Fetches S3 XML listing pages with pagination.     │
+  │  • Parses XML via xmltodict; normalizes edge cases.  │
+  │  • Extracts and sorts symbol names from prefixes.    │
+  └──────────────────────────────────────────────────────┘
 ```
+
+Only `result.matched` is printed to stdout. `unmatched` (raw symbols that failed
+inference) and `filtered_out` (inferred symbols rejected by the filter) are dropped by
+the CLI by design, even when no filter flag is passed.
 
 For S3 protocol details and proxy configuration, see the
 [archive reference](reference/bhds/archive.md#s3-listing-protocol).

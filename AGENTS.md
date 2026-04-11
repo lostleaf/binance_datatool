@@ -39,7 +39,8 @@
 - Write clear comments only where they add real value; do not narrate obvious code.
 - Use Google-style docstrings for public modules, classes, and functions.
 - Use modern Python syntax compatible with Python 3.11, but **MUST NOT** use syntax introduced after 3.11
-- Keep line length at 100 characters or less.
+- Keep Python source line length at 100 characters or less. This limit does not apply to
+  Markdown files under `docs/`, where long table rows and wide ASCII diagrams are allowed.
 - Keep imports at module top level unless a local import is technically necessary.
 - Prefer explicit types and clear names over implicit behavior.
 - Prefer small, focused modules with straightforward responsibilities.
