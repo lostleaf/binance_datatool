@@ -44,8 +44,8 @@ def _infer_symbol_info(trade_type: TradeType, symbol: str) -> SymbolInfo | None:
 class ArchiveListSymbolsWorkflow:
     """Workflow for listing available symbols from the archive.
 
-    Thin orchestration layer that delegates to :class:`ArchiveClient`.
-    Future phases may add filtering, configuration loading, or caching.
+    Fetches raw symbols via :class:`ArchiveClient`, infers typed metadata
+    per market segment, and optionally applies a typed symbol filter.
     """
 
     def __init__(
@@ -56,7 +56,7 @@ class ArchiveListSymbolsWorkflow:
         symbol_filter: SymbolFilter | None = None,
         client: ArchiveClient | None = None,
     ) -> None:
-        """Initialise the workflow.
+        """Initialize the workflow.
 
         Args:
             trade_type: Market segment to query.
@@ -78,7 +78,9 @@ class ArchiveListSymbolsWorkflow:
         Returns:
             Inferred symbols split into matched, unmatched, and filtered-out buckets.
         """
-        raw_symbols = await self.client.list_symbols(self.trade_type, self.data_freq, self.data_type)
+        raw_symbols = await self.client.list_symbols(
+            self.trade_type, self.data_freq, self.data_type
+        )
 
         inferred: list[SymbolInfo] = []
         unmatched: list[str] = []

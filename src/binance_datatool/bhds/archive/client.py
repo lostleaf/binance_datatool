@@ -96,7 +96,7 @@ class ArchiveClient:
         timeout_seconds: int | float = S3_HTTP_TIMEOUT_SECONDS,
         trust_env: bool = True,
     ) -> None:
-        """Initialise the archive client.
+        """Initialize the archive client.
 
         Args:
             timeout_seconds: Total timeout in seconds for each HTTP request.
