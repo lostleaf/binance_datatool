@@ -9,6 +9,7 @@ from binance_datatool.common.constants import (
     STABLECOINS,
 )
 from binance_datatool.common.enums import ContractType, DataFrequency, DataType, TradeType
+from binance_datatool.common.logging import configure_cli_logging
 from binance_datatool.common.symbols import infer_cm_info, infer_spot_info, infer_um_info
 from binance_datatool.common.types import (
     CmSymbolInfo,
@@ -34,6 +35,7 @@ __all__ = [
     "SymbolInfoBase",
     "TradeType",
     "UmSymbolInfo",
+    "configure_cli_logging",
     "infer_cm_info",
     "infer_spot_info",
     "infer_um_info",

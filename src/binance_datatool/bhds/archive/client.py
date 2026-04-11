@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode
 
 import aiohttp
 import xmltodict
+from loguru import logger
 from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from binance_datatool.common import S3_HTTP_TIMEOUT_SECONDS, S3_LISTING_PREFIX
@@ -54,6 +57,20 @@ def _extract_prefixes_from_payload(payload: dict[str, Any]) -> list[str]:
     return [entry["Prefix"] for entry in prefixes]
 
 
+def _extract_files_from_payload(payload: dict[str, Any]) -> list[ArchiveFile]:
+    """Extract file metadata entries from an S3 listing response payload."""
+    result = payload["ListBucketResult"]
+    contents = _normalize_entries(result.get("Contents"))
+    return [
+        ArchiveFile(
+            key=entry["Key"],
+            size=int(entry["Size"]),
+            last_modified=datetime.fromisoformat(entry["LastModified"].replace("Z", "+00:00")),
+        )
+        for entry in contents
+    ]
+
+
 def _is_truncated(payload: dict[str, Any]) -> bool:
     """Return whether the S3 listing response is truncated."""
     result = payload["ListBucketResult"]
@@ -80,6 +97,15 @@ def _next_marker(payload: dict[str, Any], prefixes: Iterable[str]) -> str | None
 def _extract_symbol(prefix: str) -> str:
     """Extract the last non-empty path segment from a prefix."""
     return prefix.rstrip("/").rsplit("/", maxsplit=1)[-1]
+
+
+@dataclass(slots=True, frozen=True)
+class ArchiveFile:
+    """Metadata for a single file on the Binance public data archive."""
+
+    key: str
+    size: int
+    last_modified: datetime
 
 
 class ArchiveClient:
@@ -147,6 +173,7 @@ class ArchiveClient:
         marker: str | None = None
 
         while True:
+            logger.debug("fetching directory listing page for prefix={} marker={}", prefix, marker)
             payload = await self._fetch_xml(session, _build_listing_url(prefix, marker))
             page_prefixes = _extract_prefixes_from_payload(payload)
             prefixes.extend(page_prefixes)
@@ -159,6 +186,30 @@ class ArchiveClient:
                 break
 
         return prefixes
+
+    async def list_files_in_dir(
+        self,
+        session: aiohttp.ClientSession,
+        prefix: str,
+    ) -> list[ArchiveFile]:
+        """List all files directly under an S3 directory prefix."""
+        files: list[ArchiveFile] = []
+        marker: str | None = None
+
+        while True:
+            logger.debug("fetching file listing page for prefix={} marker={}", prefix, marker)
+            payload = await self._fetch_xml(session, _build_listing_url(prefix, marker))
+            page_files = _extract_files_from_payload(payload)
+            files.extend(page_files)
+
+            if not _is_truncated(payload):
+                break
+
+            marker = _next_marker(payload, [file.key for file in page_files])
+            if marker is None:
+                break
+
+        return files
 
     async def list_symbols(
         self,
@@ -185,6 +236,34 @@ class ArchiveClient:
             child_prefixes = await self.list_dir(session, prefix)
 
         return sorted(_extract_symbol(prefix) for prefix in child_prefixes)
+
+    async def list_symbol_files(
+        self,
+        trade_type: TradeType,
+        data_freq: DataFrequency,
+        data_type: DataType,
+        symbol: str,
+        interval: str | None = None,
+        *,
+        session: aiohttp.ClientSession | None = None,
+    ) -> list[ArchiveFile]:
+        """List files for a single symbol directory on the Binance archive."""
+        if data_type.has_interval_layer and interval is None:
+            msg = "interval is required for kline-class data_type"
+            raise ValueError(msg)
+        if not data_type.has_interval_layer and interval is not None:
+            msg = "interval is not applicable to non-kline data_type"
+            raise ValueError(msg)
+
+        prefix = f"{_build_prefix(trade_type, data_freq, data_type)}{symbol}/"
+        if interval is not None:
+            prefix = f"{prefix}{interval}/"
+
+        if session is None:
+            async with self._create_session() as local_session:
+                return await self.list_files_in_dir(local_session, prefix)
+
+        return await self.list_files_in_dir(session, prefix)
 
 
 async def list_symbols(

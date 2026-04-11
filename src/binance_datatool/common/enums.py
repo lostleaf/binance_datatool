@@ -56,6 +56,16 @@ class DataType(StrEnum):
     metrics = "metrics"
     liquidation_snapshot = "liquidationSnapshot"
 
+    @property
+    def has_interval_layer(self) -> bool:
+        """Return whether this data type has an interval directory layer."""
+        return self in {
+            DataType.klines,
+            DataType.index_price_klines,
+            DataType.mark_price_klines,
+            DataType.premium_index_klines,
+        }
+
 
 class ContractType(StrEnum):
     """Futures contract settlement style."""

@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 import aiohttp
 import pytest
 
-from binance_datatool.bhds.archive.client import ArchiveClient
+from binance_datatool.bhds.archive.client import (
+    ArchiveClient,
+    ArchiveFile,
+    _extract_files_from_payload,
+)
 from binance_datatool.common import S3_HTTP_TIMEOUT_SECONDS, DataFrequency, DataType, TradeType
 
 
@@ -83,6 +88,133 @@ async def test_archive_client_list_symbols_uses_trust_env(monkeypatch: pytest.Mo
     assert captured["timeout"].total == S3_HTTP_TIMEOUT_SECONDS
 
 
+def test_extract_files_from_payload_handles_empty_contents() -> None:
+    """Missing S3 contents should produce an empty file list."""
+    payload = {"ListBucketResult": {"IsTruncated": "false"}}
+
+    assert _extract_files_from_payload(payload) == []
+
+
+def test_extract_files_from_payload_parses_single_entry() -> None:
+    """A single S3 content dict should become one ArchiveFile."""
+    payload = {
+        "ListBucketResult": {
+            "Contents": {
+                "Key": "data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip",
+                "LastModified": "2026-04-01T08:06:34.000Z",
+                "Size": "1048",
+            }
+        }
+    }
+
+    assert _extract_files_from_payload(payload) == [
+        ArchiveFile(
+            key="data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip",
+            size=1048,
+            last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+        )
+    ]
+
+
+def test_extract_files_from_payload_parses_multiple_entries() -> None:
+    """S3 file payloads should preserve order and parse checksum files too."""
+    payload = {
+        "ListBucketResult": {
+            "Contents": [
+                {
+                    "Key": "data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip",
+                    "LastModified": "2026-04-01T08:06:34.000Z",
+                    "Size": "1048",
+                },
+                {
+                    "Key": (
+                        "data/futures/um/monthly/fundingRate/BTCUSDT/"
+                        "BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
+                    ),
+                    "LastModified": "2026-04-01T08:06:34.000Z",
+                    "Size": "105",
+                },
+            ]
+        }
+    }
+
+    files = _extract_files_from_payload(payload)
+
+    assert [file.size for file in files] == [1048, 105]
+    assert files[0].key.endswith(".zip")
+    assert files[1].key.endswith(".zip.CHECKSUM")
+    assert all(file.last_modified.tzinfo is UTC for file in files)
+
+
+@pytest.mark.asyncio
+async def test_archive_client_list_files_in_dir_handles_pagination(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """File listings should combine multiple S3 pages."""
+    responses = [
+        {
+            "ListBucketResult": {
+                "IsTruncated": "true",
+                "Contents": {
+                    "Key": "data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip",
+                    "LastModified": "2026-04-01T08:06:34.000Z",
+                    "Size": "1048",
+                },
+            }
+        },
+        {
+            "ListBucketResult": {
+                "IsTruncated": "false",
+                "Contents": {
+                    "Key": (
+                        "data/futures/um/monthly/fundingRate/BTCUSDT/"
+                        "BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
+                    ),
+                    "LastModified": "2026-04-01T08:06:34.000Z",
+                    "Size": "105",
+                },
+            }
+        },
+    ]
+    client = ArchiveClient()
+
+    async def fake_fetch_xml(session: aiohttp.ClientSession, url: str) -> dict[str, Any]:
+        assert "prefix=data%2Ffutures%2Fum%2Fmonthly%2FfundingRate%2FBTCUSDT%2F" in url
+        return responses.pop(0)
+
+    monkeypatch.setattr(client, "_fetch_xml", fake_fetch_xml)
+
+    async with aiohttp.ClientSession() as session:
+        result = await client.list_files_in_dir(
+            session, "data/futures/um/monthly/fundingRate/BTCUSDT/"
+        )
+
+    assert [file.size for file in result] == [1048, 105]
+
+
+@pytest.mark.asyncio
+async def test_archive_client_list_symbol_files_validates_interval() -> None:
+    """High-level symbol file listing should enforce interval compatibility."""
+    client = ArchiveClient()
+
+    with pytest.raises(ValueError, match="interval is required"):
+        await client.list_symbol_files(
+            TradeType.um,
+            DataFrequency.daily,
+            DataType.klines,
+            "BTCUSDT",
+        )
+
+    with pytest.raises(ValueError, match="interval is not applicable"):
+        await client.list_symbol_files(
+            TradeType.um,
+            DataFrequency.monthly,
+            DataType.funding_rate,
+            "BTCUSDT",
+            interval="1m",
+        )
+
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_archive_client_list_symbols_spot_klines_integration() -> None:
@@ -91,3 +223,21 @@ async def test_archive_client_list_symbols_spot_klines_integration() -> None:
     symbols = await client.list_symbols(TradeType.spot, DataFrequency.daily, DataType.klines)
     assert symbols == sorted(symbols)
     assert "BTCUSDT" in symbols
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_archive_client_list_files_in_dir_integration() -> None:
+    """Real S3 file listing should return file metadata for a small directory."""
+    client = ArchiveClient()
+    async with client._create_session() as session:
+        files = await client.list_files_in_dir(
+            session,
+            "data/futures/um/monthly/fundingRate/BTCUSDT/",
+        )
+
+    assert files
+    assert any(file.key.endswith(".zip") for file in files)
+    assert any(file.key.endswith(".zip.CHECKSUM") for file in files)
+    assert all(file.size > 0 for file in files)
+    assert all(file.last_modified.tzinfo is UTC for file in files)

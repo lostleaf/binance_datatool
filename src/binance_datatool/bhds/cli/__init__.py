@@ -1,10 +1,31 @@
 """Typer application for bhds."""
 
+from typing import Annotated
+
 import typer
+
+from binance_datatool.common import configure_cli_logging
 
 app = typer.Typer(name="bhds", help="Binance Historical Data Service CLI.", add_completion=False)
 archive_app = typer.Typer(name="archive", help="Browse data.binance.vision archive paths.")
 app.add_typer(archive_app)
+
+
+@app.callback()
+def root_callback(
+    verbose: Annotated[
+        int,
+        typer.Option(
+            "-v",
+            "--verbose",
+            count=True,
+            help="Increase log verbosity (-v=INFO, -vv=DEBUG).",
+        ),
+    ] = 0,
+) -> None:
+    """Configure shared CLI state before running a command."""
+    configure_cli_logging(verbose)
+
 
 # Register sub-command modules (side-effect import).
 from binance_datatool.bhds.cli import archive as _archive  # noqa: F401,E402

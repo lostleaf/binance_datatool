@@ -1,6 +1,6 @@
 """Archive access helpers."""
 
-from binance_datatool.bhds.archive.client import ArchiveClient, list_symbols
+from binance_datatool.bhds.archive.client import ArchiveClient, ArchiveFile, list_symbols
 from binance_datatool.bhds.archive.filter import (
     CmSymbolFilter,
     SpotSymbolFilter,
@@ -11,6 +11,7 @@ from binance_datatool.bhds.archive.filter import (
 
 __all__ = [
     "ArchiveClient",
+    "ArchiveFile",
     "CmSymbolFilter",
     "SpotSymbolFilter",
     "SymbolFilter",

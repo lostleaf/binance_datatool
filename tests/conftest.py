@@ -2,7 +2,64 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
+
+from binance_datatool.bhds.archive import ArchiveFile
+
+
+class FakeArchiveClient:
+    """Programmable stub for ArchiveClient-based tests."""
+
+    def __init__(
+        self,
+        *,
+        symbols: list[str] | None = None,
+        files_by_symbol: dict[str, list[ArchiveFile]] | None = None,
+        errors_by_symbol: dict[str, Exception] | None = None,
+    ) -> None:
+        self._symbols = symbols or []
+        self._files = files_by_symbol or {}
+        self._errors = errors_by_symbol or {}
+
+    async def list_symbols(self, trade_type, data_freq, data_type) -> list[str]:
+        return list(self._symbols)
+
+    async def list_symbol_files(
+        self,
+        trade_type,
+        data_freq,
+        data_type,
+        symbol,
+        interval=None,
+        *,
+        session=None,
+    ) -> list[ArchiveFile]:
+        del trade_type, data_freq, data_type, interval, session
+        if symbol in self._errors:
+            raise self._errors[symbol]
+        return list(self._files.get(symbol, []))
+
+
+@pytest.fixture
+def sample_archive_files() -> list[ArchiveFile]:
+    """Return representative archive files for list-files tests."""
+    return [
+        ArchiveFile(
+            key="data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip",
+            size=1048,
+            last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+        ),
+        ArchiveFile(
+            key=(
+                "data/futures/um/monthly/fundingRate/BTCUSDT/"
+                "BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
+            ),
+            size=105,
+            last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+        ),
+    ]
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

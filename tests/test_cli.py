@@ -2,11 +2,23 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
+import pytest
 from typer.testing import CliRunner
 
-from binance_datatool.bhds.archive import CmSymbolFilter, SpotSymbolFilter, UmSymbolFilter
+from binance_datatool.bhds.archive import (
+    ArchiveFile,
+    CmSymbolFilter,
+    SpotSymbolFilter,
+    UmSymbolFilter,
+)
 from binance_datatool.bhds.cli import app
-from binance_datatool.bhds.workflow.archive import ListSymbolsResult
+from binance_datatool.bhds.workflow.archive import (
+    ListFilesResult,
+    ListSymbolsResult,
+    SymbolListFilesResult,
+)
 from binance_datatool.common import ContractType, SpotSymbolInfo, UmSymbolInfo
 
 runner = CliRunner()
@@ -206,3 +218,392 @@ def test_cli_list_symbols_builds_cm_filter(monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert result.stdout == ""
+
+
+def test_cli_list_files_rejects_mutually_exclusive_flags() -> None:
+    """The CLI should reject incompatible output filters."""
+    result = runner.invoke(
+        app,
+        [
+            "archive",
+            "list-files",
+            "um",
+            "--type",
+            "fundingRate",
+            "--only-zip",
+            "--only-checksum",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "mutually exclusive" in result.stderr
+
+
+def test_cli_list_files_requires_interval_for_kline_types() -> None:
+    """Kline-class data types should require an interval."""
+    result = runner.invoke(app, ["archive", "list-files", "um", "BTCUSDT"])
+
+    assert result.exit_code == 2
+    assert "--interval" in result.stderr
+
+
+def test_cli_list_files_rejects_interval_for_non_kline_types() -> None:
+    """Non-kline data types should reject interval arguments."""
+    result = runner.invoke(
+        app,
+        [
+            "archive",
+            "list-files",
+            "um",
+            "--type",
+            "fundingRate",
+            "--interval",
+            "1m",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "--interval" in result.stderr
+
+
+def test_cli_list_files_requires_symbols() -> None:
+    """The CLI should reject calls without symbols from args or stdin."""
+    result = runner.invoke(app, ["archive", "list-files", "um", "--type", "fundingRate"])
+
+    assert result.exit_code == 2
+    assert "No symbols given" in result.stderr
+
+
+def test_cli_list_files_argument_symbols_override_stdin(monkeypatch) -> None:
+    """Positional symbols should win when stdin is also present."""
+
+    async def fake_run(self) -> ListFilesResult:
+        assert self.symbols == ["BTCUSDT"]
+        return ListFilesResult(per_symbol=[])
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        ["archive", "list-files", "um", "--type", "fundingRate", "btcusdt"],
+        input="ethusdt\n",
+    )
+
+    assert result.exit_code == 0
+
+
+def test_cli_list_files_reads_symbols_from_stdin(monkeypatch) -> None:
+    """Piped stdin should be used when no positional symbols are provided."""
+
+    async def fake_run(self) -> ListFilesResult:
+        assert self.symbols == ["BTCUSDT", "ETHUSDT"]
+        return ListFilesResult(per_symbol=[])
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        ["archive", "list-files", "um", "--type", "fundingRate"],
+        input="btcusdt\n\nethusdt\n",
+    )
+
+    assert result.exit_code == 0
+
+
+def test_cli_list_files_short_output(monkeypatch) -> None:
+    """Short output should print one relative path per line."""
+
+    async def fake_run(self) -> ListFilesResult:
+        assert self.symbols == ["BTCUSDT"]
+        return ListFilesResult(
+            per_symbol=[
+                SymbolListFilesResult(
+                    symbol="BTCUSDT",
+                    files=[
+                        ArchiveFile(
+                            key=(
+                                "data/futures/um/monthly/fundingRate/BTCUSDT/"
+                                "BTCUSDT-fundingRate-2026-03.zip"
+                            ),
+                            size=1048,
+                            last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+                        ),
+                        ArchiveFile(
+                            key=(
+                                "data/futures/um/monthly/fundingRate/BTCUSDT/"
+                                "BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
+                            ),
+                            size=105,
+                            last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+                        ),
+                    ],
+                )
+            ]
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        ["archive", "list-files", "um", "--freq", "monthly", "--type", "fundingRate", "btcusdt"],
+    )
+
+    assert result.exit_code == 0
+    assert result.stdout.splitlines() == [
+        "BTCUSDT/BTCUSDT-fundingRate-2026-03.zip",
+        "BTCUSDT/BTCUSDT-fundingRate-2026-03.zip.CHECKSUM",
+    ]
+
+
+def test_cli_list_files_long_output_and_only_zip(monkeypatch) -> None:
+    """Long output should emit TSV rows and respect zip-only filtering."""
+
+    async def fake_run(self) -> ListFilesResult:
+        return ListFilesResult(
+            per_symbol=[
+                SymbolListFilesResult(
+                    symbol="BTCUSDT",
+                    files=[
+                        ArchiveFile(
+                            key=(
+                                "data/futures/um/monthly/fundingRate/BTCUSDT/"
+                                "BTCUSDT-fundingRate-2026-03.zip"
+                            ),
+                            size=1048,
+                            last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+                        ),
+                        ArchiveFile(
+                            key=(
+                                "data/futures/um/monthly/fundingRate/BTCUSDT/"
+                                "BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
+                            ),
+                            size=105,
+                            last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+                        ),
+                    ],
+                )
+            ]
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "archive",
+            "list-files",
+            "um",
+            "--freq",
+            "monthly",
+            "--type",
+            "fundingRate",
+            "-l",
+            "--only-zip",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
+    lines = result.stdout.splitlines()
+    assert lines == ["1048\t2026-04-01T08:06:34Z\tBTCUSDT/BTCUSDT-fundingRate-2026-03.zip"]
+
+
+def test_cli_list_files_logs_errors_and_exits_2(monkeypatch) -> None:
+    """Per-symbol failures should log to stderr and exit with code 2."""
+
+    async def fake_run(self) -> ListFilesResult:
+        return ListFilesResult(
+            per_symbol=[
+                SymbolListFilesResult(
+                    symbol="BTCUSDT",
+                    files=[],
+                    error="Connection reset by peer",
+                )
+            ]
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        ["archive", "list-files", "um", "--type", "fundingRate", "BTCUSDT"],
+    )
+
+    assert result.exit_code == 2
+    assert "ERROR: BTCUSDT: Connection reset by peer" in result.stderr
+
+
+def test_cli_list_files_kline_relative_path_contains_interval(monkeypatch) -> None:
+    """Kline paths should include the interval directory in short output."""
+
+    async def fake_run(self) -> ListFilesResult:
+        return ListFilesResult(
+            per_symbol=[
+                SymbolListFilesResult(
+                    symbol="BTCUSDT",
+                    files=[
+                        ArchiveFile(
+                            key="data/futures/um/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2024-01-01.zip",
+                            size=100,
+                            last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+                        )
+                    ],
+                )
+            ]
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        ["archive", "list-files", "um", "--interval", "1m", "btcusdt"],
+    )
+
+    assert result.exit_code == 0
+    assert result.stdout == "BTCUSDT/1m/BTCUSDT-1m-2024-01-01.zip\n"
+
+
+def test_cli_list_files_verbose_flag_emits_info_log(monkeypatch) -> None:
+    """Root verbose flags should configure INFO logging for CLI runs."""
+
+    async def fake_run(self) -> ListFilesResult:
+        from loguru import logger
+
+        logger.info("listing 1 symbols with interval=None")
+        return ListFilesResult(per_symbol=[])
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        ["-v", "archive", "list-files", "um", "--type", "fundingRate", "BTCUSDT"],
+    )
+
+    assert result.exit_code == 0
+    assert "INFO: listing 1 symbols with interval=None" in result.stderr
+
+
+def test_cli_list_files_only_checksum(monkeypatch) -> None:
+    """Checksum-only mode should print only checksum entries."""
+
+    async def fake_run(self) -> ListFilesResult:
+        return ListFilesResult(
+            per_symbol=[
+                SymbolListFilesResult(
+                    symbol="BTCUSDT",
+                    files=[
+                        ArchiveFile(
+                            key=(
+                                "data/futures/um/monthly/fundingRate/BTCUSDT/"
+                                "BTCUSDT-fundingRate-2026-03.zip"
+                            ),
+                            size=1048,
+                            last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+                        ),
+                        ArchiveFile(
+                            key=(
+                                "data/futures/um/monthly/fundingRate/BTCUSDT/"
+                                "BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
+                            ),
+                            size=105,
+                            last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+                        ),
+                    ],
+                )
+            ]
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "archive",
+            "list-files",
+            "um",
+            "--freq",
+            "monthly",
+            "--type",
+            "fundingRate",
+            "--only-checksum",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.stdout == "BTCUSDT/BTCUSDT-fundingRate-2026-03.zip.CHECKSUM\n"
+
+
+@pytest.mark.integration
+def test_cli_list_files_integration() -> None:
+    """The real CLI should list funding-rate archive files for BTCUSDT."""
+    result = runner.invoke(
+        app,
+        [
+            "archive",
+            "list-files",
+            "um",
+            "--freq",
+            "monthly",
+            "--type",
+            "fundingRate",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
+    lines = result.stdout.splitlines()
+    assert lines
+    assert any(line.startswith("BTCUSDT/BTCUSDT-fundingRate-") for line in lines)
+
+
+@pytest.mark.integration
+def test_cli_list_files_long_output_integration() -> None:
+    """The real CLI should support long and filtered archive output."""
+    result = runner.invoke(
+        app,
+        [
+            "archive",
+            "list-files",
+            "um",
+            "--freq",
+            "monthly",
+            "--type",
+            "fundingRate",
+            "-l",
+            "--only-zip",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
+    lines = result.stdout.splitlines()
+    assert lines
+    assert all(line.count("\t") == 2 for line in lines)
+    assert all(".CHECKSUM" not in line for line in lines)
