@@ -64,58 +64,35 @@ For detailed API docs see the [module reference](reference/).
 
 ## Data Flow: `bhds archive list-symbols`
 
-The `list-symbols` command is the only implemented command. Below is its end-to-end data flow.
+The `list-symbols` command is the only implemented command. Below is its end-to-end
+path through the three layers. See the reference docs for each layer's implementation
+details.
 
 ```
 User runs:
-  bhds archive list-symbols spot --quote USDT --exclude-leverage
+  bhds archive list-symbols spot --quote USDT
 
   ┌──────────────────────────────────────────────────────┐
   │ CLI layer  (bhds/cli/archive.py)                     │
-  │  • Typer parses arguments into typed enum values.    │
-  │  • Uppercases --quote values into a frozenset.       │
-  │  • build_symbol_filter() returns a market-specific   │
-  │    filter or None when no flag is active.            │
-  │  • Creates ArchiveListSymbolsWorkflow with filter.   │
-  │  • Calls asyncio.run(workflow.run()).                │
-  │  • Prints result.matched[*].symbol, one per line.    │
+  │  Parses arguments, builds a typed symbol filter,     │
+  │  runs the workflow, and prints matched symbols.      │
   └──────────────────────┬───────────────────────────────┘
-                         │
+                         │ trade_type, data_freq, data_type,
+                         │ symbol_filter
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow layer  (bhds/workflow/archive.py)           │
-  │  • Fetches raw symbols via ArchiveClient.            │
-  │  • Routes each raw symbol through infer_spot_info /  │
-  │    infer_um_info / infer_cm_info by trade_type.      │
-  │  • Splits results into inferred / unmatched.         │
-  │  • Applies symbol_filter.matches() to inferred,      │
-  │    splitting into matched / filtered_out.            │
-  │  • Returns ListSymbolsResult(matched, unmatched,     │
-  │    filtered_out).                                    │
+  │ Workflow  (bhds/workflow/archive.py)                 │
+  │  Fetches raw symbols, infers typed metadata per      │
+  │  market, applies the filter, and returns a           │
+  │  ListSymbolsResult.                                  │
   └──────────────────────┬───────────────────────────────┘
-                         │
+                         │ trade_type, data_freq, data_type
   ┌──────────────────────▼───────────────────────────────┐
   │ Archive Client  (bhds/archive/client.py)             │
-  │  • Builds S3 prefix: data/spot/daily/klines/         │
-  │  • Creates aiohttp session (trust_env=True).         │
-  │  • Fetches S3 XML listing pages with pagination.     │
-  │  • Parses XML via xmltodict; normalizes edge cases.  │
-  │  • Extracts and sorts symbol names from prefixes.    │
+  │  Issues paginated S3 XML listings against            │
+  │  data.binance.vision and returns sorted symbol       │
+  │  names.                                              │
   └──────────────────────────────────────────────────────┘
 ```
 
-Only `result.matched` is printed to stdout. `unmatched` (raw symbols that failed
-inference) and `filtered_out` (inferred symbols rejected by the filter) are dropped by
-the CLI by design, even when no filter flag is passed.
-
 For S3 protocol details and proxy configuration, see the
 [archive reference](reference/bhds/archive.md#s3-listing-protocol).
-
-## Enum Design
-
-Enums in `common/enums.py` use `StrEnum` so their values work directly as Typer CLI arguments and
-as string components in S3 path construction.
-
-- **`TradeType`** — Values are CLI-friendly short names (`spot`, `um`, `cm`). The `s3_path`
-  property maps to the actual S3 directory component (e.g. `um` → `futures/um`).
-- **`DataFrequency`** and **`DataType`** — Values match the S3 path segment exactly, so no
-  additional mapping is needed.

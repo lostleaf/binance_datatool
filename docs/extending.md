@@ -150,7 +150,7 @@ To add a command group alongside `archive` (for example, `bhds holo ...`):
 
 3. Follow the same CLI → Workflow → Client layering for the new commands.
 
-## Test Organisation
+## Test Organization
 
 ```
 tests/
