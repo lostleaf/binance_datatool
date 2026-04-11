@@ -137,4 +137,4 @@ Aggregate result for `ArchiveListFilesWorkflow.run()`.
 
 ---
 
-See also: [Archive client](archive.md) | [CLI commands](cli.md)
+See also: [Archive client](archive.md) | [CLI commands](cli/archive.md)
