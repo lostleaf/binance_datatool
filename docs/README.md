@@ -20,9 +20,11 @@ For installation and usage instructions, see the repository root README.
 | [common.logging](reference/common/logging.md) | `configure_cli_logging` helper for CLI entry points. |
 | [common.symbols](reference/common/symbols.md) | Symbol inference functions and quote parsing rules. |
 | [bhds.archive](reference/bhds/archive.md) | S3 listing client for data.binance.vision. |
+| [bhds.archive (S3 protocol)](reference/bhds/s3-protocol.md) | S3 XML listing protocol, pagination, retry, and proxy. |
 | [bhds.workflow](reference/bhds/workflow.md) | Business logic orchestration. |
 | [bhds.cli](reference/bhds/cli/overview.md) | Typer CLI overview, verbosity, and sub-command index. |
 | [bhds.cli.archive](reference/bhds/cli/archive.md) | Archive listing commands (list-symbols, list-files). |
+| [Testing](reference/testing.md) | Test directory layout, conventions, and shared fixtures. |
 
 ## Guides
 

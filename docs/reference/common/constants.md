@@ -22,4 +22,4 @@ Shared constants imported by all other packages.
 
 ---
 
-See also: [enums](enums.md) | [types](types.md) | [logging](logging.md) | [symbols](symbols.md) | [Architecture](../../architecture.md)
+See also: [enums](enums.md) | [symbols](symbols.md) | [Architecture](../../architecture.md)

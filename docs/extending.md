@@ -28,105 +28,59 @@ Follow the three-layer pattern: **CLI → Workflow → Client**.
 
 ### Step 1: Add a Client Method
 
-If the command needs new data access, add a method to `ArchiveClient` in
+If the command needs new data access, add an `async` method to `ArchiveClient` in
 `bhds/archive/client.py`. Keep the method focused on S3 communication and return plain data
 structures.
 
 ```python
-async def list_dates(
-    self,
-    trade_type: TradeType,
-    data_freq: DataFrequency,
-    data_type: DataType,
-    symbol: str,
-) -> list[str]:
-    """List available date directories for a symbol.
-
-    Args:
-        trade_type: Market segment.
-        data_freq: Partition frequency.
-        data_type: Dataset type.
-        symbol: Symbol name (e.g. ``"BTCUSDT"``).
-
-    Returns:
-        Sorted list of date directory names.
-    """
+async def list_dates(self, trade_type: TradeType, ...) -> list[str]:
+    """List available date directories for a symbol."""
     prefix = _build_prefix(trade_type, data_freq, data_type) + f"{symbol}/"
-    async with self._create_session() as session:
-        child_prefixes = await self.list_dir(session, prefix)
-    return sorted(_extract_symbol(p) for p in child_prefixes)
+    ...
 ```
+
+See `list_symbols` and `list_symbol_files` in `bhds/archive/client.py` for real examples.
 
 ### Step 2: Create a Workflow Class
 
 Create a workflow in `bhds/workflow/archive.py` (or a new module if the scope warrants it).
-The workflow accepts an optional `client` parameter for testability.
+Accept an optional `client` parameter for testability and return a typed result dataclass.
 
 ```python
 class ArchiveListDatesWorkflow:
-    """Workflow for listing available dates for a symbol."""
-
-    def __init__(
-        self,
-        trade_type: TradeType,
-        data_freq: DataFrequency,
-        data_type: DataType,
-        symbol: str,
-        client: ArchiveClient | None = None,
-    ) -> None:
-        """Initialize the workflow.
-
-        Args:
-            trade_type: Market segment to query.
-            data_freq: Partition frequency.
-            data_type: Dataset type.
-            symbol: Symbol name.
-            client: Optional pre-configured archive client.
-        """
+    def __init__(self, trade_type: TradeType, ..., client: ArchiveClient | None = None) -> None:
         ...
 
     async def run(self) -> list[str]:
-        """Execute the workflow and return a sorted date list.
-
-        Returns:
-            Sorted list of date directory names.
-        """
-        return await self.client.list_dates(...)
+        ...
 ```
+
+See `ArchiveListSymbolsWorkflow` and `ArchiveListFilesWorkflow` in `bhds/workflow/archive.py`
+for real examples.
 
 ### Step 3: Add a CLI Command
 
-Add a Typer command in `bhds/cli/archive.py`:
+Add a Typer command in `bhds/cli/archive.py`. The command parses arguments, constructs a
+workflow, and prints the result.
 
 ```python
 @archive_app.command("list-dates")
 def list_dates_command(
-    trade_type: Annotated[TradeType, typer.Argument(help="Market segment.")],
-    symbol: Annotated[str, typer.Argument(help="Symbol name.")],
-    data_freq: Annotated[
-        DataFrequency,
-        typer.Option("--freq", help="Partition frequency."),
-    ] = DataFrequency.daily,
-    data_type: Annotated[
-        DataType,
-        typer.Option("--type", help="Dataset type."),
-    ] = DataType.klines,
+    trade_type: Annotated[TradeType, typer.Argument(...)],
+    ...
 ) -> None:
-    """List available dates for a symbol under a Binance archive prefix."""
-    workflow = ArchiveListDatesWorkflow(trade_type, data_freq, data_type, symbol)
+    """List available dates for a symbol."""
+    workflow = ArchiveListDatesWorkflow(trade_type, ...)
     for date in asyncio.run(workflow.run()):
         typer.echo(date)
 ```
 
+See `list_symbols_command` and `list_files_command` in `bhds/cli/archive.py` for real examples.
+
 ### Step 4: Add Tests
 
-Add tests at each layer:
-
-- **Unit test** — Monkeypatch `_fetch_xml` to supply mock XML responses and verify client logic
-  (pagination, normalization, sorting).
-- **CLI test** — Use `typer.testing.CliRunner` with a monkeypatched workflow `run()` method.
-- **Integration test** *(optional)* — Mark with `@pytest.mark.integration` for real network
-  requests. These are skipped by default; run them with `pytest --run-integration`.
+Add tests at each layer. See [Test Organization](reference/testing.md) for directory layout,
+conventions, and shared fixtures.
 
 ## Adding a New Sub-command Group
 
@@ -152,35 +106,5 @@ To add a command group alongside `archive` (for example, `bhds holo ...`):
 
 ## Test Organization
 
-```
-tests/
-├── conftest.py                 # Shared fixtures (FakeArchiveClient, sample_archive_files)
-├── test_archive_client.py      # Archive client unit and integration tests
-├── test_archive_workflow.py    # Workflow unit and integration tests
-├── test_cli.py                 # CLI smoke tests
-├── test_enums.py               # common.enums property tests
-├── test_filter.py              # Symbol filter unit tests
-├── test_logging.py             # configure_cli_logging verbosity and format tests
-└── test_symbols.py             # Symbol inference unit and integration tests
-```
-
-**Conventions:**
-
-- **Unit tests** use `monkeypatch` to replace HTTP methods with fake responses.
-- **Integration tests** are marked with `@pytest.mark.integration` and skipped by default.
-  Run them explicitly with `pytest --run-integration`.
-- **CLI tests** use `typer.testing.CliRunner` and monkeypatch the workflow's `run()` method so
-  they run without network access.
-
-### Shared fixtures in `conftest.py`
-
-- **`FakeArchiveClient`** — a programmable stub configured entirely via constructor
-  kwargs (`symbols=`, `files_by_symbol=`, `errors_by_symbol=`). It implements both
-  `list_symbols` and `list_symbol_files`. The `session=` kwarg is accepted for API
-  parity with `ArchiveClient` but ignored, so stubs stay network-free regardless of
-  what the workflow does with its shared session. Prefer extending this stub over
-  re-implementing per-test fakes when you add new workflows.
-- **`sample_archive_files`** — a representative pair of `ArchiveFile` entries
-  (`.zip` + `.zip.CHECKSUM`) for list-files-style workflow and CLI tests.
-- **`--run-integration`** — a custom pytest option that unlocks the `integration`
-  marker. The default run skips every integration test.
+For the test directory layout, conventions, and shared fixtures, see
+[Test Organization](reference/testing.md).

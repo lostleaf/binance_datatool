@@ -30,4 +30,4 @@ planned `bmds`) can reuse the same configuration without duplication.
 
 ---
 
-See also: [constants](constants.md) | [CLI](../bhds/cli/overview.md) | [Architecture](../../architecture.md)
+See also: [CLI overview](../bhds/cli/overview.md) | [Architecture](../../architecture.md)
