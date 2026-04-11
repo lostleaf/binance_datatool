@@ -2,12 +2,6 @@
 
 Shared constants imported by all other packages.
 
-## Root Package
-
-| Symbol | Type | Description |
-|--------|------|-------------|
-| `__version__` | `str` | Semantic version string (currently `0.1.0`). |
-
 ## Constants
 
 | Constant | Type | Value | Description |

@@ -35,4 +35,4 @@ tests/
 
 ---
 
-See also: [Extending the Project](../../extending.md) | [Architecture](../../architecture.md)
+See also: [Extending the Project](../extending.md) | [Architecture](../architecture.md)

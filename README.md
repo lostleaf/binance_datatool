@@ -8,7 +8,7 @@ end-to-end archive command:
 
 ```bash
 uv run bhds archive list-symbols spot
-uv run bhds archive list-symbols um --data-type fundingRate --data-freq monthly
+uv run bhds archive list-symbols um --type fundingRate --freq monthly
 ```
 
 ## Documentation
@@ -18,7 +18,7 @@ Detailed developer documentation lives in [`docs/`](docs/README.md):
 | Document | Description |
 |----------|-------------|
 | [Architecture](docs/architecture.md) | Layered design, data flow, S3 protocol, and key decisions. |
-| [Module Reference](docs/reference/) | Per-subpackage API reference (common, archive, workflow, CLI). |
+| [Module Reference](docs/reference/README.md) | Per-subpackage API reference (common, archive, workflow, CLI). |
 | [Extending the Project](docs/extending.md) | How to add commands, enums, workflows, and tests. |
 
 ## Development

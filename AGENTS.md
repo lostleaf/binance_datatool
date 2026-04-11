@@ -11,6 +11,17 @@
 - If `.AGENTS.local.md` exists, read it and follow it as additional local guidance.
 - Public instructions in this file apply to everyone; local instructions add developer-specific context.
 
+## Documentation Navigation
+- Read `docs/architecture.md` before making structural or cross-layer changes.
+- Read `docs/extending.md` before adding a new command, workflow, enum member, or sub-command group.
+- Read `docs/reference/testing.md` before changing tests, fixtures, or test layout conventions.
+- Use `docs/reference/README.md` as the entry point for module and CLI reference details.
+- Treat checked-in code and tests as higher priority than documentation if they conflict.
+- When a change alters behavior, public interfaces, or contributor workflows, update the relevant
+  `docs/` promptly after the code change is committed.
+- Unless explicitly requested otherwise, do not mix code changes and documentation updates in the
+  same commit.
+
 ## Working Model
 - Build the project as a modern Python package named `binance_datatool`.
 - Use the intended package layout: shared code under `binance_datatool.common` and historical
