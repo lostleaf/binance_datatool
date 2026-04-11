@@ -76,21 +76,27 @@ entries only when live Binance metadata proves that a greedy long-quote match is
 
 **`DataType(StrEnum)`** — Dataset type on data.binance.vision.
 
-| Member | Value |
-|--------|-------|
-| `klines` | `klines` |
-| `agg_trades` | `aggTrades` |
-| `trades` | `trades` |
-| `funding_rate` | `fundingRate` |
-| `book_depth` | `bookDepth` |
-| `book_ticker` | `bookTicker` |
-| `index_price_klines` | `indexPriceKlines` |
-| `mark_price_klines` | `markPriceKlines` |
-| `premium_index_klines` | `premiumIndexKlines` |
-| `metrics` | `metrics` |
-| `liquidation_snapshot` | `liquidationSnapshot` |
+| Member | Value | `has_interval_layer` |
+|--------|-------|----------------------|
+| `klines` | `klines` | `True` |
+| `agg_trades` | `aggTrades` | `False` |
+| `trades` | `trades` | `False` |
+| `funding_rate` | `fundingRate` | `False` |
+| `book_depth` | `bookDepth` | `False` |
+| `book_ticker` | `bookTicker` | `False` |
+| `index_price_klines` | `indexPriceKlines` | `True` |
+| `mark_price_klines` | `markPriceKlines` | `True` |
+| `premium_index_klines` | `premiumIndexKlines` | `True` |
+| `metrics` | `metrics` | `False` |
+| `liquidation_snapshot` | `liquidationSnapshot` | `False` |
 
 > Member names use `snake_case`; values match the S3 path segment exactly.
+
+The `has_interval_layer` property returns `True` for data types whose archive
+path includes an interval directory segment (e.g. `1m`, `1h`) between the symbol
+and the data files. It is the single source of truth for the
+`interval`-vs-`data_type` consistency rule enforced by the archive client, the
+`ArchiveListFilesWorkflow` constructor, and the `archive list-files` CLI command.
 
 **`ContractType(StrEnum)`** — Futures contract settlement style.
 
@@ -130,6 +136,36 @@ entries only when live Binance metadata proves that a greedy long-quote match is
 | `contract_type` | `ContractType` | Whether the contract is perpetual or delivery. |
 
 **`SymbolInfo`** — Union alias for `SpotSymbolInfo | UmSymbolInfo | CmSymbolInfo`.
+
+## `common.logging`
+
+Shared `loguru` configuration helper for CLI entry points.
+
+```python
+from binance_datatool.common import configure_cli_logging
+
+configure_cli_logging(verbosity=1)  # 0 = WARNING, 1 = INFO, 2+ = DEBUG
+```
+
+`configure_cli_logging(verbosity: int) -> None` resets `loguru` and installs a
+single `stderr` sink with a level and format chosen from the verbosity level:
+
+| `verbosity` | `loguru` level | Format |
+|-------------|----------------|--------|
+| `0` | `WARNING` | `<level>{level}</level>: {message}` |
+| `1` | `INFO` | `<level>{level}</level>: {message}` |
+| `2` or more | `DEBUG` | `<green>{time:HH:mm:ss.SSS}</green> \| <level>{level: <8}</level> \| <cyan>{name}</cyan>:<cyan>{line}</cyan> - {message}` |
+
+The sink uses `colorize=sys.stderr.isatty()` so ANSI colour escapes appear on
+interactive terminals but are stripped from logs redirected to files or pipes.
+Level names are emitted in uppercase (`INFO`, `ERROR`, `DEBUG`, `WARNING`),
+matching the conventions used by `pip`, the stdlib `logging` module, and the
+default `loguru` formatter.
+
+This function is called by the root `bhds` Typer callback before any
+sub-command runs; see [CLI — Root Callback and Verbosity](bhds/cli.md#root-callback-and-verbosity).
+It is introduced as a shared helper so future CLI entry points (for example a
+planned `bmds`) can reuse the same configuration without duplication.
 
 ## `common.symbols`
 

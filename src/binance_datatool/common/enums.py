@@ -58,7 +58,13 @@ class DataType(StrEnum):
 
     @property
     def has_interval_layer(self) -> bool:
-        """Return whether this data type has an interval directory layer."""
+        """Return whether this data type uses an interval directory layer.
+
+        Returns:
+            ``True`` for kline-class data types whose S3 path includes
+            an interval directory segment (e.g. ``"1m"``, ``"1h"``);
+            ``False`` otherwise.
+        """
         return self in {
             DataType.klines,
             DataType.index_price_klines,

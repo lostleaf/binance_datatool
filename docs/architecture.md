@@ -14,6 +14,7 @@ src/binance_datatool/
 │   ├── __init__.py          # Re-exports public symbols
 │   ├── constants.py         # S3 settings, quote assets, stablecoins, leverage rules
 │   ├── enums.py             # TradeType, DataFrequency, DataType, ContractType
+│   ├── logging.py           # configure_cli_logging for CLI entry points
 │   ├── types.py             # SymbolInfoBase, SpotSymbolInfo, UmSymbolInfo, CmSymbolInfo
 │   └── symbols.py           # infer_spot_info, infer_um_info, infer_cm_info
 │
@@ -21,17 +22,17 @@ src/binance_datatool/
     ├── __init__.py
     │
     ├── archive/             # S3 data access and typed filters
-    │   ├── __init__.py      # Re-exports ArchiveClient, list_symbols, symbol filters
-    │   ├── client.py        # HTTP client and XML parsing
+    │   ├── __init__.py      # Re-exports ArchiveClient, ArchiveFile, list_symbols, symbol filters
+    │   ├── client.py        # HTTP client, XML parsing, ArchiveFile metadata
     │   └── filter.py        # Spot/Um/Cm symbol filters and build_symbol_filter()
     │
     ├── workflow/            # Business logic orchestration
     │   ├── __init__.py
-    │   └── archive.py       # ArchiveListSymbolsWorkflow, ListSymbolsResult
+    │   └── archive.py       # ArchiveListSymbolsWorkflow, ArchiveListFilesWorkflow, result dataclasses
     │
     └── cli/                 # Typer CLI layer
-        ├── __init__.py      # App definition and sub-command registration
-        └── archive.py       # list-symbols command
+        ├── __init__.py      # Root callback with -v/-vv verbosity; sub-command registration
+        └── archive.py       # list-symbols and list-files commands
 ```
 
 ## Layered Design
@@ -62,11 +63,22 @@ For detailed API docs see the [module reference](reference/).
 - **Extensibility.** Adding a new command means adding a thin CLI function that delegates to a
   workflow, without touching the archive client.
 
-## Data Flow: `bhds archive list-symbols`
+## CLI Entry Point and Logging
 
-The `list-symbols` command is the only implemented command. Below is its end-to-end
-path through the three layers. See the reference docs for each layer's implementation
-details.
+The root `bhds` Typer app exposes a `-v` / `-vv` verbosity flag on its callback. The
+callback invokes `configure_cli_logging(verbosity)` from `common.logging` before any
+sub-command runs, wiring `loguru` to `stderr` with the appropriate level and format:
+
+| Verbosity | Level | Format |
+|-----------|-------|--------|
+| *(default)* | `WARNING` | `LEVEL: message` |
+| `-v` | `INFO` | `LEVEL: message` |
+| `-vv` | `DEBUG` | `HH:MM:SS.mmm \| LEVEL \| module:line - message` |
+
+All CLI logging flows through `stderr`; stdout is reserved exclusively for command
+results so that sub-commands remain safe to pipe into one another.
+
+## Data Flow: `bhds archive list-symbols`
 
 ```
 User runs:
@@ -93,6 +105,55 @@ User runs:
   │  names.                                              │
   └──────────────────────────────────────────────────────┘
 ```
+
+## Data Flow: `bhds archive list-files`
+
+`list-files` is the second archive listing command and is designed to compose with
+`list-symbols` through a shell pipe. It reads one or more symbols, lists every file
+under each symbol directory on `data.binance.vision`, and prints results in
+caller-provided order.
+
+```
+User runs:
+  bhds archive list-symbols um --quote USDT --exclude-stables \
+    | bhds archive list-files um --type klines --interval 1m
+
+  ┌──────────────────────────────────────────────────────┐
+  │ CLI layer  (bhds/cli/archive.py)                     │
+  │  Validates --only-zip / --only-checksum exclusivity  │
+  │  and --interval vs data_type consistency; resolves   │
+  │  symbols from positional args (winning) or piped     │
+  │  stdin; uppercases each symbol; runs the workflow;   │
+  │  prints short or TSV long output; logs per-symbol    │
+  │  failures to stderr and exits 2 if any failed.       │
+  └──────────────────────┬───────────────────────────────┘
+                         │ trade_type, data_freq, data_type,
+                         │ symbols, interval
+  ┌──────────────────────▼───────────────────────────────┐
+  │ Workflow  (bhds/workflow/archive.py)                 │
+  │  Re-validates interval consistency at construction;  │
+  │  opens one shared aiohttp session; concurrently      │
+  │  issues list_symbol_files per symbol via             │
+  │  asyncio.gather(return_exceptions=True); wraps       │
+  │  exceptions into SymbolListFilesResult.error and     │
+  │  preserves caller input order.                       │
+  └──────────────────────┬───────────────────────────────┘
+                         │ trade_type, data_freq, data_type,
+                         │ symbol, interval, session
+  ┌──────────────────────▼───────────────────────────────┐
+  │ Archive Client  (bhds/archive/client.py)             │
+  │  list_symbol_files builds the prefix and calls       │
+  │  list_files_in_dir, which paginates S3 Contents      │
+  │  entries into ArchiveFile dataclasses (key, size,    │
+  │  last_modified tz-aware UTC).                        │
+  └──────────────────────────────────────────────────────┘
+```
+
+The `interval` vs `data_type.has_interval_layer` consistency check is enforced at
+**three layers** — CLI (`BadParameter`), Workflow (`__init__` `ValueError`), and
+Client (`list_symbol_files` entry `ValueError`) — so each possible entry point
+(shell, notebook importing the workflow, notebook importing the client directly)
+fails loud on the same contract violation.
 
 For S3 protocol details and proxy configuration, see the
 [archive reference](reference/bhds/archive.md#s3-listing-protocol).

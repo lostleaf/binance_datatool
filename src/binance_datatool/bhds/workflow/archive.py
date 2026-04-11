@@ -10,7 +10,13 @@ import aiohttp
 from loguru import logger
 
 from binance_datatool.bhds.archive import ArchiveClient
-from binance_datatool.common import TradeType, infer_cm_info, infer_spot_info, infer_um_info
+from binance_datatool.common import (
+    S3_HTTP_TIMEOUT_SECONDS,
+    TradeType,
+    infer_cm_info,
+    infer_spot_info,
+    infer_um_info,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -30,7 +36,13 @@ class ListSymbolsResult:
 
 @dataclass(slots=True)
 class SymbolListFilesResult:
-    """Result for listing files under one symbol."""
+    """Result for listing files under one symbol.
+
+    A successful listing of an empty directory is represented by ``files``
+    equal to ``[]`` with ``error`` still ``None``; this is distinct from a
+    failed listing, which also carries an empty ``files`` list but sets
+    ``error`` to a non-empty description of the failure.
+    """
 
     symbol: str
     files: list[ArchiveFile]
@@ -137,7 +149,12 @@ class ArchiveListSymbolsWorkflow:
 
 
 class ArchiveListFilesWorkflow:
-    """Workflow for listing archive files under one or more symbol directories."""
+    """Workflow for listing archive files under one or more symbol directories.
+
+    Fetches file metadata concurrently via :class:`ArchiveClient` while
+    preserving the caller-provided symbol order and isolating per-symbol
+    failures so that one bad symbol does not abort the entire batch.
+    """
 
     def __init__(
         self,
@@ -174,14 +191,23 @@ class ArchiveListFilesWorkflow:
 
     def _create_session(self) -> aiohttp.ClientSession:
         """Create a shared HTTP session for one workflow run."""
-        if isinstance(self.client, ArchiveClient):
-            timeout = aiohttp.ClientTimeout(total=self.client.timeout_seconds)
-            return aiohttp.ClientSession(timeout=timeout, trust_env=self.client.trust_env)
-
-        return aiohttp.ClientSession()
+        timeout = aiohttp.ClientTimeout(total=S3_HTTP_TIMEOUT_SECONDS)
+        return aiohttp.ClientSession(timeout=timeout, trust_env=True)
 
     async def run(self) -> ListFilesResult:
-        """Execute the workflow and return per-symbol file results."""
+        """Execute the workflow and return per-symbol file results.
+
+        Opens a single shared HTTP session and issues one concurrent
+        :meth:`ArchiveClient.list_symbol_files` call per requested symbol.
+        Per-symbol exceptions are captured into
+        :attr:`SymbolListFilesResult.error` rather than raised, so the
+        returned :class:`ListFilesResult` always covers every requested
+        symbol in caller-provided input order.
+
+        Returns:
+            Aggregate result whose ``per_symbol`` list preserves the
+            caller-provided symbol order.
+        """
         logger.info(
             "listing {} symbols for trade_type={} data_freq={} data_type={} interval={}",
             len(self.symbols),

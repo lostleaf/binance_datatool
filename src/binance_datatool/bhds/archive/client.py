@@ -192,7 +192,20 @@ class ArchiveClient:
         session: aiohttp.ClientSession,
         prefix: str,
     ) -> list[ArchiveFile]:
-        """List all files directly under an S3 directory prefix."""
+        """List all files directly under an S3 directory prefix.
+
+        Files are listed without recursion.  Automatically follows S3
+        pagination when the result set exceeds a single response page.
+
+        Args:
+            session: An active ``aiohttp`` client session.
+            prefix: S3 object key prefix to list
+                (e.g. ``"data/futures/um/monthly/fundingRate/BTCUSDT/"``).
+
+        Returns:
+            Archive file metadata entries for each file directly under
+            the prefix.
+        """
         files: list[ArchiveFile] = []
         marker: str | None = None
 
@@ -247,7 +260,34 @@ class ArchiveClient:
         *,
         session: aiohttp.ClientSession | None = None,
     ) -> list[ArchiveFile]:
-        """List files for a single symbol directory on the Binance archive."""
+        """List files for a single symbol directory on the Binance archive.
+
+        Builds the S3 prefix from the requested path parameters and
+        delegates to :meth:`list_files_in_dir`.  Callers that run many
+        concurrent symbol listings should pass a shared ``session`` so
+        every request reuses the same connection pool.
+
+        Args:
+            trade_type: Market segment (spot, um, cm).
+            data_freq: Partition frequency (daily, monthly).
+            data_type: Dataset type (klines, fundingRate, etc.).
+            symbol: Symbol directory to list (e.g. ``"BTCUSDT"``).
+            interval: Kline interval directory such as ``"1m"``.  Required
+                when ``data_type.has_interval_layer`` is ``True`` and must
+                be ``None`` otherwise.
+            session: Optional pre-existing ``aiohttp`` client session to
+                reuse.  When ``None`` a short-lived session is created
+                and closed inside this call.  When provided the caller
+                owns its lifecycle and this method does not close it.
+
+        Returns:
+            Archive file metadata entries for each file under the symbol
+            directory.
+
+        Raises:
+            ValueError: If ``interval`` does not match
+                ``data_type.has_interval_layer``.
+        """
         if data_type.has_interval_layer and interval is None:
             msg = "interval is required for kline-class data_type"
             raise ValueError(msg)
