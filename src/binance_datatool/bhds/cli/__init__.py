@@ -1,5 +1,7 @@
 """Typer application for bhds."""
 
+from __future__ import annotations
+
 from typing import Annotated
 
 import typer
@@ -13,6 +15,7 @@ app.add_typer(archive_app)
 
 @app.callback()
 def root_callback(
+    ctx: typer.Context,
     verbose: Annotated[
         int,
         typer.Option(
@@ -22,9 +25,15 @@ def root_callback(
             help="Increase log verbosity (-v=INFO, -vv=DEBUG).",
         ),
     ] = 0,
+    bhds_home: Annotated[
+        str | None,
+        typer.Option("--bhds-home", help="Override the BHDS_HOME data directory."),
+    ] = None,
 ) -> None:
     """Configure shared CLI state before running a command."""
     configure_cli_logging(verbose)
+    ctx.obj = {} if ctx.obj is None else dict(ctx.obj)
+    ctx.obj["bhds_home_override"] = bhds_home
 
 
 # Register sub-command modules (side-effect import).

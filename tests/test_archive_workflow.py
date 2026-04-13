@@ -2,18 +2,26 @@
 
 from __future__ import annotations
 
+import os
+from datetime import UTC, datetime
+from pathlib import Path
+
 import aiohttp
 import pytest
 
 from binance_datatool.bhds.archive import (
     ArchiveClient,
+    ArchiveFile,
+    Aria2DownloadResult,
     CmSymbolFilter,
     SpotSymbolFilter,
     UmSymbolFilter,
 )
 from binance_datatool.bhds.workflow.archive import (
+    ArchiveDownloadWorkflow,
     ArchiveListFilesWorkflow,
     ArchiveListSymbolsWorkflow,
+    DiffResult,
     ListFilesResult,
     ListSymbolsResult,
 )
@@ -196,3 +204,185 @@ def test_archive_list_files_workflow_rejects_interval_for_non_kline_types() -> N
             symbols=["BTCUSDT"],
             interval="1m",
         )
+
+
+@pytest.mark.asyncio
+async def test_archive_download_workflow_builds_new_updated_and_skipped_diff(tmp_path) -> None:
+    """Download diffing should classify files by timestamp freshness."""
+    remote_new = ArchiveFile(
+        key="data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-01.zip",
+        size=100,
+        last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+    )
+    remote_updated = ArchiveFile(
+        key=(
+            "data/futures/um/monthly/fundingRate/BTCUSDT/"
+            "BTCUSDT-fundingRate-2026-02.zip.CHECKSUM"
+        ),
+        size=10,
+        last_modified=datetime(2026, 4, 2, 8, 6, 34, tzinfo=UTC),
+    )
+    remote_skipped = ArchiveFile(
+        key="data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip",
+        size=100,
+        last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+    )
+
+    updated_local = tmp_path / "aws_data" / Path(remote_updated.key)
+    updated_local.parent.mkdir(parents=True, exist_ok=True)
+    updated_local.write_text("old checksum", encoding="utf-8")
+    os.utime(updated_local, (remote_updated.last_modified.timestamp() - 100,) * 2)
+
+    skipped_local = tmp_path / "aws_data" / Path(remote_skipped.key)
+    skipped_local.parent.mkdir(parents=True, exist_ok=True)
+    skipped_local.write_text("fresh zip", encoding="utf-8")
+    os.utime(skipped_local, (remote_skipped.last_modified.timestamp() + 100,) * 2)
+
+    workflow = ArchiveDownloadWorkflow(
+        trade_type=TradeType.um,
+        data_freq=DataFrequency.monthly,
+        data_type=DataType.funding_rate,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        dry_run=True,
+        client=FakeArchiveClient(files_by_symbol={"BTCUSDT": [remote_new, remote_updated, remote_skipped]}),
+    )
+
+    result = await workflow.run()
+
+    assert isinstance(result, DiffResult)
+    assert result.total_remote == 3
+    assert result.skipped == 1
+    assert [(entry.remote.key, entry.reason) for entry in result.to_download] == [
+        (remote_new.key, "new"),
+        (remote_updated.key, "updated"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_archive_download_workflow_invalidates_new_and_legacy_verified_markers(
+    tmp_path,
+) -> None:
+    """Updated zip or checksum files should clear all stale verification markers."""
+    checksum_remote = ArchiveFile(
+        key=(
+            "data/futures/um/monthly/fundingRate/BTCUSDT/"
+            "BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
+        ),
+        size=10,
+        last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),
+    )
+    local_checksum = tmp_path / "aws_data" / Path(checksum_remote.key)
+    local_zip = local_checksum.with_name(local_checksum.name.removesuffix(".CHECKSUM"))
+    local_checksum.parent.mkdir(parents=True, exist_ok=True)
+    local_checksum.write_text("old checksum", encoding="utf-8")
+    local_zip.write_text("zip bytes", encoding="utf-8")
+    os.utime(local_checksum, (checksum_remote.last_modified.timestamp() - 100,) * 2)
+
+    legacy_marker = local_zip.parent / f"{local_zip.name}.verified"
+    timestamped_marker = local_zip.parent / f"{local_zip.name}.1712678400.verified"
+    legacy_marker.write_text("", encoding="utf-8")
+    timestamped_marker.write_text("", encoding="utf-8")
+
+    captured_requests: list = []
+
+    def fake_download(requests, **kwargs):  # noqa: ANN001
+        del kwargs
+        captured_requests.extend(requests)
+        return Aria2DownloadResult(requested=len(requests), failed_requests=[])
+
+    workflow = ArchiveDownloadWorkflow(
+        trade_type=TradeType.um,
+        data_freq=DataFrequency.monthly,
+        data_type=DataType.funding_rate,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        dry_run=False,
+        client=FakeArchiveClient(files_by_symbol={"BTCUSDT": [checksum_remote]}),
+        download_func=fake_download,
+    )
+
+    result = await workflow.run()
+
+    assert result.failed == 0
+    assert len(captured_requests) == 1
+    assert not legacy_marker.exists()
+    assert not timestamped_marker.exists()
+
+
+@pytest.mark.asyncio
+async def test_archive_download_workflow_dry_run_keeps_verified_markers(tmp_path) -> None:
+    """Dry-run mode should not mutate verification markers."""
+    checksum_remote = ArchiveFile(
+        key=(
+            "data/futures/um/monthly/fundingRate/BTCUSDT/"
+            "BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
+        ),
+        size=10,
+        last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),
+    )
+    local_checksum = tmp_path / "aws_data" / Path(checksum_remote.key)
+    local_zip = local_checksum.with_name(local_checksum.name.removesuffix(".CHECKSUM"))
+    local_checksum.parent.mkdir(parents=True, exist_ok=True)
+    local_checksum.write_text("old checksum", encoding="utf-8")
+    local_zip.write_text("zip bytes", encoding="utf-8")
+    os.utime(local_checksum, (checksum_remote.last_modified.timestamp() - 100,) * 2)
+
+    legacy_marker = local_zip.parent / f"{local_zip.name}.verified"
+    timestamped_marker = local_zip.parent / f"{local_zip.name}.1712678400.verified"
+    legacy_marker.write_text("", encoding="utf-8")
+    timestamped_marker.write_text("", encoding="utf-8")
+
+    workflow = ArchiveDownloadWorkflow(
+        trade_type=TradeType.um,
+        data_freq=DataFrequency.monthly,
+        data_type=DataType.funding_rate,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        dry_run=True,
+        client=FakeArchiveClient(files_by_symbol={"BTCUSDT": [checksum_remote]}),
+    )
+
+    result = await workflow.run()
+
+    assert isinstance(result, DiffResult)
+    assert legacy_marker.exists()
+    assert timestamped_marker.exists()
+
+
+@pytest.mark.asyncio
+async def test_archive_download_workflow_returns_listing_failures_and_download_counts(
+    tmp_path,
+) -> None:
+    """Download results should preserve per-symbol listing failures."""
+    remote_file = ArchiveFile(
+        key="data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip",
+        size=100,
+        last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),
+    )
+
+    def fake_download(requests, **kwargs):  # noqa: ANN001
+        del kwargs
+        return Aria2DownloadResult(requested=len(requests), failed_requests=requests[:1])
+
+    workflow = ArchiveDownloadWorkflow(
+        trade_type=TradeType.um,
+        data_freq=DataFrequency.monthly,
+        data_type=DataType.funding_rate,
+        symbols=["BTCUSDT", "ETHUSDT"],
+        bhds_home=tmp_path / "missing-home",
+        dry_run=False,
+        client=FakeArchiveClient(
+            files_by_symbol={"BTCUSDT": [remote_file]},
+            errors_by_symbol={"ETHUSDT": aiohttp.ClientError("boom")},
+        ),
+        download_func=fake_download,
+    )
+
+    result = await workflow.run()
+
+    assert result.downloaded == 0
+    assert result.failed == 1
+    assert result.listing_failed_symbols == 1
+    assert result.listing_errors[0].symbol == "ETHUSDT"
+    assert (tmp_path / "missing-home").exists()

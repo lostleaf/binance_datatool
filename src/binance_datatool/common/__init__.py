@@ -4,12 +4,14 @@ from binance_datatool.common.constants import (
     LEVERAGE_EXCLUDES,
     LEVERAGE_SUFFIXES,
     QUOTE_ASSETS,
+    S3_DOWNLOAD_PREFIX,
     S3_HTTP_TIMEOUT_SECONDS,
     S3_LISTING_PREFIX,
     STABLECOINS,
 )
 from binance_datatool.common.enums import ContractType, DataFrequency, DataType, TradeType
 from binance_datatool.common.logging import configure_cli_logging
+from binance_datatool.common.path import BhdsHomeNotConfiguredError, resolve_bhds_home
 from binance_datatool.common.symbols import infer_cm_info, infer_spot_info, infer_um_info
 from binance_datatool.common.types import (
     CmSymbolInfo,
@@ -24,9 +26,11 @@ __all__ = [
     "ContractType",
     "DataFrequency",
     "DataType",
+    "BhdsHomeNotConfiguredError",
     "LEVERAGE_EXCLUDES",
     "LEVERAGE_SUFFIXES",
     "QUOTE_ASSETS",
+    "S3_DOWNLOAD_PREFIX",
     "S3_HTTP_TIMEOUT_SECONDS",
     "S3_LISTING_PREFIX",
     "STABLECOINS",
@@ -39,4 +43,5 @@ __all__ = [
     "infer_cm_info",
     "infer_spot_info",
     "infer_um_info",
+    "resolve_bhds_home",
 ]

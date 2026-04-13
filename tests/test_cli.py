@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -15,9 +16,13 @@ from binance_datatool.bhds.archive import (
 )
 from binance_datatool.bhds.cli import app
 from binance_datatool.bhds.workflow.archive import (
+    DiffEntry,
+    DiffResult,
+    DownloadResult,
     ListFilesResult,
     ListSymbolsResult,
     SymbolListFilesResult,
+    SymbolListingError,
 )
 from binance_datatool.common import ContractType, SpotSymbolInfo, UmSymbolInfo
 
@@ -558,6 +563,164 @@ def test_cli_list_files_only_checksum(monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert result.stdout == "BTCUSDT/BTCUSDT-fundingRate-2026-03.zip.CHECKSUM\n"
+
+
+def test_cli_list_files_warns_on_empty_remote_without_failures(monkeypatch) -> None:
+    """An empty successful listing should emit a warning hint."""
+
+    async def fake_run(self) -> ListFilesResult:
+        return ListFilesResult(per_symbol=[SymbolListFilesResult(symbol="BTCUSDT", files=[])])
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        ["archive", "list-files", "um", "--type", "fundingRate", "BTCUSDT"],
+    )
+
+    assert result.exit_code == 0
+    assert "Warning: no archive files found" in result.stderr
+
+
+def test_cli_download_requires_symbols() -> None:
+    """Download should reject calls without symbols from args or stdin."""
+    result = runner.invoke(app, ["archive", "download", "um", "--type", "fundingRate"])
+
+    assert result.exit_code == 2
+    assert "No symbols given" in result.stderr
+
+
+def test_cli_download_dry_run_outputs_tsv_and_summary(monkeypatch) -> None:
+    """Dry-run output should be TSV on stdout plus a summary on stderr."""
+
+    async def fake_run(self) -> DiffResult:
+        assert self.dry_run is True
+        return DiffResult(
+            to_download=[
+                DiffEntry(
+                    remote=ArchiveFile(
+                        key=(
+                            "data/futures/um/monthly/fundingRate/BTCUSDT/"
+                            "BTCUSDT-fundingRate-2026-03.zip"
+                        ),
+                        size=1048,
+                        last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+                    ),
+                    local_path=Path("/tmp/bhds/aws_data/data/futures/um/monthly/fundingRate/BTCUSDT/"
+                                    "BTCUSDT-fundingRate-2026-03.zip"),
+                    reason="new",
+                )
+            ],
+            skipped=12,
+            total_remote=13,
+            listing_errors=[],
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveDownloadWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--bhds-home",
+            "/tmp/bhds",
+            "archive",
+            "download",
+            "um",
+            "--freq",
+            "monthly",
+            "--type",
+            "fundingRate",
+            "--dry-run",
+            "btcusdt",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert (
+        result.stdout
+        == "new\t1048\tBTCUSDT/BTCUSDT-fundingRate-2026-03.zip\n"
+    )
+    assert "1 files to download, 12 up to date" in result.stderr
+
+
+def test_cli_download_passes_bhds_home_and_proxy_flag(monkeypatch) -> None:
+    """Global BHDS home and aria2 proxy flags should reach the workflow."""
+
+    async def fake_run(self) -> DownloadResult:
+        assert self.bhds_home == Path("/tmp/bhds-home")
+        assert self.inherit_aria2_proxy is True
+        assert self.show_progress is False
+        return DownloadResult(
+            total_remote=1,
+            skipped=0,
+            downloaded=1,
+            failed=0,
+            listing_errors=[],
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveDownloadWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--bhds-home",
+            "/tmp/bhds-home",
+            "archive",
+            "download",
+            "um",
+            "--type",
+            "fundingRate",
+            "--aria2-proxy",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Done: 1 downloaded, 0 failed, 0 skipped" in result.stderr
+
+
+def test_cli_download_logs_listing_errors_and_exits_2(monkeypatch) -> None:
+    """Listing failures should still print results for good symbols and exit 2."""
+
+    async def fake_run(self) -> DiffResult:
+        return DiffResult(
+            to_download=[],
+            skipped=0,
+            total_remote=0,
+            listing_errors=[SymbolListingError(symbol="ETHUSDT", error="boom")],
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveDownloadWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--bhds-home",
+            "/tmp/bhds",
+            "archive",
+            "download",
+            "um",
+            "--type",
+            "fundingRate",
+            "--dry-run",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "ERROR: ETHUSDT: boom" in result.stderr
 
 
 @pytest.mark.integration

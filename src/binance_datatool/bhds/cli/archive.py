@@ -1,5 +1,7 @@
 """Archive CLI commands."""
 
+from __future__ import annotations
+
 import asyncio
 import sys
 from datetime import UTC
@@ -11,10 +13,20 @@ from loguru import logger
 from binance_datatool.bhds.archive import build_symbol_filter
 from binance_datatool.bhds.cli import archive_app
 from binance_datatool.bhds.workflow.archive import (
+    ArchiveDownloadWorkflow,
     ArchiveListFilesWorkflow,
     ArchiveListSymbolsWorkflow,
+    DiffResult,
+    DownloadResult,
 )
-from binance_datatool.common import ContractType, DataFrequency, DataType, TradeType
+from binance_datatool.common import (
+    BhdsHomeNotConfiguredError,
+    ContractType,
+    DataFrequency,
+    DataType,
+    TradeType,
+    resolve_bhds_home,
+)
 
 
 @archive_app.command("list-symbols")
@@ -116,6 +128,51 @@ def _format_relative_path(
     return key.removeprefix(prefix)
 
 
+def _warn_if_empty_remote(*, total_remote: int, has_failures: bool) -> None:
+    """Print a heuristic warning for empty remote results."""
+    if total_remote != 0 or has_failures:
+        return
+
+    typer.echo(
+        (
+            "Warning: no archive files found; check --freq, --type, and trade_type "
+            "(for example, futures fundingRate requires --freq monthly)."
+        ),
+        err=True,
+    )
+
+
+def _resolve_download_home(ctx: typer.Context):
+    """Resolve the BHDS home directory for commands that write local files."""
+    override = None
+    if isinstance(ctx.obj, dict):
+        override = ctx.obj.get("bhds_home_override")
+
+    try:
+        return resolve_bhds_home(override)
+    except BhdsHomeNotConfiguredError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+
+
+def _print_listing_errors(listing_errors) -> None:
+    """Print per-symbol listing errors to stderr."""
+    for entry in listing_errors:
+        logger.error("{}: {}", entry.symbol, entry.error)
+
+
+def _finalize_download_result(result: DiffResult | DownloadResult) -> None:
+    """Emit shared warnings and exit status for download-style commands."""
+    _print_listing_errors(result.listing_errors)
+    _warn_if_empty_remote(
+        total_remote=result.total_remote,
+        has_failures=result.listing_failed_symbols > 0,
+    )
+
+    if result.listing_failed_symbols > 0:
+        raise typer.Exit(code=2)
+
+
 @archive_app.command("list-files")
 def list_files_command(
     trade_type: Annotated[TradeType, typer.Argument(help="Market segment.")],
@@ -194,5 +251,82 @@ def list_files_command(
             else:
                 typer.echo(relative_path)
 
+    _warn_if_empty_remote(
+        total_remote=result.total_remote_files,
+        has_failures=result.has_failures,
+    )
+
     if result.has_failures:
+        raise typer.Exit(code=2)
+
+
+@archive_app.command("download")
+def download_command(
+    ctx: typer.Context,
+    trade_type: Annotated[TradeType, typer.Argument(help="Market segment.")],
+    symbols: Annotated[list[str] | None, typer.Argument(help="Symbols to download.")] = None,
+    data_freq: Annotated[
+        DataFrequency,
+        typer.Option("--freq", help="Partition frequency."),
+    ] = DataFrequency.daily,
+    data_type: Annotated[
+        DataType,
+        typer.Option("--type", help="Dataset type."),
+    ] = DataType.klines,
+    interval: Annotated[
+        str | None,
+        typer.Option("--interval", help="Interval for kline-class data types."),
+    ] = None,
+    dry_run: Annotated[
+        bool,
+        typer.Option("-n", "--dry-run", help="Show what would be downloaded without writing files."),
+    ] = False,
+    aria2_proxy: Annotated[
+        bool,
+        typer.Option(
+            "--aria2-proxy",
+            help="Allow aria2c to inherit system proxy environment variables.",
+        ),
+    ] = False,
+) -> None:
+    """Download archive files into the local BHDS data directory."""
+    _validate_interval(data_type, interval)
+
+    resolved_symbols = _resolve_symbols(symbols)
+    if not resolved_symbols:
+        raise typer.BadParameter("No symbols given.", param_hint="SYMBOLS")
+
+    bhds_home = _resolve_download_home(ctx)
+    workflow = ArchiveDownloadWorkflow(
+        trade_type=trade_type,
+        data_freq=data_freq,
+        data_type=data_type,
+        symbols=resolved_symbols,
+        bhds_home=bhds_home,
+        interval=interval,
+        dry_run=dry_run,
+        inherit_aria2_proxy=aria2_proxy,
+        show_progress=sys.stderr.isatty(),
+    )
+    result = asyncio.run(workflow.run())
+
+    if isinstance(result, DiffResult):
+        for entry in result.to_download:
+            typer.echo(
+                f"{entry.reason}\t{entry.remote.size}\t"
+                f"{_format_relative_path(entry.remote.key, trade_type, data_freq, data_type)}"
+            )
+        typer.echo(
+            f"{len(result.to_download)} files to download, {result.skipped} up to date",
+            err=True,
+        )
+        _finalize_download_result(result)
+        return
+
+    typer.echo(
+        f"Done: {result.downloaded} downloaded, {result.failed} failed, {result.skipped} skipped",
+        err=True,
+    )
+    _finalize_download_result(result)
+    if result.failed > 0:
         raise typer.Exit(code=2)
