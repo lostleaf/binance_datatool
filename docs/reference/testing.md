@@ -4,11 +4,13 @@
 tests/
 ├── conftest.py                 # Shared fixtures (FakeArchiveClient, sample_archive_files)
 ├── test_archive_client.py      # Archive client unit and integration tests
-├── test_archive_workflow.py    # Workflow unit and integration tests
-├── test_cli.py                 # CLI smoke tests
+├── test_archive_workflow.py    # Workflow unit and integration tests (list + download)
+├── test_cli.py                 # CLI smoke tests (list-symbols, list-files, download)
+├── test_downloader.py          # aria2 downloader unit tests (proxy, batching, retry)
 ├── test_enums.py               # common.enums property tests
 ├── test_filter.py              # Symbol filter unit tests
 ├── test_logging.py             # configure_cli_logging verbosity and format tests
+├── test_path.py                # BHDS home resolution (override, env var, missing)
 └── test_symbols.py             # Symbol inference unit and integration tests
 ```
 

@@ -1,6 +1,6 @@
 # bhds archive
 
-Archive listing commands for querying data.binance.vision.
+Archive commands for querying and downloading data from data.binance.vision.
 
 ## `list-symbols`
 
@@ -207,6 +207,137 @@ The `interval` vs `data_type.has_interval_layer` consistency check is enforced a
 all three layers (CLI, Workflow, and Client) so every entry point fails loud on the
 same contract violation. See the [archive reference](../archive.md) for S3 protocol
 details.
+
+## `download`
+
+```
+bhds [--bhds-home PATH] archive download <TRADE_TYPE> [SYMBOLS...]
+    [--freq FREQ] [--type TYPE] [--interval INTERVAL]
+    [-n | --dry-run]
+    [--aria2-proxy]
+```
+
+Downloads new or updated archive files into the local BHDS data directory.
+Requires `aria2c` to be available in `PATH`.
+
+| Argument / Option | Type | Default | Description |
+|-------------------|------|---------|-------------|
+| `TRADE_TYPE` | `TradeType` | *(required)* | Market segment (positional argument). |
+| `SYMBOLS` | `list[str]` | *(see below)* | Symbols to download, as variadic positional arguments. Same resolution rules as `list-files`. |
+| `--freq` | `DataFrequency` | `daily` | Partition frequency. |
+| `--type` | `DataType` | `klines` | Dataset type. |
+| `--interval` | `str \| None` | `None` | Kline interval directory. Same validation as `list-files`. |
+| `-n` / `--dry-run` | `bool` | `False` | Show what would be downloaded without writing files. Outputs TSV to stdout. |
+| `--aria2-proxy` | `bool` | `False` | Allow aria2c to inherit system proxy environment variables. By default, proxy env vars (`HTTP_PROXY`, `HTTPS_PROXY`, etc.) are stripped from the aria2c subprocess. |
+
+### BHDS home resolution
+
+The download command requires a local data directory. Resolution priority:
+
+| Priority | Source |
+|----------|--------|
+| 1 | `--bhds-home` (root-level option) |
+| 2 | `$BHDS_HOME` environment variable |
+| 3 | Exit 2 with a descriptive error |
+
+See [`common.path`](../../common/path.md) for implementation details.
+
+### Diff semantics
+
+For each remote file, the workflow checks the local path at
+`bhds_home/aws_data/{archive_key}`:
+
+| Local state | Action | Reason |
+|-------------|--------|--------|
+| File does not exist | Download | `new` |
+| File exists, `local_mtime < remote_last_modified` | Download | `updated` |
+| File exists, `local_mtime >= remote_last_modified` | Skip | up to date |
+
+When a file is classified as `updated`, any stale `.verified` markers for the
+corresponding zip file are deleted before downloading. Both legacy markers
+(`file.zip.verified`) and timestamped markers (`file.zip.<ts>.verified`) are
+cleaned.
+
+### Dry-run output
+
+In dry-run mode (`-n`), the command prints a three-column TSV to stdout:
+
+```
+new	1048	BTCUSDT/BTCUSDT-fundingRate-2026-03.zip
+updated	105	BTCUSDT/BTCUSDT-fundingRate-2026-03.zip.CHECKSUM
+```
+
+Columns: `reason<TAB>size_bytes<TAB>relative_path`. A summary line is printed
+to stderr: `N files to download, M up to date`.
+
+### Normal output
+
+In download mode, progress is shown on stderr with:
+- Scan summary: symbol count and file counts
+- Per-batch status via tqdm progress bar (only when stderr is a TTY)
+- Final summary: `Done: N downloaded, M failed, K skipped`
+
+### Exit codes
+
+| Situation | Exit code |
+|-----------|-----------|
+| All files downloaded successfully | `0` |
+| Any symbol listing failed | `2` |
+| Any download failed | `2` |
+| BHDS_HOME not configured | `2` |
+| Argument validation error | `2` |
+
+### Composition with other commands
+
+```
+# Dry-run: preview what would be downloaded
+bhds --bhds-home ~/data archive download um --freq monthly --type fundingRate -n BTCUSDT
+
+# Download with proxy passthrough
+bhds archive download um --type klines --interval 1m --aria2-proxy BTCUSDT ETHUSDT
+
+# Pipe from list-symbols
+bhds archive list-symbols um --quote USDT --exclude-stables \
+  | bhds archive download um --type klines --interval 1m
+```
+
+### Data flow
+
+```
+User runs:
+  bhds --bhds-home ~/data archive download um --type fundingRate BTCUSDT
+
+  ┌──────────────────────────────────────────────────────┐
+  │ CLI layer  (bhds/cli/archive.py)                     │
+  │  Validates interval vs data_type; resolves symbols   │
+  │  from args or stdin; resolves BHDS home from         │
+  │  --bhds-home or $BHDS_HOME; constructs the download  │
+  │  workflow; prints dry-run TSV or download summary;    │
+  │  logs listing errors to stderr and exits 2 on fail.  │
+  └──────────────────────┬───────────────────────────────┘
+                         │ trade_type, data_freq, data_type,
+                         │ symbols, bhds_home, interval,
+                         │ dry_run, inherit_aria2_proxy
+  ┌──────────────────────▼───────────────────────────────┐
+  │ Workflow  (bhds/workflow/archive.py)                 │
+  │  Delegates to ArchiveListFilesWorkflow for remote    │
+  │  listing; computes diff (new/updated/skipped) by     │
+  │  comparing local timestamps; invalidates stale       │
+  │  .verified markers; invokes aria2 downloader with    │
+  │  batch retry.                                        │
+  └──────────────────────┬───────────────────────────────┘
+                         │
+          ┌──────────────┴──────────────┐
+          │                             │
+  ┌───────▼───────────────┐   ┌────────▼──────────────────┐
+  │ Archive Client         │   │ Downloader                │
+  │  (bhds/archive/        │   │  (bhds/archive/           │
+  │   client.py)           │   │   downloader.py)          │
+  │  Concurrent S3 file    │   │  aria2c batch download    │
+  │  listings              │   │  with retry and proxy     │
+  │                        │   │  control                  │
+  └────────────────────────┘   └───────────────────────────┘
+```
 
 ---
 

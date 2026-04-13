@@ -124,6 +124,72 @@ Returns `None` when every applicable argument is at its no-op default, so caller
 the result straight to `ArchiveListSymbolsWorkflow` and short-circuit filtering when no
 constraints are active.
 
+## Archive Downloader
+
+Aria2-backed batch download helpers. Declared in `bhds/archive/downloader.py` and
+re-exported from `bhds/archive/__init__`.
+
+### `DownloadRequest`
+
+Immutable `@dataclass(slots=True, frozen=True)` describing a single direct-download task.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `url` | `str` | Full download URL (built from `S3_DOWNLOAD_PREFIX` + archive key). |
+| `local_path` | `Path` | Target filesystem path. Parent directories are created automatically. |
+
+### `download_archive_files()`
+
+```python
+from binance_datatool.bhds.archive import download_archive_files, DownloadRequest
+
+result = download_archive_files(
+    requests,
+    inherit_proxy=False,
+    batch_size=4096,
+    max_tries=3,
+    progress_callback=None,
+)
+```
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `requests` | *(required)* | Sequence of `DownloadRequest` items to download. |
+| `inherit_proxy` | *(required)* | When `False`, proxy env vars (`HTTP_PROXY`, `HTTPS_PROXY`, etc.) are stripped from the aria2c subprocess environment. When `True`, aria2c inherits the caller's proxy settings. |
+| `batch_size` | `4096` | Maximum files per aria2c invocation. Larger sets are chunked. |
+| `max_tries` | `3` | Maximum retry rounds for failed batches. Each retry re-runs the entire failed batch. |
+| `progress_callback` | `None` | Optional `Callable[[BatchProgressEvent], None]` invoked at batch lifecycle events. |
+
+Returns an `Aria2DownloadResult`.
+
+Aria2 is invoked with `--allow-overwrite=true` and `--auto-file-renaming=false` to
+ensure updated files replace existing ones without `.1.zip` renaming.
+
+### `Aria2DownloadResult`
+
+| Field / Property | Type | Description |
+|------------------|------|-------------|
+| `requested` | `int` | Total number of files requested. |
+| `failed_requests` | `list[DownloadRequest]` | Requests that still failed after all retries. |
+| `succeeded` | `int` *(property)* | `requested - len(failed_requests)`. |
+
+### `BatchProgressEvent`
+
+Frozen dataclass payload for the progress callback.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `phase` | `str` | One of `"start"`, `"success"`, `"retry"`, `"failed"`. |
+| `batch_index` | `int` | 1-based index within the current retry round. |
+| `total_batches` | `int` | Total batches in the current retry round. |
+| `requested` | `int` | Number of files in this batch. |
+| `attempt` | `int` | Current retry attempt (1-based). |
+| `max_tries` | `int` | Maximum retry attempts configured. |
+
+### `Aria2NotFoundError`
+
+Custom `FileNotFoundError` subclass raised when `aria2c` is not available in `PATH`.
+
 For S3 XML protocol details (request format, pagination, retry, proxy), see
 [S3 Listing Protocol](s3-protocol.md).
 

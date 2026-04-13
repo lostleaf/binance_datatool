@@ -134,6 +134,108 @@ Aggregate result for `ArchiveListFilesWorkflow.run()`.
 |------------------|------|-------------|
 | `per_symbol` | `list[SymbolListFilesResult]` | One entry per requested symbol, in caller-provided input order. |
 | `has_failures` | `bool` *(property)* | `True` when any `per_symbol` entry has a non-`None` `error`. Used by the CLI to set exit code 2. |
+| `total_remote_files` | `int` *(property)* | Total number of successfully listed remote files across all symbols. |
+
+## `ArchiveDownloadWorkflow`
+
+Diffs remote archive listings against local files and optionally downloads new or
+updated files via aria2c.
+
+```python
+from binance_datatool.bhds.workflow.archive import (
+    ArchiveDownloadWorkflow,
+    DiffResult,
+    DownloadResult,
+)
+from binance_datatool.common import DataFrequency, DataType, TradeType
+
+workflow = ArchiveDownloadWorkflow(
+    trade_type=TradeType.um,
+    data_freq=DataFrequency.monthly,
+    data_type=DataType.funding_rate,
+    symbols=["BTCUSDT"],
+    bhds_home=Path("/data/bhds"),
+)
+result = await workflow.run()
+```
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `trade_type` | *(required)* | Market segment to query. |
+| `data_freq` | *(required)* | Partition frequency. |
+| `data_type` | *(required)* | Dataset type. |
+| `symbols` | *(required)* | Symbols to download, preserving caller order. |
+| `bhds_home` | *(required)* | Root directory for local BHDS data storage. |
+| `interval` | `None` | Kline interval directory. Required for kline-class data types. |
+| `dry_run` | `False` | When `True`, compute the diff without downloading. |
+| `inherit_aria2_proxy` | `False` | Whether aria2c should inherit proxy env vars. |
+| `show_progress` | `False` | Whether to display a tqdm progress bar on stderr. |
+| `client` | `None` | Optional pre-configured `ArchiveClient`. |
+| `download_func` | `None` | Optional download callable for dependency injection. Defaults to `download_archive_files`. |
+
+### `run()`
+
+```python
+async def run(self) -> DiffResult | DownloadResult
+```
+
+1. Delegates to `ArchiveListFilesWorkflow` to fetch remote file metadata for all
+   requested symbols concurrently.
+2. Computes a diff by comparing each remote file against the local path under
+   `bhds_home/aws_data/`. A file is skipped when its local copy exists and
+   `local_mtime >= remote_last_modified`; otherwise it is classified as `"new"`
+   or `"updated"`.
+3. In dry-run mode, returns a `DiffResult` immediately.
+4. Otherwise, invalidates stale `.verified` markers for updated zip/checksum files,
+   then downloads via `download_archive_files` with batch retry and optional tqdm
+   progress.
+
+Returns `DiffResult` when `dry_run=True`, otherwise `DownloadResult`.
+
+## `DiffEntry`
+
+One file selected for download.
+
+| Field / Property | Type | Description |
+|------------------|------|-------------|
+| `remote` | `ArchiveFile` | Remote file metadata. |
+| `local_path` | `Path` | Target local path under `bhds_home/aws_data/`. |
+| `reason` | `Literal["new", "updated"]` | Why this file was selected. |
+| `url` | `str` *(property)* | Full download URL built from `S3_DOWNLOAD_PREFIX` + key. |
+
+## `DiffResult`
+
+Returned by `ArchiveDownloadWorkflow.run()` in dry-run mode.
+
+| Field / Property | Type | Description |
+|------------------|------|-------------|
+| `to_download` | `list[DiffEntry]` | Files selected for download. |
+| `skipped` | `int` | Files already up to date locally. |
+| `total_remote` | `int` | Total remote files listed. |
+| `listing_errors` | `list[SymbolListingError]` | Per-symbol listing failures. |
+| `listing_failed_symbols` | `int` *(property)* | Count of failed symbol listings. |
+
+## `DownloadResult`
+
+Returned by `ArchiveDownloadWorkflow.run()` after a real download.
+
+| Field / Property | Type | Description |
+|------------------|------|-------------|
+| `total_remote` | `int` | Total remote files listed. |
+| `skipped` | `int` | Files already up to date locally. |
+| `downloaded` | `int` | Files successfully downloaded. |
+| `failed` | `int` | Files that failed after all retries. |
+| `listing_errors` | `list[SymbolListingError]` | Per-symbol listing failures. |
+| `listing_failed_symbols` | `int` *(property)* | Count of failed symbol listings. |
+
+## `SymbolListingError`
+
+Structured per-symbol listing error, used by both `DiffResult` and `DownloadResult`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `symbol` | `str` | The symbol whose listing failed. |
+| `error` | `str` | Text description of the failure. |
 
 ---
 

@@ -15,24 +15,26 @@ src/binance_datatool/
 │   ├── constants.py         # S3 settings, quote assets, stablecoins, leverage rules
 │   ├── enums.py             # TradeType, DataFrequency, DataType, ContractType
 │   ├── logging.py           # configure_cli_logging for CLI entry points
+│   ├── path.py              # BHDS_HOME resolution and BhdsHomeNotConfiguredError
 │   ├── types.py             # SymbolInfoBase, SpotSymbolInfo, UmSymbolInfo, CmSymbolInfo
 │   └── symbols.py           # infer_spot_info, infer_um_info, infer_cm_info
 │
 └── bhds/                    # Binance Historical Data Service
     ├── __init__.py
     │
-    ├── archive/             # S3 data access and typed filters
-    │   ├── __init__.py      # Re-exports ArchiveClient, ArchiveFile, list_symbols, symbol filters
+    ├── archive/             # S3 data access, typed filters, and download helpers
+    │   ├── __init__.py      # Re-exports client, filter, and downloader symbols
     │   ├── client.py        # HTTP client, XML parsing, ArchiveFile metadata
+    │   ├── downloader.py    # aria2c batch downloader with retry and proxy control
     │   └── filter.py        # Spot/Um/Cm symbol filters and build_symbol_filter()
     │
     ├── workflow/            # Business logic orchestration
     │   ├── __init__.py
-    │   └── archive.py       # ArchiveListSymbolsWorkflow, ArchiveListFilesWorkflow, result dataclasses
+    │   └── archive.py       # ArchiveListSymbolsWorkflow, ArchiveListFilesWorkflow, ArchiveDownloadWorkflow
     │
     └── cli/                 # Typer CLI layer
-        ├── __init__.py      # Root callback with -v/-vv verbosity; sub-command registration
-        └── archive.py       # list-symbols and list-files commands
+        ├── __init__.py      # Root callback with -v/-vv verbosity, --bhds-home; sub-command registration
+        └── archive.py       # list-symbols, list-files, and download commands
 ```
 
 ## Layered Design
