@@ -13,6 +13,7 @@ from binance_datatool.bhds.archive import (
     ArchiveClient,
     ArchiveFile,
     Aria2DownloadResult,
+    BatchProgressEvent,
     CmSymbolFilter,
     SpotSymbolFilter,
     UmSymbolFilter,
@@ -385,3 +386,76 @@ async def test_archive_download_workflow_returns_listing_failures_and_download_c
     assert result.listing_failed_symbols == 1
     assert result.listing_errors[0].symbol == "ETHUSDT"
     assert (tmp_path / "missing-home").exists()
+
+
+def test_archive_download_workflow_uses_tqdm_write_for_batch_messages(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    """Progress-mode batch messages should go through tqdm to preserve the bar state."""
+
+    class FakeTqdm:
+        def __init__(
+            self,
+            *,
+            total: int,
+            disable: bool,
+            file,
+            unit: str,
+            leave: bool,
+        ) -> None:
+            self.total = total
+            self.disable = disable
+            self.file = file
+            self.unit = unit
+            self.leave = leave
+            self.messages: list[str] = []
+            self.updates: list[int] = []
+
+        def write(self, message: str, *, file) -> None:
+            assert file is self.file
+            self.messages.append(message)
+
+        def update(self, amount: int) -> None:
+            self.updates.append(amount)
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr("binance_datatool.bhds.workflow.archive.tqdm", FakeTqdm)
+
+    workflow = ArchiveDownloadWorkflow(
+        trade_type=TradeType.um,
+        data_freq=DataFrequency.monthly,
+        data_type=DataType.funding_rate,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        dry_run=False,
+        client=FakeArchiveClient(),
+        show_progress=True,
+    )
+
+    callback, progress_bar = workflow._build_progress_callback(total_requests=2)
+    callback(
+        BatchProgressEvent(
+            phase="start",
+            batch_index=1,
+            total_batches=1,
+            requested=2,
+            attempt=1,
+            max_tries=3,
+        )
+    )
+    callback(
+        BatchProgressEvent(
+            phase="success",
+            batch_index=1,
+            total_batches=1,
+            requested=2,
+            attempt=1,
+            max_tries=3,
+        )
+    )
+
+    assert progress_bar.messages == ["Downloading batch 1/1 (2 files)..."]
+    assert progress_bar.updates == [2]

@@ -441,22 +441,27 @@ class ArchiveDownloadWorkflow:
             disable=not self.show_progress,
             file=sys.stderr,
             unit="file",
-            leave=False,
+            leave=True,
         )
+
+        def emit(message: str) -> None:
+            """Write batch-status messages without corrupting the tqdm cursor state."""
+            if self.show_progress:
+                progress_bar.write(message, file=sys.stderr)
+                return
+            print(message, file=sys.stderr)
 
         def callback(event: BatchProgressEvent) -> None:
             if event.phase == "start":
                 if event.attempt == 1:
-                    print(
+                    emit(
                         f"Downloading batch {event.batch_index}/{event.total_batches} "
-                        f"({event.requested} files)...",
-                        file=sys.stderr,
+                        f"({event.requested} files)..."
                     )
                 else:
-                    print(
+                    emit(
                         f"Retrying batch {event.batch_index}/{event.total_batches} "
-                        f"({event.requested} files), attempt {event.attempt}/{event.max_tries}...",
-                        file=sys.stderr,
+                        f"({event.requested} files), attempt {event.attempt}/{event.max_tries}..."
                     )
                 return
 
