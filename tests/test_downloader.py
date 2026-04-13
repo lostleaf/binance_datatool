@@ -19,7 +19,11 @@ def test_download_archive_files_raises_when_aria2_is_missing(monkeypatch, tmp_pa
 
     with pytest.raises(Aria2NotFoundError, match="aria2c executable not found"):
         download_archive_files(
-            [DownloadRequest(url="https://data.binance.vision/data/a.zip", local_path=tmp_path / "a.zip")],
+            [
+                DownloadRequest(
+                    url="https://data.binance.vision/data/a.zip", local_path=tmp_path / "a.zip"
+                )
+            ],
             inherit_proxy=False,
         )
 
@@ -73,7 +77,12 @@ def test_download_archive_files_can_inherit_proxy_env(monkeypatch, tmp_path) -> 
     monkeypatch.setattr("subprocess.run", fake_run)
 
     download_archive_files(
-        [DownloadRequest(url="https://data.binance.vision/data/spot/file.zip", local_path=tmp_path / "file.zip")],
+        [
+            DownloadRequest(
+                url="https://data.binance.vision/data/spot/file.zip",
+                local_path=tmp_path / "file.zip",
+            )
+        ],
         inherit_proxy=True,
     )
 

@@ -216,8 +216,7 @@ async def test_archive_download_workflow_builds_new_updated_and_skipped_diff(tmp
     )
     remote_updated = ArchiveFile(
         key=(
-            "data/futures/um/monthly/fundingRate/BTCUSDT/"
-            "BTCUSDT-fundingRate-2026-02.zip.CHECKSUM"
+            "data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-02.zip.CHECKSUM"
         ),
         size=10,
         last_modified=datetime(2026, 4, 2, 8, 6, 34, tzinfo=UTC),
@@ -245,7 +244,9 @@ async def test_archive_download_workflow_builds_new_updated_and_skipped_diff(tmp
         symbols=["BTCUSDT"],
         bhds_home=tmp_path,
         dry_run=True,
-        client=FakeArchiveClient(files_by_symbol={"BTCUSDT": [remote_new, remote_updated, remote_skipped]}),
+        client=FakeArchiveClient(
+            files_by_symbol={"BTCUSDT": [remote_new, remote_updated, remote_skipped]}
+        ),
     )
 
     result = await workflow.run()
@@ -266,8 +267,7 @@ async def test_archive_download_workflow_invalidates_new_and_legacy_verified_mar
     """Updated zip or checksum files should clear all stale verification markers."""
     checksum_remote = ArchiveFile(
         key=(
-            "data/futures/um/monthly/fundingRate/BTCUSDT/"
-            "BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
+            "data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
         ),
         size=10,
         last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),
@@ -315,8 +315,7 @@ async def test_archive_download_workflow_dry_run_keeps_verified_markers(tmp_path
     """Dry-run mode should not mutate verification markers."""
     checksum_remote = ArchiveFile(
         key=(
-            "data/futures/um/monthly/fundingRate/BTCUSDT/"
-            "BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
+            "data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip.CHECKSUM"
         ),
         size=10,
         last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),

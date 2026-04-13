@@ -609,8 +609,10 @@ def test_cli_download_dry_run_outputs_tsv_and_summary(monkeypatch) -> None:
                         size=1048,
                         last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
                     ),
-                    local_path=Path("/tmp/bhds/aws_data/data/futures/um/monthly/fundingRate/BTCUSDT/"
-                                    "BTCUSDT-fundingRate-2026-03.zip"),
+                    local_path=Path(
+                        "/tmp/bhds/aws_data/data/futures/um/monthly/fundingRate/BTCUSDT/"
+                        "BTCUSDT-fundingRate-2026-03.zip"
+                    ),
                     reason="new",
                 )
             ],
@@ -642,10 +644,7 @@ def test_cli_download_dry_run_outputs_tsv_and_summary(monkeypatch) -> None:
     )
 
     assert result.exit_code == 0
-    assert (
-        result.stdout
-        == "new\t1048\tBTCUSDT/BTCUSDT-fundingRate-2026-03.zip\n"
-    )
+    assert result.stdout == "new\t1048\tBTCUSDT/BTCUSDT-fundingRate-2026-03.zip\n"
     assert "1 files to download, 12 up to date" in result.stderr
 
 

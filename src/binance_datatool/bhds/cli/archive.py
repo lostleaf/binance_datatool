@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import sys
 from datetime import UTC
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 from loguru import logger
@@ -18,6 +18,7 @@ from binance_datatool.bhds.workflow.archive import (
     ArchiveListSymbolsWorkflow,
     DiffResult,
     DownloadResult,
+    SymbolListingError,
 )
 from binance_datatool.common import (
     BhdsHomeNotConfiguredError,
@@ -27,6 +28,10 @@ from binance_datatool.common import (
     TradeType,
     resolve_bhds_home,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
 
 
 @archive_app.command("list-symbols")
@@ -142,11 +147,9 @@ def _warn_if_empty_remote(*, total_remote: int, has_failures: bool) -> None:
     )
 
 
-def _resolve_download_home(ctx: typer.Context):
+def _resolve_download_home(ctx: typer.Context) -> Path:
     """Resolve the BHDS home directory for commands that write local files."""
-    override = None
-    if isinstance(ctx.obj, dict):
-        override = ctx.obj.get("bhds_home_override")
+    override = ctx.obj.get("bhds_home_override")
 
     try:
         return resolve_bhds_home(override)
@@ -155,7 +158,7 @@ def _resolve_download_home(ctx: typer.Context):
         raise typer.Exit(code=2) from exc
 
 
-def _print_listing_errors(listing_errors) -> None:
+def _print_listing_errors(listing_errors: Sequence[SymbolListingError]) -> None:
     """Print per-symbol listing errors to stderr."""
     for entry in listing_errors:
         logger.error("{}: {}", entry.symbol, entry.error)
@@ -279,7 +282,9 @@ def download_command(
     ] = None,
     dry_run: Annotated[
         bool,
-        typer.Option("-n", "--dry-run", help="Show what would be downloaded without writing files."),
+        typer.Option(
+            "-n", "--dry-run", help="Show what would be downloaded without writing files."
+        ),
     ] = False,
     aria2_proxy: Annotated[
         bool,

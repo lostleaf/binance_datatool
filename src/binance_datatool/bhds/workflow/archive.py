@@ -332,7 +332,21 @@ class ArchiveDownloadWorkflow:
         client: ArchiveClient | None = None,
         download_func: Callable[..., Aria2DownloadResult] | None = None,
     ) -> None:
-        """Initialize the download workflow."""
+        """Initialize the download workflow.
+
+        Args:
+            trade_type: Market segment to query.
+            data_freq: Partition frequency.
+            data_type: Dataset type.
+            symbols: Symbols to download, preserving caller order.
+            bhds_home: Root directory for local BHDS data storage.
+            interval: Interval directory for kline-class data types.
+            dry_run: When ``True``, compute the diff without downloading.
+            inherit_aria2_proxy: Whether aria2c should inherit proxy env vars.
+            show_progress: Whether to display a tqdm progress bar on stderr.
+            client: Optional pre-configured archive client.
+            download_func: Optional download callable for dependency injection.
+        """
         self.trade_type = trade_type
         self.data_freq = data_freq
         self.data_type = data_type
@@ -362,12 +376,17 @@ class ArchiveDownloadWorkflow:
 
             for remote_file in entry.files:
                 local_path = self._local_path_for_key(remote_file.key)
-                if local_path.exists() and local_path.stat().st_mtime >= remote_file.last_modified.timestamp():
+                if (
+                    local_path.exists()
+                    and local_path.stat().st_mtime >= remote_file.last_modified.timestamp()
+                ):
                     skipped += 1
                     continue
 
                 reason: Literal["new", "updated"] = "updated" if local_path.exists() else "new"
-                to_download.append(DiffEntry(remote=remote_file, local_path=local_path, reason=reason))
+                to_download.append(
+                    DiffEntry(remote=remote_file, local_path=local_path, reason=reason)
+                )
 
         return DiffResult(
             to_download=to_download,
@@ -447,7 +466,12 @@ class ArchiveDownloadWorkflow:
         return callback, progress_bar
 
     async def run(self) -> DiffResult | DownloadResult:
-        """Execute the workflow and return either a diff or a download result."""
+        """Execute the workflow and return either a diff or a download result.
+
+        Returns:
+            :class:`DiffResult` when ``dry_run`` is enabled, otherwise
+            :class:`DownloadResult` with aggregated counts and errors.
+        """
         list_workflow = ArchiveListFilesWorkflow(
             trade_type=self.trade_type,
             data_freq=self.data_freq,

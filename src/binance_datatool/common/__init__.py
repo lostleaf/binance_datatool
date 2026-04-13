@@ -22,11 +22,11 @@ from binance_datatool.common.types import (
 )
 
 __all__ = [
+    "BhdsHomeNotConfiguredError",
     "CmSymbolInfo",
     "ContractType",
     "DataFrequency",
     "DataType",
-    "BhdsHomeNotConfiguredError",
     "LEVERAGE_EXCLUDES",
     "LEVERAGE_SUFFIXES",
     "QUOTE_ASSETS",
