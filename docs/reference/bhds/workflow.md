@@ -237,6 +237,101 @@ Structured per-symbol listing error, used by both `DiffResult` and `DownloadResu
 | `symbol` | `str` | The symbol whose listing failed. |
 | `error` | `str` | Text description of the failure. |
 
+## `ArchiveVerifyWorkflow`
+
+Scans local archive directories, classifies zip files into verify / skip / orphan
+buckets, and optionally verifies SHA256 checksums in parallel using a process pool.
+
+```python
+from binance_datatool.bhds.workflow.archive import (
+    ArchiveVerifyWorkflow,
+    VerifyDiffResult,
+    VerifyResult,
+)
+from binance_datatool.common import DataFrequency, DataType, TradeType
+
+workflow = ArchiveVerifyWorkflow(
+    trade_type=TradeType.um,
+    data_freq=DataFrequency.daily,
+    data_type=DataType.klines,
+    symbols=["BTCUSDT"],
+    bhds_home=Path("/data/bhds"),
+    interval="1m",
+)
+result = workflow.run()
+```
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `trade_type` | *(required)* | Market segment. |
+| `data_freq` | *(required)* | Partition frequency. |
+| `data_type` | *(required)* | Dataset type. |
+| `symbols` | *(required)* | Symbols to verify, preserving caller order. |
+| `bhds_home` | *(required)* | Root directory for local BHDS data storage. |
+| `interval` | `None` | Kline interval directory. Required for kline-class data types. |
+| `keep_failed` | `False` | When `True`, retain failed zip and checksum files instead of deleting them. |
+| `dry_run` | `False` | When `True`, scan and classify files without verifying or mutating the filesystem. |
+| `n_workers` | `None` | Process pool size. Defaults to `max(1, cpu_count - 2)`. |
+| `show_progress` | `False` | Whether to display a tqdm progress bar on stderr. |
+
+### `run()`
+
+```python
+def run(self) -> VerifyDiffResult | VerifyResult
+```
+
+This is a **synchronous** method (no `async`) because the verify workflow is purely
+local I/O and CPU work — no network access is needed.
+
+1. **Scan** — walks each symbol's local directory under
+   `bhds_home/aws_data/data/{s3_path}/{freq}/{type}/{symbol}[/{interval}]`,
+   classifying each `.zip` file as pending verification, already verified (valid
+   timestamped marker), orphan zip (missing `.CHECKSUM` sibling), or orphan checksum
+   (missing `.zip` sibling).
+2. In **dry-run mode**, returns a `VerifyDiffResult` immediately.
+3. **Orphan cleanup** — orphan zips have their markers cleared (zip file is kept);
+   orphan checksums and their markers are deleted.
+4. **Parallel verification** — submits `verify_single_file` tasks to a
+   `ProcessPoolExecutor` with `spawn` context. SHA256 is CPU-intensive, so process
+   isolation avoids GIL contention.
+5. **Post-verify** — for each result: clears old markers, writes a fresh timestamped
+   marker on pass, or deletes the zip + checksum on failure (unless `keep_failed`).
+
+Returns `VerifyDiffResult` when `dry_run=True`, otherwise `VerifyResult`.
+
+### Timestamped marker protocol
+
+Verified files are tracked by marker files named `{zip_name}.{ts}.verified`, where
+`ts = max(now, ceil(max(zip_mtime, checksum_mtime)))`. A marker is valid when
+`max(ts_markers) >= ceil(max(zip_mtime, checksum_mtime))`. Legacy markers without a
+timestamp (`file.zip.verified`) are treated as invalid and force re-verification.
+
+## `VerifyDiffResult`
+
+Returned by `ArchiveVerifyWorkflow.run()` in dry-run mode.
+
+| Field / Property | Type | Description |
+|------------------|------|-------------|
+| `to_verify` | `list[Path]` | Zip files pending SHA256 verification. |
+| `skipped` | `int` | Zip files with a valid timestamped marker. |
+| `orphan_zips` | `list[Path]` | Zip files without a sibling `.CHECKSUM`. |
+| `orphan_checksums` | `list[Path]` | `.CHECKSUM` files without a sibling `.zip`. |
+| `total_zips` | `int` *(property)* | `len(to_verify) + skipped + len(orphan_zips)`. |
+
+## `VerifyResult`
+
+Returned by `ArchiveVerifyWorkflow.run()` after a real verify run.
+
+| Field / Property | Type | Description |
+|------------------|------|-------------|
+| `skipped` | `int` | Zip files with a valid marker (not re-verified). |
+| `verified` | `int` | Zip files that passed verification. |
+| `orphan_zips` | `int` | Orphan zips whose markers were cleared. |
+| `orphan_checksums` | `int` | Orphan checksums that were deleted. |
+| `failed_details` | `dict[Path, str]` | Failed zip paths mapped to failure descriptions. |
+| `failed` | `int` *(property)* | `len(failed_details)`. |
+| `total_zips` | `int` *(property)* | `skipped + verified + failed + orphan_zips`. |
+
 ---
 
 See also: [Archive client](archive.md) | [CLI commands](cli/archive.md) | [Architecture](../../architecture.md)

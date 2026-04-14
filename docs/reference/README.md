@@ -22,7 +22,7 @@ Reference documentation for the importable modules and CLI packages in
 | [bhds.archive (S3 protocol)](bhds/s3-protocol.md) | S3 XML listing protocol, pagination, retry, and proxy. |
 | [bhds.workflow](bhds/workflow.md) | Business logic orchestration. |
 | [bhds.cli](bhds/cli/overview.md) | Typer CLI overview, verbosity, and sub-command index. |
-| [bhds.cli.archive](bhds/cli/archive.md) | Archive commands (`list-symbols`, `list-files`, `download`). |
+| [bhds.cli.archive](bhds/cli/archive.md) | Archive commands (`list-symbols`, `list-files`, `download`, `verify`). |
 
 ---
 

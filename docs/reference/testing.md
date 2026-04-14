@@ -4,8 +4,9 @@
 tests/
 ├── conftest.py                 # Shared fixtures (FakeArchiveClient, sample_archive_files)
 ├── test_archive_client.py      # Archive client unit and integration tests
-├── test_archive_workflow.py    # Workflow unit and integration tests (list + download)
-├── test_cli.py                 # CLI smoke tests (list-symbols, list-files, download)
+├── test_archive_workflow.py    # Workflow unit and integration tests (list + download + verify)
+├── test_checksum.py            # checksum module unit tests (calc, read, verify_single_file)
+├── test_cli.py                 # CLI smoke tests (list-symbols, list-files, download, verify)
 ├── test_downloader.py          # aria2 downloader unit tests (proxy, batching, retry)
 ├── test_enums.py               # common.enums property tests
 ├── test_filter.py              # Symbol filter unit tests

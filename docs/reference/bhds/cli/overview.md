@@ -10,7 +10,8 @@ bhds [-v | -vv] [--bhds-home PATH]   # Root Typer app with shared options
 └── archive                          # Sub-command group
     ├── list-symbols                 # Command
     ├── list-files                   # Command
-    └── download                     # Command
+    ├── download                     # Command
+    └── verify                       # Command
 ```
 
 ## Root Callback

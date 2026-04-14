@@ -55,8 +55,8 @@ class ArchiveListDatesWorkflow:
         ...
 ```
 
-See `ArchiveListSymbolsWorkflow`, `ArchiveListFilesWorkflow`, and `ArchiveDownloadWorkflow`
-in `bhds/workflow/archive.py` for real examples.
+See `ArchiveListSymbolsWorkflow`, `ArchiveListFilesWorkflow`, `ArchiveDownloadWorkflow`,
+and `ArchiveVerifyWorkflow` in `bhds/workflow/archive.py` for real examples.
 
 ### Step 3: Add a CLI Command
 
@@ -75,8 +75,8 @@ def list_dates_command(
         typer.echo(date)
 ```
 
-See `list_symbols_command`, `list_files_command`, and `download_command` in
-`bhds/cli/archive.py` for real examples.
+See `list_symbols_command`, `list_files_command`, `download_command`, and
+`verify_command` in `bhds/cli/archive.py` for real examples.
 
 ### Step 4: Add Tests
 

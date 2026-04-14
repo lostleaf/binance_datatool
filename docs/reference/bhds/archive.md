@@ -190,6 +190,58 @@ Frozen dataclass payload for the progress callback.
 
 Custom `FileNotFoundError` subclass raised when `aria2c` is not available in `PATH`.
 
+## Archive Checksum
+
+SHA256 verification helpers for local archive files. Declared in
+`bhds/archive/checksum.py` and re-exported from `bhds/archive/__init__`.
+
+### `VerifyFileResult`
+
+Mutable `@dataclass(slots=True)` describing the verification outcome for a single zip file.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `zip_path` | `Path` | Path to the zip file that was verified. |
+| `passed` | `bool` | `True` when the computed SHA256 matches the expected checksum. |
+| `detail` | `str` | Empty on success; describes the failure otherwise (`"checksum mismatch"`, or the exception message for I/O errors). |
+
+### `calc_sha256()`
+
+```python
+from binance_datatool.bhds.archive import calc_sha256
+
+hex_digest = calc_sha256(file_path)
+```
+
+Computes the SHA256 hex digest of a file using `hashlib.file_digest`.
+
+### `read_expected_checksum()`
+
+```python
+from binance_datatool.bhds.archive import read_expected_checksum
+
+expected = read_expected_checksum(zip_path)
+```
+
+Reads the first whitespace-delimited token from the sibling `.CHECKSUM` file
+(`{zip_path}.CHECKSUM`). Raises `FileNotFoundError` when the checksum file does not
+exist and `ValueError` when the file is empty or has no parseable token.
+
+### `verify_single_file()`
+
+```python
+from binance_datatool.bhds.archive import verify_single_file
+
+result = verify_single_file(zip_path)
+```
+
+Verifies a single zip file against its sibling checksum file. Returns a
+`VerifyFileResult` — never raises. Exceptions during checksum reading or
+SHA256 computation are caught and reported via `result.detail`.
+
+This function is the unit of work submitted to `ProcessPoolExecutor` by
+`ArchiveVerifyWorkflow`.
+
 For S3 XML protocol details (request format, pagination, retry, proxy), see
 [S3 Listing Protocol](s3-protocol.md).
 

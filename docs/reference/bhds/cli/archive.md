@@ -312,7 +312,7 @@ User runs:
   │  Validates interval vs data_type; resolves symbols   │
   │  from args or stdin; resolves BHDS home from         │
   │  --bhds-home or $BHDS_HOME; constructs the download  │
-  │  workflow; prints dry-run TSV or download summary;    │
+  │  workflow; prints dry-run TSV or download summary;   │
   │  logs listing errors to stderr and exits 2 on fail.  │
   └──────────────────────┬───────────────────────────────┘
                          │ trade_type, data_freq, data_type,
@@ -329,7 +329,7 @@ User runs:
                          │
           ┌──────────────┴──────────────┐
           │                             │
-  ┌───────▼───────────────┐   ┌────────▼──────────────────┐
+  ┌───────▼────────────────┐   ┌────────▼──────────────────┐
   │ Archive Client         │   │ Downloader                │
   │  (bhds/archive/        │   │  (bhds/archive/           │
   │   client.py)           │   │   downloader.py)          │
@@ -337,6 +337,147 @@ User runs:
   │  listings              │   │  with retry and proxy     │
   │                        │   │  control                  │
   └────────────────────────┘   └───────────────────────────┘
+```
+
+## `verify`
+
+```
+bhds [--bhds-home PATH] archive verify <TRADE_TYPE> [SYMBOLS...]
+    [--freq FREQ] [--type TYPE] [--interval INTERVAL]
+    [--keep-failed]
+    [-n | --dry-run]
+```
+
+Verifies local archive zip files against their sibling `.CHECKSUM` files using
+SHA256. Requires `BHDS_HOME` to be configured (same resolution as `download`).
+
+| Argument / Option | Type | Default | Description |
+|-------------------|------|---------|-------------|
+| `TRADE_TYPE` | `TradeType` | *(required)* | Market segment (positional argument). |
+| `SYMBOLS` | `list[str]` | *(see below)* | Symbols to verify, as variadic positional arguments. Same resolution rules as `list-files` and `download`. |
+| `--freq` | `DataFrequency` | `daily` | Partition frequency. |
+| `--type` | `DataType` | `klines` | Dataset type. |
+| `--interval` | `str \| None` | `None` | Kline interval directory. Same validation as `list-files`. |
+| `--keep-failed` | `bool` | `False` | Keep failed zip and checksum files instead of deleting them. |
+| `-n` / `--dry-run` | `bool` | `False` | Show what would be verified without computing checksums or modifying files. |
+
+### Symbol input resolution
+
+Same convention as `list-files` and `download`: positional args win over piped
+stdin, every symbol is stripped and uppercased.
+
+### Dry-run output
+
+In dry-run mode (`-n`), the command prints one relative path per line to stdout
+for each zip file that would be verified:
+
+```
+BTCUSDT/1m/BTCUSDT-1m-2024-01-01.zip
+BTCUSDT/1m/BTCUSDT-1m-2024-01-02.zip
+```
+
+A summary line is printed to stderr:
+
+```
+12 to verify, 5 up to date, 0 orphan zip, 0 orphan checksum
+```
+
+### Normal output
+
+In verify mode, results are printed to stderr:
+
+```
+Done: 12 verified, 0 failed, 5 skipped
+```
+
+If orphans were found, an additional line describes the cleanup:
+
+```
+Cleaned 1 orphan zip markers, deleted 2 orphan checksums
+```
+
+If `--keep-failed` is enabled and there are failures:
+
+```
+Failed files were kept because --keep-failed is enabled.
+```
+
+Per-file failures are logged to stderr as `ERROR: {filename}: {detail}`.
+
+### Orphan handling
+
+| Orphan type | Action |
+|-------------|--------|
+| Zip without sibling `.CHECKSUM` | Clear all markers for the zip; **keep** the zip file. |
+| `.CHECKSUM` without sibling `.zip` | Delete the checksum file and clear its markers. |
+
+### Verified marker protocol
+
+After a successful verification, the workflow writes a timestamped marker file
+(`{zip_name}.{ts}.verified`) next to the zip. Subsequent runs skip the zip if the
+marker timestamp is still fresh relative to the zip and checksum file mtimes.
+Legacy markers without a timestamp are treated as invalid.
+
+See the [workflow reference](../workflow.md#timestamped-marker-protocol) for
+protocol details.
+
+### Exit codes
+
+| Situation | Exit code |
+|-----------|-----------|
+| All files verified successfully (including mismatches and orphan cleanup) | `0` |
+| Runtime error (e.g. process pool failure) | `2` |
+| BHDS_HOME not configured | `2` |
+| Argument validation error | `2` |
+
+### Composition with other commands
+
+```
+# Dry-run: preview what would be verified
+bhds --bhds-home ~/data archive verify um --type klines --interval 1m -n BTCUSDT
+
+# Verify and delete failed files (default)
+bhds archive verify um --type klines --interval 1m BTCUSDT ETHUSDT
+
+# Keep failed files for inspection
+bhds archive verify um --freq monthly --type fundingRate --keep-failed BTCUSDT
+
+# Pipe from list-symbols
+bhds archive list-symbols um --quote USDT --exclude-stables \
+  | bhds archive verify um --type klines --interval 1m
+```
+
+### Data flow
+
+```
+User runs:
+  bhds --bhds-home ~/data archive verify um --type klines --interval 1m BTCUSDT
+
+  ┌──────────────────────────────────────────────────────┐
+  │ CLI layer  (bhds/cli/archive.py)                     │
+  │  Validates interval vs data_type; resolves symbols   │
+  │  from args or stdin; resolves BHDS home; constructs  │
+  │  the verify workflow; prints dry-run paths or verify │
+  │  summary; logs per-file failures to stderr.          │
+  └──────────────────────┬───────────────────────────────┘
+                         │ trade_type, data_freq, data_type,
+                         │ symbols, bhds_home, interval,
+                         │ keep_failed, dry_run
+  ┌──────────────────────▼───────────────────────────────┐
+  │ Workflow  (bhds/workflow/archive.py)                 │
+  │  Scans local symbol directories; classifies zips     │
+  │  into verify/skip/orphan buckets; cleans orphans;    │
+  │  verifies SHA256 checksums in parallel via           │
+  │  ProcessPoolExecutor (spawn); writes/clears markers; │
+  │  optionally deletes failed files.                    │
+  └──────────────────────┬───────────────────────────────┘
+                         │ zip_path
+  ┌──────────────────────▼───────────────────────────────┐
+  │ Checksum  (bhds/archive/checksum.py)                 │
+  │  verify_single_file reads the .CHECKSUM sibling,     │
+  │  computes SHA256 via hashlib.file_digest, and        │
+  │  returns VerifyFileResult (passed/failed + detail).  │
+  └──────────────────────────────────────────────────────┘
 ```
 
 ---

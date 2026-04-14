@@ -22,19 +22,20 @@ src/binance_datatool/
 └── bhds/                    # Binance Historical Data Service
     ├── __init__.py
     │
-    ├── archive/             # S3 data access, typed filters, and download helpers
-    │   ├── __init__.py      # Re-exports client, filter, and downloader symbols
+    ├── archive/             # S3 data access, typed filters, checksum, and download helpers
+    │   ├── __init__.py      # Re-exports client, filter, checksum, and downloader symbols
+    │   ├── checksum.py      # SHA256 verification helpers (calc, read, verify_single_file)
     │   ├── client.py        # HTTP client, XML parsing, ArchiveFile metadata
     │   ├── downloader.py    # aria2c batch downloader with retry and proxy control
     │   └── filter.py        # Spot/Um/Cm symbol filters and build_symbol_filter()
     │
     ├── workflow/            # Business logic orchestration
     │   ├── __init__.py
-    │   └── archive.py       # ArchiveListSymbolsWorkflow, ArchiveListFilesWorkflow, ArchiveDownloadWorkflow
+    │   └── archive.py       # ArchiveListSymbolsWorkflow, ArchiveListFilesWorkflow, ArchiveDownloadWorkflow, ArchiveVerifyWorkflow
     │
     └── cli/                 # Typer CLI layer
         ├── __init__.py      # Root callback with -v/-vv verbosity, --bhds-home; sub-command registration
-        └── archive.py       # list-symbols, list-files, and download commands
+        └── archive.py       # list-symbols, list-files, download, and verify commands
 ```
 
 ## Layered Design
