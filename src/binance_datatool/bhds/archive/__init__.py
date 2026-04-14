@@ -33,11 +33,11 @@ __all__ = [
     "SpotSymbolFilter",
     "SymbolFilter",
     "UmSymbolFilter",
+    "VerifyFileResult",
     "build_symbol_filter",
     "calc_sha256",
     "download_archive_files",
     "list_symbols",
     "read_expected_checksum",
     "verify_single_file",
-    "VerifyFileResult",
 ]

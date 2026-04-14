@@ -639,7 +639,9 @@ def test_verify_workflow_keep_failed_preserves_files(tmp_path) -> None:
     base_dir = _symbol_verify_dir(tmp_path)
     failed = _write_verify_pair(base_dir, "failed.zip", content=b"failed")
     checksum_path = base_dir / "failed.zip.CHECKSUM"
-    checksum_path.write_text(f"{hashlib.sha256(b'wrong').hexdigest()}  failed.zip\n", encoding="utf-8")
+    checksum_path.write_text(
+        f"{hashlib.sha256(b'wrong').hexdigest()}  failed.zip\n", encoding="utf-8"
+    )
     legacy_marker = base_dir / "failed.zip.verified"
     legacy_marker.write_text("", encoding="utf-8")
     timestamped_marker = base_dir / "failed.zip.100.verified"

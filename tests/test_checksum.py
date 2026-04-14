@@ -11,7 +11,9 @@ def test_calc_sha256() -> None:
     """SHA256 calculation should match the known sample archive digest."""
     zip_path = Path("tests/data/BTCUSDT-1m-2020-01-01.zip")
 
-    assert calc_sha256(zip_path) == "dd579c62368ded93d3f01a1904575b932279e32936e181c062763e605793c1c2"
+    assert (
+        calc_sha256(zip_path) == "dd579c62368ded93d3f01a1904575b932279e32936e181c062763e605793c1c2"
+    )
 
 
 def test_read_expected_checksum() -> None:

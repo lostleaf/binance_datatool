@@ -794,17 +794,17 @@ def test_cli_verify_dry_run_outputs_paths_and_summary(monkeypatch) -> None:
         return VerifyDiffResult(
             to_verify=[
                 Path(
-                    "/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/"
-                    "BTCUSDT-1m-2020-01-01.zip"
+                    "/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2020-01-01.zip"
                 ),
                 Path(
-                    "/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/"
-                    "BTCUSDT-1m-2020-01-02.zip"
+                    "/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2020-01-02.zip"
                 ),
             ],
             skipped=120,
             orphan_zips=[],
-            orphan_checksums=[Path("/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/missing.zip.CHECKSUM")],
+            orphan_checksums=[
+                Path("/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/missing.zip.CHECKSUM")
+            ],
         )
 
     monkeypatch.setattr(
@@ -829,8 +829,7 @@ def test_cli_verify_dry_run_outputs_paths_and_summary(monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert result.stdout == (
-        "BTCUSDT/1m/BTCUSDT-1m-2020-01-01.zip\n"
-        "BTCUSDT/1m/BTCUSDT-1m-2020-01-02.zip\n"
+        "BTCUSDT/1m/BTCUSDT-1m-2020-01-01.zip\nBTCUSDT/1m/BTCUSDT-1m-2020-01-02.zip\n"
     )
     assert "2 to verify, 120 up to date, 0 orphan zip, 1 orphan checksum" in result.stderr
 

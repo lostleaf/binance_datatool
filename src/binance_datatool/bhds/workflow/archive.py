@@ -588,7 +588,22 @@ class ArchiveVerifyWorkflow:
         n_workers: int | None = None,
         show_progress: bool = False,
     ) -> None:
-        """Initialize the verify workflow."""
+        """Initialize the verify workflow.
+
+        Args:
+            trade_type: Market segment to query.
+            data_freq: Partition frequency.
+            data_type: Dataset type.
+            symbols: Symbols to verify, preserving caller order.
+            bhds_home: Root directory for local BHDS data storage.
+            interval: Interval directory for kline-class data types.
+            keep_failed: When ``True``, retain failed zip and checksum files
+                instead of deleting them.
+            dry_run: When ``True``, scan and classify files without verifying
+                or mutating the filesystem.
+            n_workers: Process pool size.  Defaults to ``max(1, cpu_count - 2)``.
+            show_progress: Whether to display a tqdm progress bar on stderr.
+        """
         if data_type.has_interval_layer and interval is None:
             msg = "interval is required for kline-class data_type"
             raise ValueError(msg)
@@ -759,7 +774,13 @@ class ArchiveVerifyWorkflow:
         checksum_path.unlink(missing_ok=True)
 
     def run(self) -> VerifyDiffResult | VerifyResult:
-        """Run the local verify workflow."""
+        """Run the local verify workflow.
+
+        Returns:
+            :class:`VerifyDiffResult` when ``dry_run`` is enabled, otherwise
+            :class:`VerifyResult` with aggregated counts and per-file failure
+            details.
+        """
         diff_result = self._scan()
         if self.dry_run:
             return diff_result

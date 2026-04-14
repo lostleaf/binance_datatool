@@ -26,7 +26,12 @@ def calc_sha256(file_path: Path) -> str:
 
 
 def read_expected_checksum(zip_path: Path) -> str:
-    """Read the expected checksum from a sibling ``.CHECKSUM`` file."""
+    """Read the expected checksum from a sibling ``.CHECKSUM`` file.
+
+    Raises:
+        FileNotFoundError: When the ``.CHECKSUM`` sibling does not exist.
+        ValueError: When the checksum file is empty or has no parseable token.
+    """
     checksum_path = zip_path.parent / f"{zip_path.name}.CHECKSUM"
     line = checksum_path.read_text(encoding="utf-8").strip()
     expected, *_rest = line.split()
