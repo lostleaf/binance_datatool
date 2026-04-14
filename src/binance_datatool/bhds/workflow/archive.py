@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import math
+import multiprocessing
+import os
 import sys
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -16,6 +21,7 @@ from binance_datatool.bhds.archive import (
     ArchiveClient,
     DownloadRequest,
     download_archive_files,
+    verify_single_file,
 )
 from binance_datatool.common import (
     S3_DOWNLOAD_PREFIX,
@@ -34,6 +40,7 @@ if TYPE_CHECKING:
         Aria2DownloadResult,
         BatchProgressEvent,
         SymbolFilter,
+        VerifyFileResult,
     )
     from binance_datatool.common import DataFrequency, DataType, SymbolInfo
 
@@ -130,6 +137,42 @@ class DownloadResult:
     def listing_failed_symbols(self) -> int:
         """Return the number of symbols whose remote listing failed."""
         return len(self.listing_errors)
+
+
+@dataclass(slots=True)
+class VerifyDiffResult:
+    """Scan-phase result for archive verify dry-runs."""
+
+    to_verify: list[Path]
+    skipped: int
+    orphan_zips: list[Path]
+    orphan_checksums: list[Path]
+
+    @property
+    def total_zips(self) -> int:
+        """Return the number of discovered zip files."""
+        return len(self.to_verify) + self.skipped + len(self.orphan_zips)
+
+
+@dataclass(slots=True)
+class VerifyResult:
+    """Structured result for a verify run."""
+
+    skipped: int
+    verified: int
+    orphan_zips: int
+    orphan_checksums: int
+    failed_details: dict[Path, str]
+
+    @property
+    def failed(self) -> int:
+        """Return the number of failed verifications."""
+        return len(self.failed_details)
+
+    @property
+    def total_zips(self) -> int:
+        """Return the number of discovered zip files."""
+        return self.skipped + self.verified + self.failed + self.orphan_zips
 
 
 def _infer_symbol_info(trade_type: TradeType, symbol: str) -> SymbolInfo | None:
@@ -526,4 +569,217 @@ class ArchiveDownloadWorkflow:
             downloaded=aria2_result.succeeded,
             failed=len(aria2_result.failed_requests),
             listing_errors=diff_result.listing_errors,
+        )
+
+
+class ArchiveVerifyWorkflow:
+    """Workflow for verifying local archive zip files against SHA256 checksums."""
+
+    def __init__(
+        self,
+        trade_type: TradeType,
+        data_freq: DataFrequency,
+        data_type: DataType,
+        symbols: Sequence[str],
+        bhds_home: Path,
+        interval: str | None = None,
+        keep_failed: bool = False,
+        dry_run: bool = False,
+        n_workers: int | None = None,
+        show_progress: bool = False,
+    ) -> None:
+        """Initialize the verify workflow."""
+        if data_type.has_interval_layer and interval is None:
+            msg = "interval is required for kline-class data_type"
+            raise ValueError(msg)
+        if not data_type.has_interval_layer and interval is not None:
+            msg = "interval is not applicable to non-kline data_type"
+            raise ValueError(msg)
+
+        self.trade_type = trade_type
+        self.data_freq = data_freq
+        self.data_type = data_type
+        self.symbols = list(symbols)
+        self.bhds_home = bhds_home
+        self.interval = interval
+        self.keep_failed = keep_failed
+        self.dry_run = dry_run
+        self.n_workers = n_workers or max(1, (os.cpu_count() or 1) - 2)
+        self.show_progress = show_progress
+
+    def _symbol_dir(self, symbol: str) -> Path:
+        """Return the local directory that stores files for one symbol."""
+        path = (
+            self.bhds_home
+            / "aws_data"
+            / "data"
+            / self.trade_type.s3_path
+            / self.data_freq.value
+            / self.data_type.value
+            / symbol
+        )
+        if self.interval is not None:
+            path /= self.interval
+        return path
+
+    def _iter_marker_paths(self, zip_path: Path) -> list[Path]:
+        """Return all legacy and timestamped marker files for a zip path."""
+        markers = [zip_path.parent / f"{zip_path.name}.verified"]
+        markers.extend(sorted(zip_path.parent.glob(f"{zip_path.name}.*.verified")))
+        return markers
+
+    def _clear_markers(self, zip_path: Path) -> None:
+        """Delete all verification markers for a zip path."""
+        for marker_path in self._iter_marker_paths(zip_path):
+            marker_path.unlink(missing_ok=True)
+
+    def _max_source_mtime(self, zip_path: Path) -> int:
+        """Return the normalized freshness timestamp for a zip/checksum pair."""
+        checksum_path = zip_path.parent / f"{zip_path.name}.CHECKSUM"
+        return math.ceil(max(zip_path.stat().st_mtime, checksum_path.stat().st_mtime))
+
+    def _is_marker_valid(self, zip_path: Path) -> bool:
+        """Return whether a zip file already has a fresh timestamped marker."""
+        timestamps: list[int] = []
+        for marker_path in zip_path.parent.glob(f"{zip_path.name}.*.verified"):
+            timestamp_str = (
+                marker_path.name.removeprefix(zip_path.name).removesuffix(".verified").strip(".")
+            )
+            try:
+                timestamps.append(int(timestamp_str))
+            except ValueError:
+                continue
+
+        if not timestamps:
+            return False
+
+        return max(timestamps) >= self._max_source_mtime(zip_path)
+
+    def _build_marker_timestamp(self, zip_path: Path) -> int:
+        """Build a marker timestamp that stays fresh after integer rounding."""
+        return max(int(time.time()), self._max_source_mtime(zip_path))
+
+    def _write_marker(self, zip_path: Path) -> None:
+        """Create a fresh timestamped marker for a verified zip file."""
+        marker_path = zip_path.parent / (
+            f"{zip_path.name}.{self._build_marker_timestamp(zip_path)}.verified"
+        )
+        marker_path.touch()
+
+    def _scan(self) -> VerifyDiffResult:
+        """Scan local symbol directories and classify verify work."""
+        to_verify: list[Path] = []
+        orphan_zips: list[Path] = []
+        orphan_checksums: list[Path] = []
+        skipped = 0
+
+        for symbol in self.symbols:
+            symbol_dir = self._symbol_dir(symbol)
+            if not symbol_dir.exists():
+                continue
+
+            zip_paths = sorted(symbol_dir.glob("*.zip"))
+            checksum_paths = sorted(symbol_dir.glob("*.zip.CHECKSUM"))
+
+            for zip_path in zip_paths:
+                checksum_path = zip_path.parent / f"{zip_path.name}.CHECKSUM"
+                if not checksum_path.exists():
+                    orphan_zips.append(zip_path)
+                    continue
+
+                if self._is_marker_valid(zip_path):
+                    skipped += 1
+                else:
+                    to_verify.append(zip_path)
+
+            for checksum_path in checksum_paths:
+                zip_path = checksum_path.with_name(checksum_path.name.removesuffix(".CHECKSUM"))
+                if not zip_path.exists():
+                    orphan_checksums.append(checksum_path)
+
+        return VerifyDiffResult(
+            to_verify=to_verify,
+            skipped=skipped,
+            orphan_zips=orphan_zips,
+            orphan_checksums=orphan_checksums,
+        )
+
+    def _clean_orphans(self, diff_result: VerifyDiffResult) -> None:
+        """Apply orphan cleanup rules before verification."""
+        for zip_path in diff_result.orphan_zips:
+            self._clear_markers(zip_path)
+
+        for checksum_path in diff_result.orphan_checksums:
+            zip_path = checksum_path.with_name(checksum_path.name.removesuffix(".CHECKSUM"))
+            checksum_path.unlink(missing_ok=True)
+            self._clear_markers(zip_path)
+
+    def _verify_paths(self, zip_paths: list[Path]) -> list[VerifyFileResult]:
+        """Verify zip files in parallel using a process pool."""
+        if not zip_paths:
+            return []
+
+        progress_bar = tqdm(
+            total=len(zip_paths),
+            disable=not self.show_progress,
+            file=sys.stderr,
+            unit="file",
+            leave=True,
+        )
+        try:
+            with ProcessPoolExecutor(
+                max_workers=self.n_workers,
+                mp_context=multiprocessing.get_context("spawn"),
+            ) as executor:
+                futures = [executor.submit(verify_single_file, zip_path) for zip_path in zip_paths]
+                results: list[VerifyFileResult] = []
+                for future in as_completed(futures):
+                    results.append(future.result())
+                    progress_bar.update(1)
+        finally:
+            progress_bar.close()
+
+        result_by_path = {result.zip_path: result for result in results}
+        return [result_by_path[zip_path] for zip_path in zip_paths]
+
+    def _apply_verify_result(self, result: VerifyFileResult) -> None:
+        """Apply filesystem side effects for one verify outcome."""
+        zip_path = result.zip_path
+        checksum_path = zip_path.parent / f"{zip_path.name}.CHECKSUM"
+        self._clear_markers(zip_path)
+
+        if result.passed:
+            self._write_marker(zip_path)
+            return
+
+        if self.keep_failed:
+            return
+
+        zip_path.unlink(missing_ok=True)
+        checksum_path.unlink(missing_ok=True)
+
+    def run(self) -> VerifyDiffResult | VerifyResult:
+        """Run the local verify workflow."""
+        diff_result = self._scan()
+        if self.dry_run:
+            return diff_result
+
+        self._clean_orphans(diff_result)
+        verify_results = self._verify_paths(diff_result.to_verify)
+        failed_details: dict[Path, str] = {}
+        verified = 0
+
+        for result in verify_results:
+            self._apply_verify_result(result)
+            if result.passed:
+                verified += 1
+                continue
+            failed_details[result.zip_path] = result.detail
+
+        return VerifyResult(
+            skipped=diff_result.skipped,
+            verified=verified,
+            orphan_zips=len(diff_result.orphan_zips),
+            orphan_checksums=len(diff_result.orphan_checksums),
+            failed_details=failed_details,
         )

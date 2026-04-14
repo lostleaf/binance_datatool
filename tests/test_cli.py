@@ -16,6 +16,7 @@ from binance_datatool.bhds.archive import (
 )
 from binance_datatool.bhds.cli import app
 from binance_datatool.bhds.workflow.archive import (
+    ArchiveVerifyWorkflow,
     DiffEntry,
     DiffResult,
     DownloadResult,
@@ -23,6 +24,8 @@ from binance_datatool.bhds.workflow.archive import (
     ListSymbolsResult,
     SymbolListFilesResult,
     SymbolListingError,
+    VerifyDiffResult,
+    VerifyResult,
 )
 from binance_datatool.common import ContractType, SpotSymbolInfo, UmSymbolInfo
 
@@ -720,6 +723,188 @@ def test_cli_download_logs_listing_errors_and_exits_2(monkeypatch) -> None:
 
     assert result.exit_code == 2
     assert "ERROR: ETHUSDT: boom" in result.stderr
+
+
+def test_cli_verify_requires_symbols() -> None:
+    """Verify should reject calls without symbols from args or stdin."""
+    result = runner.invoke(app, ["archive", "verify", "um", "--type", "fundingRate"])
+
+    assert result.exit_code == 2
+    assert "No symbols given" in result.stderr
+
+
+def test_cli_verify_validates_interval() -> None:
+    """Verify should enforce the same interval validation as list-files/download."""
+    missing_interval = runner.invoke(app, ["archive", "verify", "um", "BTCUSDT"])
+    extra_interval = runner.invoke(
+        app,
+        ["archive", "verify", "um", "--type", "fundingRate", "--interval", "1m", "BTCUSDT"],
+    )
+
+    assert missing_interval.exit_code == 2
+    assert "--interval" in missing_interval.stderr
+    assert extra_interval.exit_code == 2
+    assert "--interval" in extra_interval.stderr
+
+
+def test_cli_verify_passes_bhds_home_and_keep_failed(monkeypatch) -> None:
+    """Global BHDS home and keep-failed should reach the verify workflow."""
+
+    def fake_run(self) -> VerifyResult:
+        assert isinstance(self, ArchiveVerifyWorkflow)
+        assert self.bhds_home == Path("/tmp/bhds-home")
+        assert self.keep_failed is True
+        assert self.show_progress is False
+        return VerifyResult(
+            skipped=0,
+            verified=1,
+            orphan_zips=0,
+            orphan_checksums=0,
+            failed_details={},
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveVerifyWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--bhds-home",
+            "/tmp/bhds-home",
+            "archive",
+            "verify",
+            "um",
+            "--type",
+            "fundingRate",
+            "--keep-failed",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Done: 1 verified, 0 failed, 0 skipped" in result.stderr
+
+
+def test_cli_verify_dry_run_outputs_paths_and_summary(monkeypatch) -> None:
+    """Dry-run verify should print relative paths and a local scan summary."""
+
+    def fake_run(self) -> VerifyDiffResult:
+        return VerifyDiffResult(
+            to_verify=[
+                Path(
+                    "/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/"
+                    "BTCUSDT-1m-2020-01-01.zip"
+                ),
+                Path(
+                    "/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/"
+                    "BTCUSDT-1m-2020-01-02.zip"
+                ),
+            ],
+            skipped=120,
+            orphan_zips=[],
+            orphan_checksums=[Path("/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/missing.zip.CHECKSUM")],
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveVerifyWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--bhds-home",
+            "/tmp/bhds",
+            "archive",
+            "verify",
+            "spot",
+            "--dry-run",
+            "--interval",
+            "1m",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.stdout == (
+        "BTCUSDT/1m/BTCUSDT-1m-2020-01-01.zip\n"
+        "BTCUSDT/1m/BTCUSDT-1m-2020-01-02.zip\n"
+    )
+    assert "2 to verify, 120 up to date, 0 orphan zip, 1 orphan checksum" in result.stderr
+
+
+def test_cli_verify_returns_zero_with_failures_or_orphans(monkeypatch) -> None:
+    """Verify failures and orphan cleanup should still exit successfully."""
+
+    def fake_run(self) -> VerifyResult:
+        return VerifyResult(
+            skipped=50,
+            verified=120,
+            orphan_zips=1,
+            orphan_checksums=2,
+            failed_details={Path("/tmp/bhds/file.zip"): "checksum mismatch"},
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveVerifyWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--bhds-home",
+            "/tmp/bhds",
+            "archive",
+            "verify",
+            "um",
+            "--type",
+            "fundingRate",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Done: 120 verified, 1 failed, 50 skipped" in result.stderr
+    assert "Cleaned 1 orphan zip markers, deleted 2 orphan checksums" in result.stderr
+    assert "ERROR: file.zip: checksum mismatch" in result.stderr
+
+
+def test_cli_verify_warns_on_empty_local_scan(monkeypatch) -> None:
+    """Empty verify scans should warn instead of pretending everything is current."""
+
+    def fake_run(self) -> VerifyDiffResult:
+        return VerifyDiffResult(
+            to_verify=[],
+            skipped=0,
+            orphan_zips=[],
+            orphan_checksums=[],
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveVerifyWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--bhds-home",
+            "/tmp/bhds",
+            "archive",
+            "verify",
+            "spot",
+            "--dry-run",
+            "--interval",
+            "1m",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Warning: no local zip files found" in result.stderr
 
 
 @pytest.mark.integration

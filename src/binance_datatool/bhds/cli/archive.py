@@ -16,9 +16,12 @@ from binance_datatool.bhds.workflow.archive import (
     ArchiveDownloadWorkflow,
     ArchiveListFilesWorkflow,
     ArchiveListSymbolsWorkflow,
+    ArchiveVerifyWorkflow,
     DiffResult,
     DownloadResult,
     SymbolListingError,
+    VerifyDiffResult,
+    VerifyResult,
 )
 from binance_datatool.common import (
     BhdsHomeNotConfiguredError,
@@ -133,6 +136,21 @@ def _format_relative_path(
     return key.removeprefix(prefix)
 
 
+def _format_local_relative_path(
+    path: Path,
+    *,
+    bhds_home: Path,
+    trade_type: TradeType,
+    data_freq: DataFrequency,
+    data_type: DataType,
+) -> str:
+    """Format a local aws_data path relative to the shared archive prefix."""
+    prefix = (
+        bhds_home / "aws_data" / "data" / trade_type.s3_path / data_freq.value / data_type.value
+    )
+    return str(path.relative_to(prefix))
+
+
 def _warn_if_empty_remote(*, total_remote: int, has_failures: bool) -> None:
     """Print a heuristic warning for empty remote results."""
     if total_remote != 0 or has_failures:
@@ -142,6 +160,20 @@ def _warn_if_empty_remote(*, total_remote: int, has_failures: bool) -> None:
         (
             "Warning: no archive files found; check --freq, --type, and trade_type "
             "(for example, futures fundingRate requires --freq monthly)."
+        ),
+        err=True,
+    )
+
+
+def _warn_if_empty_local_scan(*, total_zips: int) -> None:
+    """Print a warning when verify did not find any local zip files."""
+    if total_zips != 0:
+        return
+
+    typer.echo(
+        (
+            "Warning: no local zip files found; check --bhds-home, --freq, --type, "
+            "--interval, and symbols."
         ),
         err=True,
     )
@@ -335,3 +367,94 @@ def download_command(
     _finalize_download_result(result)
     if result.failed > 0:
         raise typer.Exit(code=2)
+
+
+@archive_app.command("verify")
+def verify_command(
+    ctx: typer.Context,
+    trade_type: Annotated[TradeType, typer.Argument(help="Market segment.")],
+    symbols: Annotated[list[str] | None, typer.Argument(help="Symbols to verify.")] = None,
+    data_freq: Annotated[
+        DataFrequency,
+        typer.Option("--freq", help="Partition frequency."),
+    ] = DataFrequency.daily,
+    data_type: Annotated[
+        DataType,
+        typer.Option("--type", help="Dataset type."),
+    ] = DataType.klines,
+    interval: Annotated[
+        str | None,
+        typer.Option("--interval", help="Interval for kline-class data types."),
+    ] = None,
+    keep_failed: Annotated[
+        bool,
+        typer.Option("--keep-failed", help="Keep failed zip and checksum files."),
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option("-n", "--dry-run", help="Show what would be verified without writing files."),
+    ] = False,
+) -> None:
+    """Verify local archive zip files against sibling checksum files."""
+    _validate_interval(data_type, interval)
+
+    resolved_symbols = _resolve_symbols(symbols)
+    if not resolved_symbols:
+        raise typer.BadParameter("No symbols given.", param_hint="SYMBOLS")
+
+    bhds_home = _resolve_download_home(ctx)
+    workflow = ArchiveVerifyWorkflow(
+        trade_type=trade_type,
+        data_freq=data_freq,
+        data_type=data_type,
+        symbols=resolved_symbols,
+        bhds_home=bhds_home,
+        interval=interval,
+        keep_failed=keep_failed,
+        dry_run=dry_run,
+        show_progress=sys.stderr.isatty(),
+    )
+    result = workflow.run()
+
+    if isinstance(result, VerifyDiffResult):
+        for zip_path in result.to_verify:
+            typer.echo(
+                _format_local_relative_path(
+                    zip_path,
+                    bhds_home=bhds_home,
+                    trade_type=trade_type,
+                    data_freq=data_freq,
+                    data_type=data_type,
+                )
+            )
+        typer.echo(
+            (
+                f"{len(result.to_verify)} to verify, {result.skipped} up to date, "
+                f"{len(result.orphan_zips)} orphan zip, "
+                f"{len(result.orphan_checksums)} orphan checksum"
+            ),
+            err=True,
+        )
+        _warn_if_empty_local_scan(total_zips=result.total_zips)
+        return
+
+    assert isinstance(result, VerifyResult)
+    for path, detail in result.failed_details.items():
+        logger.error("{}: {}", path.name, detail)
+
+    typer.echo(
+        f"Done: {result.verified} verified, {result.failed} failed, {result.skipped} skipped",
+        err=True,
+    )
+    if result.orphan_zips > 0 or result.orphan_checksums > 0:
+        typer.echo(
+            (
+                f"Cleaned {result.orphan_zips} orphan zip markers, "
+                f"deleted {result.orphan_checksums} orphan checksums"
+            ),
+            err=True,
+        )
+    if keep_failed and result.failed > 0:
+        typer.echo("Failed files were kept because --keep-failed is enabled.", err=True)
+
+    _warn_if_empty_local_scan(total_zips=result.total_zips)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 from datetime import UTC, datetime
 from pathlib import Path
@@ -22,12 +23,35 @@ from binance_datatool.bhds.workflow.archive import (
     ArchiveDownloadWorkflow,
     ArchiveListFilesWorkflow,
     ArchiveListSymbolsWorkflow,
+    ArchiveVerifyWorkflow,
     DiffResult,
     ListFilesResult,
     ListSymbolsResult,
+    VerifyDiffResult,
+    VerifyResult,
 )
 from binance_datatool.common import ContractType, DataFrequency, DataType, TradeType
 from conftest import FakeArchiveClient
+
+
+def _write_verify_pair(
+    base_dir: Path,
+    name: str,
+    *,
+    content: bytes = b"zip-bytes",
+) -> Path:
+    """Create a zip/checksum pair for verify workflow tests."""
+    zip_path = base_dir / name
+    zip_path.parent.mkdir(parents=True, exist_ok=True)
+    zip_path.write_bytes(content)
+    digest = hashlib.sha256(content).hexdigest()
+    (base_dir / f"{name}.CHECKSUM").write_text(f"{digest}  {name}\n", encoding="utf-8")
+    return zip_path
+
+
+def _symbol_verify_dir(tmp_path: Path, *, symbol: str = "BTCUSDT", interval: str = "1m") -> Path:
+    """Return the default kline verify directory for a symbol."""
+    return tmp_path / "aws_data" / "data" / "spot" / "daily" / "klines" / symbol / interval
 
 
 @pytest.mark.asyncio
@@ -459,3 +483,211 @@ def test_archive_download_workflow_uses_tqdm_write_for_batch_messages(
 
     assert progress_bar.messages == ["Downloading batch 1/1 (2 files)..."]
     assert progress_bar.updates == [2]
+
+
+def test_verify_workflow_diff_classifies_files(tmp_path) -> None:
+    """Verify diffing should split fresh, stale, and legacy-marker files."""
+    base_dir = _symbol_verify_dir(tmp_path)
+    fresh = _write_verify_pair(base_dir, "fresh.zip", content=b"fresh")
+    stale = _write_verify_pair(base_dir, "stale.zip", content=b"stale")
+    legacy = _write_verify_pair(base_dir, "legacy.zip", content=b"legacy")
+    plain = _write_verify_pair(base_dir, "plain.zip", content=b"plain")
+
+    fresh_marker = fresh.parent / f"{fresh.name}.{int(fresh.stat().st_mtime) + 10}.verified"
+    fresh_marker.write_text("", encoding="utf-8")
+
+    stale_marker = stale.parent / f"{stale.name}.{int(stale.stat().st_mtime) - 10}.verified"
+    stale_marker.write_text("", encoding="utf-8")
+
+    legacy_marker = legacy.parent / f"{legacy.name}.verified"
+    legacy_marker.write_text("", encoding="utf-8")
+
+    workflow = ArchiveVerifyWorkflow(
+        trade_type=TradeType.spot,
+        data_freq=DataFrequency.daily,
+        data_type=DataType.klines,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        interval="1m",
+        dry_run=True,
+    )
+
+    result = workflow.run()
+
+    assert isinstance(result, VerifyDiffResult)
+    assert result.skipped == 1
+    assert result.orphan_zips == []
+    assert result.orphan_checksums == []
+    assert result.to_verify == [legacy, plain, stale]
+
+
+def test_verify_workflow_diff_detects_orphans(tmp_path) -> None:
+    """Verify diffing should classify orphan zip and checksum files."""
+    base_dir = _symbol_verify_dir(tmp_path)
+    orphan_zip = base_dir / "orphan.zip"
+    orphan_zip.parent.mkdir(parents=True, exist_ok=True)
+    orphan_zip.write_bytes(b"zip-only")
+
+    orphan_checksum = base_dir / "missing.zip.CHECKSUM"
+    orphan_checksum.write_text("abc  missing.zip\n", encoding="utf-8")
+
+    workflow = ArchiveVerifyWorkflow(
+        trade_type=TradeType.spot,
+        data_freq=DataFrequency.daily,
+        data_type=DataType.klines,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        interval="1m",
+        dry_run=True,
+    )
+
+    result = workflow.run()
+
+    assert isinstance(result, VerifyDiffResult)
+    assert result.to_verify == []
+    assert result.orphan_zips == [orphan_zip]
+    assert result.orphan_checksums == [orphan_checksum]
+
+
+def test_verify_workflow_dry_run_preserves_files(tmp_path) -> None:
+    """Dry-run verify should not mutate files or markers."""
+    base_dir = _symbol_verify_dir(tmp_path)
+    zip_path = _write_verify_pair(base_dir, "keep.zip", content=b"keep")
+    checksum_path = base_dir / "keep.zip.CHECKSUM"
+    legacy_marker = base_dir / "keep.zip.verified"
+    legacy_marker.write_text("", encoding="utf-8")
+    timestamped_marker = base_dir / "keep.zip.123.verified"
+    timestamped_marker.write_text("", encoding="utf-8")
+
+    workflow = ArchiveVerifyWorkflow(
+        trade_type=TradeType.spot,
+        data_freq=DataFrequency.daily,
+        data_type=DataType.klines,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        interval="1m",
+        dry_run=True,
+    )
+
+    result = workflow.run()
+
+    assert isinstance(result, VerifyDiffResult)
+    assert zip_path.exists()
+    assert checksum_path.exists()
+    assert legacy_marker.exists()
+    assert timestamped_marker.exists()
+
+
+def test_verify_workflow_processes_results_default(tmp_path) -> None:
+    """Verify should write markers, delete failed pairs, and clean orphans by default."""
+    base_dir = _symbol_verify_dir(tmp_path)
+    _write_verify_pair(base_dir, "passed.zip", content=b"passed")
+    failed = _write_verify_pair(base_dir, "failed.zip", content=b"failed")
+    (base_dir / "failed.zip.CHECKSUM").write_text(
+        f"{hashlib.sha256(b'wrong').hexdigest()}  failed.zip\n",
+        encoding="utf-8",
+    )
+    failed_marker = base_dir / "failed.zip.100.verified"
+    failed_marker.write_text("", encoding="utf-8")
+
+    orphan_zip = base_dir / "orphan.zip"
+    orphan_zip.write_bytes(b"orphan")
+    orphan_zip_marker = base_dir / "orphan.zip.200.verified"
+    orphan_zip_marker.write_text("", encoding="utf-8")
+
+    orphan_checksum = base_dir / "missing.zip.CHECKSUM"
+    orphan_checksum.write_text("abc  missing.zip\n", encoding="utf-8")
+    orphan_checksum_marker = base_dir / "missing.zip.300.verified"
+    orphan_checksum_marker.write_text("", encoding="utf-8")
+
+    workflow = ArchiveVerifyWorkflow(
+        trade_type=TradeType.spot,
+        data_freq=DataFrequency.daily,
+        data_type=DataType.klines,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        interval="1m",
+        n_workers=1,
+    )
+
+    result = workflow.run()
+
+    assert isinstance(result, VerifyResult)
+    assert result.verified == 1
+    assert result.failed == 1
+    assert result.skipped == 0
+    assert result.orphan_zips == 1
+    assert result.orphan_checksums == 1
+    assert result.failed_details == {failed: "checksum mismatch"}
+
+    passed_markers = list(base_dir.glob("passed.zip.*.verified"))
+    assert len(passed_markers) == 1
+    assert not (base_dir / "passed.zip.verified").exists()
+
+    assert not failed.exists()
+    assert not (base_dir / "failed.zip.CHECKSUM").exists()
+    assert not failed_marker.exists()
+
+    assert orphan_zip.exists()
+    assert not orphan_zip_marker.exists()
+    assert not orphan_checksum.exists()
+    assert not orphan_checksum_marker.exists()
+
+
+def test_verify_workflow_keep_failed_preserves_files(tmp_path) -> None:
+    """The keep-failed mode should retain bad zip/checksum files but clear markers."""
+    base_dir = _symbol_verify_dir(tmp_path)
+    failed = _write_verify_pair(base_dir, "failed.zip", content=b"failed")
+    checksum_path = base_dir / "failed.zip.CHECKSUM"
+    checksum_path.write_text(f"{hashlib.sha256(b'wrong').hexdigest()}  failed.zip\n", encoding="utf-8")
+    legacy_marker = base_dir / "failed.zip.verified"
+    legacy_marker.write_text("", encoding="utf-8")
+    timestamped_marker = base_dir / "failed.zip.100.verified"
+    timestamped_marker.write_text("", encoding="utf-8")
+
+    workflow = ArchiveVerifyWorkflow(
+        trade_type=TradeType.spot,
+        data_freq=DataFrequency.daily,
+        data_type=DataType.klines,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        interval="1m",
+        keep_failed=True,
+        n_workers=1,
+    )
+
+    result = workflow.run()
+
+    assert isinstance(result, VerifyResult)
+    assert result.failed == 1
+    assert failed.exists()
+    assert checksum_path.exists()
+    assert not legacy_marker.exists()
+    assert not timestamped_marker.exists()
+
+
+def test_verify_workflow_marker_timestamp_rounding(tmp_path) -> None:
+    """Marker timestamps should use ceil-rounded source mtimes."""
+    base_dir = _symbol_verify_dir(tmp_path)
+    zip_path = _write_verify_pair(base_dir, "rounded.zip", content=b"rounded")
+    checksum_path = base_dir / "rounded.zip.CHECKSUM"
+    os.utime(zip_path, (1000.1, 1000.1))
+    os.utime(checksum_path, (1000.9, 1000.9))
+    marker = base_dir / "rounded.zip.1001.verified"
+    marker.write_text("", encoding="utf-8")
+
+    workflow = ArchiveVerifyWorkflow(
+        trade_type=TradeType.spot,
+        data_freq=DataFrequency.daily,
+        data_type=DataType.klines,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        interval="1m",
+        dry_run=True,
+    )
+
+    result = workflow.run()
+
+    assert isinstance(result, VerifyDiffResult)
+    assert result.skipped == 1
+    assert result.to_verify == []

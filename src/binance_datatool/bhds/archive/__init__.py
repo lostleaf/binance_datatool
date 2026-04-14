@@ -1,5 +1,11 @@
 """Archive access helpers."""
 
+from binance_datatool.bhds.archive.checksum import (
+    VerifyFileResult,
+    calc_sha256,
+    read_expected_checksum,
+    verify_single_file,
+)
 from binance_datatool.bhds.archive.client import ArchiveClient, ArchiveFile, list_symbols
 from binance_datatool.bhds.archive.downloader import (
     Aria2DownloadResult,
@@ -28,6 +34,10 @@ __all__ = [
     "SymbolFilter",
     "UmSymbolFilter",
     "build_symbol_filter",
+    "calc_sha256",
     "download_archive_files",
     "list_symbols",
+    "read_expected_checksum",
+    "verify_single_file",
+    "VerifyFileResult",
 ]
