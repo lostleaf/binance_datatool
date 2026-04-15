@@ -60,10 +60,11 @@ the session reads proxy configuration from standard environment variables:
 
 - `http_proxy` / `HTTP_PROXY`
 - `https_proxy` / `HTTPS_PROXY`
+- `all_proxy` / `ALL_PROXY`
 - `no_proxy` / `NO_PROXY`
 
 No additional proxy configuration is needed at the application level.
 
 ---
 
-See also: [Archive client](archive.md) | [Architecture](../../architecture.md)
+See also: [Archive package](archive/) | [Archive client module](archive/client.md) | [Architecture](../../architecture.md)

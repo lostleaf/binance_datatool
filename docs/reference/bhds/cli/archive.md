@@ -133,6 +133,11 @@ Columns are:
 No header line is emitted; this matches `ls -l` / `find -printf` / `du` / `git ls-files`
 conventions so the output is pipe-safe without `tail -n +2` gymnastics.
 
+If every requested symbol is listed successfully but no files are found, the
+command still exits `0` and prints a warning to stderr. Treat that warning as a
+hint to verify the upstream directory layout on `data.binance.vision` for the
+selected market, frequency, and data type rather than as a local runtime error.
+
 ### Exit codes
 
 | Situation | Exit code |
@@ -205,8 +210,8 @@ User runs:
 
 The `interval` vs `data_type.has_interval_layer` consistency check is enforced at
 all three layers (CLI, Workflow, and Client) so every entry point fails loud on the
-same contract violation. See the [archive reference](../archive.md) for S3 protocol
-details.
+same contract violation. See the [archive client reference](../archive/client.md)
+and [S3 protocol reference](../s3-protocol.md) for archive listing details.
 
 ## `download`
 
@@ -274,7 +279,8 @@ to stderr: `N files to download, M up to date`.
 
 In download mode, progress is shown on stderr with:
 - Scan summary: symbol count and file counts
-- Per-batch status via tqdm progress bar (only when stderr is a TTY)
+- Per-batch status messages such as `Downloading batch ...` and `Retrying batch ...`
+- A tqdm progress bar when stderr is a TTY
 - Final summary: `Done: N downloaded, M failed, K skipped`
 
 ### Exit codes
@@ -382,6 +388,10 @@ A summary line is printed to stderr:
 12 to verify, 5 up to date, 0 orphan zip, 0 orphan checksum
 ```
 
+If no local zip files match the requested selection, the command still exits `0`
+and prints a warning to stderr asking you to re-check `--bhds-home`, the path
+selection flags, and the symbol list.
+
 ### Normal output
 
 In verify mode, results are printed to stderr:
@@ -403,6 +413,9 @@ Failed files were kept because --keep-failed is enabled.
 ```
 
 Per-file failures are logged to stderr as `ERROR: {filename}: {detail}`.
+
+Like dry-run mode, a successful but empty local scan still emits a warning to
+stderr instead of silently pretending everything is current.
 
 ### Orphan handling
 
@@ -482,5 +495,5 @@ User runs:
 
 ---
 
-See also: [CLI overview](overview.md) | [Workflow layer](../workflow.md) |
-[Archive client](../archive.md)
+See also: [CLI overview](README.md) | [Workflow layer](../workflow.md) |
+[Archive package](../archive/) | [Archive client](../archive/client.md)

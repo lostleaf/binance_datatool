@@ -32,6 +32,13 @@ to `--bhds-home` and the environment variable.
 String constant `"BHDS_HOME"` — the environment variable name used by
 `resolve_bhds_home()`.
 
+```python
+from binance_datatool.common.path import BHDS_HOME_ENV_VAR
+```
+
+This constant is documented here but is not re-exported from
+`binance_datatool.common`.
+
 ---
 
-See also: [constants](constants.md) | [CLI overview](../bhds/cli/overview.md) | [Architecture](../../architecture.md)
+See also: [constants](constants.md) | [CLI overview](../bhds/cli/) | [Architecture](../../architecture.md)

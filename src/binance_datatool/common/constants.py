@@ -53,7 +53,6 @@ LEVERAGE_EXCLUDES: frozenset[str] = frozenset({"JUP", "SYRUP"})
 # Greedy quote matches that must fall back to a shorter quote for specific bases.
 # Each entry maps a long quote to (fallback_quote, {bases_requiring_fallback}).
 # Update this mapping when exchangeInfo reveals a long-quote match is wrong.
-# See docs/reference/common.md for the full parsing rationale and examples.
 QUOTE_BASE_EXCLUDES: dict[str, tuple[str, frozenset[str]]] = {
     "AEUR": ("EUR", frozenset({"ADA", "ENA", "GALA", "LUNA", "THETA"})),
     "BIDR": ("IDR", frozenset({"ARB", "BNB"})),

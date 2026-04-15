@@ -24,10 +24,10 @@ matching the conventions used by `pip`, the stdlib `logging` module, and the
 default `loguru` formatter.
 
 This function is called by the root `bhds` Typer callback before any
-sub-command runs; see [CLI — Root Callback and Verbosity](../bhds/cli/overview.md#root-callback-and-verbosity).
+sub-command runs; see [CLI — Root Callback](../bhds/cli/README.md#root-callback).
 It is introduced as a shared helper so future CLI entry points (for example a
 planned `bmds`) can reuse the same configuration without duplication.
 
 ---
 
-See also: [CLI overview](../bhds/cli/overview.md) | [Architecture](../../architecture.md)
+See also: [CLI overview](../bhds/cli/) | [Architecture](../../architecture.md)

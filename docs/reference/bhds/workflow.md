@@ -334,4 +334,4 @@ Returned by `ArchiveVerifyWorkflow.run()` after a real verify run.
 
 ---
 
-See also: [Archive client](archive.md) | [CLI commands](cli/archive.md) | [Architecture](../../architecture.md)
+See also: [Archive package](archive/) | [Archive client module](archive/client.md) | [CLI commands](cli/archive.md) | [Architecture](../../architecture.md)

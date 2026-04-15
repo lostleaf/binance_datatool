@@ -70,7 +70,7 @@ For detailed API docs see the [module reference](reference/).
 
 All CLI logging flows through `stderr`; stdout is reserved exclusively for command
 results so that sub-commands remain safe to pipe. See the
-[CLI overview](reference/bhds/cli/overview.md) for verbosity flag details.
+[CLI overview](reference/bhds/cli/) for verbosity flag details.
 
 Every CLI command follows the same three-layer call path: the CLI function parses
 arguments, constructs a workflow, and presents the result. The workflow orchestrates

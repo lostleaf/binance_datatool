@@ -1,0 +1,44 @@
+# binance_datatool.bhds.archive
+
+Archive access package for data.binance.vision.
+
+Most user-facing imports can prefer the package-level re-export surface:
+
+```python
+from binance_datatool.bhds.archive import (
+    ArchiveClient,
+    DownloadRequest,
+    SpotSymbolFilter,
+    download_archive_files,
+    verify_single_file,
+)
+```
+
+Use the defining submodule only when you want narrower imports or module-specific
+details.
+
+## Package Structure
+
+| Module | Description |
+|--------|-------------|
+| [client](client.md) | `ArchiveClient`, `ArchiveFile`, and `list_symbols()`. |
+| [filter](filter.md) | Typed symbol filters and `build_symbol_filter()`. |
+| [downloader](downloader.md) | Aria2-backed batch download helpers and result types. |
+| [checksum](checksum.md) | SHA256 checksum helpers and `VerifyFileResult`. |
+| [S3 protocol](../s3-protocol.md) | XML listing request format, pagination, retry, and proxy behavior. |
+
+## Package Re-exports
+
+| Source module | Re-exported names |
+|---------------|-------------------|
+| [`client`](client.md) | `ArchiveClient`, `ArchiveFile`, `list_symbols` |
+| [`filter`](filter.md) | `SpotSymbolFilter`, `UmSymbolFilter`, `CmSymbolFilter`, `SymbolFilter`, `build_symbol_filter` |
+| [`downloader`](downloader.md) | `DownloadRequest`, `BatchProgressEvent`, `Aria2DownloadResult`, `Aria2NotFoundError`, `download_archive_files` |
+| [`checksum`](checksum.md) | `VerifyFileResult`, `calc_sha256`, `read_expected_checksum`, `verify_single_file` |
+
+Internal helpers such as `_build_prefix()` and `_find_aria2c()` are intentionally
+left out of the public reference surface.
+
+---
+
+See also: [Workflow](../workflow.md) | [CLI overview](../cli/) | [Architecture](../../../architecture.md)

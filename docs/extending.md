@@ -15,9 +15,14 @@ To support a new dataset type (for example, `"premiumIndex"`):
        premium_index = "premiumIndex"
    ```
 
-2. No other changes are needed. The new member automatically becomes available in:
+2. Review whether the new member needs additional enum-property updates. The new member
+   automatically becomes available in:
    - CLI arguments (Typer picks up `StrEnum` members).
    - S3 path construction (the value is used directly).
+
+3. If the new data type uses an interval directory layer, update
+   `DataType.has_interval_layer` and add coverage for the interval validation
+   paths exercised by the CLI, workflow, and archive client.
 
 If the new member requires a non-trivial path mapping (like `TradeType.s3_path`), add a property
 method to the enum class.

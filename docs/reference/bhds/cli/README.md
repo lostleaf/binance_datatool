@@ -23,7 +23,7 @@ The root `bhds` app defines a callback that runs before any sub-command:
 | *(default)* | `loguru` level `WARNING`, simple `LEVEL: message` format |
 | `-v` | `loguru` level `INFO`, simple format |
 | `-vv` | `loguru` level `DEBUG`, rich format with time, level, module, and line |
-| `--bhds-home` | Override the BHDS data directory. Stored in `ctx.obj["bhds_home_override"]` and consumed by write-oriented commands (`download`). See [`common.path`](../../common/path.md) for resolution priority. |
+| `--bhds-home` | Override the BHDS data directory. Stored in `ctx.obj["bhds_home_override"]` and consumed by commands that need local archive storage (`download`, `verify`). See [`common.path`](../../common/path.md) for resolution priority. |
 
 `-v` is `count`-based — pass `-v -v` or `-vv` for DEBUG. All CLI logging is written
 to `stderr` via `configure_cli_logging()` from [`common.logging`](../../common/logging.md),

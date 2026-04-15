@@ -2,7 +2,7 @@
 
 ```
 tests/
-├── conftest.py                 # Shared fixtures (FakeArchiveClient, sample_archive_files)
+├── conftest.py                 # Shared test support (FakeArchiveClient, sample_archive_files)
 ├── test_archive_client.py      # Archive client unit and integration tests
 ├── test_archive_workflow.py    # Workflow unit and integration tests (list + download + verify)
 ├── test_checksum.py            # checksum module unit tests (calc, read, verify_single_file)
@@ -23,7 +23,7 @@ tests/
 - **CLI tests** use `typer.testing.CliRunner` and monkeypatch the workflow's `run()` method so
   they run without network access.
 
-## Shared Fixtures in `conftest.py`
+## Shared Test Support in `conftest.py`
 
 - **`FakeArchiveClient`** — a programmable stub configured entirely via constructor
   kwargs (`symbols=`, `files_by_symbol=`, `errors_by_symbol=`). It implements both

@@ -15,6 +15,10 @@ Shared constants imported by all other packages.
 | `LEVERAGE_EXCLUDES` | `frozenset[str]` | `{"JUP", "SYRUP"}` | Base assets that would otherwise be false positives for leveraged-token detection. |
 | `QUOTE_BASE_EXCLUDES` | `dict[str, tuple[str, frozenset[str]]]` | 4-entry mapping | Known fallback rules for greedy quote matching. See [symbols](symbols.md) for parsing rules. |
 
+Import note: `QUOTE_BASE_EXCLUDES` is defined in
+`binance_datatool.common.constants` and is not re-exported from
+`binance_datatool.common`.
+
 ---
 
 See also: [enums](enums.md) | [symbols](symbols.md) | [Architecture](../../architecture.md)
