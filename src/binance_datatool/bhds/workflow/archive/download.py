@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
+from loguru import logger
 from tqdm import tqdm
 
 from binance_datatool.bhds.archive import (
@@ -119,18 +120,6 @@ class ArchiveDownloadWorkflow:
         for zip_path in targets:
             clear_markers(zip_path)
 
-    def _print_scan_summary(self, diff_result: DiffResult) -> None:
-        """Print the pre-download scan summary to stderr."""
-        print(
-            f"Scanning remote: {len(self.symbols)} symbols, {diff_result.total_remote} files",
-            file=sys.stderr,
-        )
-        print(
-            f"Scanning local: {diff_result.skipped} up to date, "
-            f"{len(diff_result.to_download)} to download",
-            file=sys.stderr,
-        )
-
     def _build_progress_callback(
         self,
         total_requests: int,
@@ -149,7 +138,7 @@ class ArchiveDownloadWorkflow:
             if self.show_progress:
                 progress_bar.write(message, file=sys.stderr)
                 return
-            print(message, file=sys.stderr)
+            logger.info(message)
 
         def callback(event: BatchProgressEvent) -> None:
             if event.phase == "start":
@@ -186,12 +175,16 @@ class ArchiveDownloadWorkflow:
             client=self.client,
         )
         list_result = await list_workflow.run()
+        logger.info("scanning local store for diff")
         diff_result = self._build_diff_result(list_result)
+        logger.info(
+            "diff complete: {} up to date, {} to download",
+            diff_result.skipped,
+            len(diff_result.to_download),
+        )
 
         if self.dry_run:
             return diff_result
-
-        self._print_scan_summary(diff_result)
 
         if not diff_result.to_download:
             return DownloadResult(
@@ -210,6 +203,7 @@ class ArchiveDownloadWorkflow:
             for entry in diff_result.to_download
         ]
 
+        logger.info("downloading {} file(s)", len(requests))
         callback, progress_bar = self._build_progress_callback(len(requests))
         try:
             aria2_result = self.download_func(

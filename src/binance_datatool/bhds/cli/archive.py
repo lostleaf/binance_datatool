@@ -353,16 +353,14 @@ def download_command(
                 f"{entry.reason}\t{entry.remote.size}\t"
                 f"{_format_relative_path(entry.remote.key, trade_type, data_freq, data_type)}"
             )
-        typer.echo(
-            f"{len(result.to_download)} files to download, {result.skipped} up to date",
-            err=True,
-        )
         _finalize_download_result(result)
         return
 
-    typer.echo(
-        f"Done: {result.downloaded} downloaded, {result.failed} failed, {result.skipped} skipped",
-        err=True,
+    logger.info(
+        "download finished: {} downloaded, {} failed, {} skipped",
+        result.downloaded,
+        result.failed,
+        result.skipped,
     )
     _finalize_download_result(result)
     if result.failed > 0:

@@ -596,8 +596,8 @@ def test_cli_download_requires_symbols() -> None:
     assert "No symbols given" in result.stderr
 
 
-def test_cli_download_dry_run_outputs_tsv_and_summary(monkeypatch) -> None:
-    """Dry-run output should be TSV on stdout plus a summary on stderr."""
+def test_cli_download_dry_run_outputs_tsv(monkeypatch) -> None:
+    """Dry-run output should keep the planned downloads on stdout."""
 
     async def fake_run(self) -> DiffResult:
         assert self.dry_run is True
@@ -648,7 +648,6 @@ def test_cli_download_dry_run_outputs_tsv_and_summary(monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert result.stdout == "new\t1048\tBTCUSDT/BTCUSDT-fundingRate-2026-03.zip\n"
-    assert "1 files to download, 12 up to date" in result.stderr
 
 
 def test_cli_download_passes_bhds_home_and_proxy_flag(monkeypatch) -> None:
@@ -687,7 +686,6 @@ def test_cli_download_passes_bhds_home_and_proxy_flag(monkeypatch) -> None:
     )
 
     assert result.exit_code == 0
-    assert "Done: 1 downloaded, 0 failed, 0 skipped" in result.stderr
 
 
 def test_cli_download_logs_listing_errors_and_exits_2(monkeypatch) -> None:
