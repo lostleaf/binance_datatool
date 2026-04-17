@@ -9,6 +9,7 @@ from pathlib import Path
 
 import aiohttp
 import pytest
+from loguru import logger
 
 from binance_datatool.bhds.archive import (
     ArchiveClient,
@@ -52,6 +53,17 @@ def _write_verify_pair(
 def _symbol_verify_dir(tmp_path: Path, *, symbol: str = "BTCUSDT", interval: str = "1m") -> Path:
     """Return the default kline verify directory for a symbol."""
     return tmp_path / "aws_data" / "data" / "spot" / "daily" / "klines" / symbol / interval
+
+
+def _capture_info_logs() -> tuple[list[str], int]:
+    """Capture INFO log messages without depending on the rendered sink format."""
+    messages: list[str] = []
+    sink_id = logger.add(
+        lambda message: messages.append(message.record["message"]),
+        level="INFO",
+        format="{message}",
+    )
+    return messages, sink_id
 
 
 @pytest.mark.asyncio
@@ -134,6 +146,42 @@ async def test_archive_list_symbols_workflow_applies_cm_filter() -> None:
     assert result.unmatched == ["BTCUSD", "BADUSDT"]
 
 
+@pytest.mark.asyncio
+async def test_archive_list_symbols_workflow_logs_parameters_and_stats() -> None:
+    """Symbol-list workflows should emit semantic start and completion logs."""
+    workflow = ArchiveListSymbolsWorkflow(
+        trade_type=TradeType.um,
+        data_freq=DataFrequency.monthly,
+        data_type=DataType.funding_rate,
+        symbol_filter=UmSymbolFilter(
+            quote_assets=frozenset({"USDT", "USDC"}),
+            contract_type=ContractType.perpetual,
+            exclude_stable_pairs=True,
+        ),
+        client=FakeArchiveClient(symbols=["BTCUSDT", "ETHUSDT_240927", "USDCUSDT", "BAD"]),
+    )
+    messages, sink_id = _capture_info_logs()
+
+    try:
+        result = await workflow.run()
+    finally:
+        logger.remove(sink_id)
+
+    assert result.total_raw_symbols == 4
+    assert result.matched_symbols == 1
+    assert result.filtered_out_symbols == 2
+    assert result.inference_failed_symbols == 1
+    assert (
+        "listing symbols for trade_type=um data_freq=monthly data_type=fundingRate "
+        "quote_assets=USDC,USDT exclude_leverage=False exclude_stable_pairs=True "
+        "contract_type=perpetual"
+    ) in messages
+    assert (
+        "listed symbols: total_raw_symbols=4 matched_symbols=1 filtered_out_symbols=2 "
+        "inference_failed_symbols=1"
+    ) in messages
+
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_archive_list_symbols_workflow_integration_applies_spot_filter() -> None:
@@ -206,6 +254,40 @@ async def test_archive_list_files_workflow_captures_per_symbol_errors(sample_arc
     assert result.per_symbol[1].error == "boom"
     assert result.per_symbol[1].files == []
     assert result.has_failures is True
+
+
+@pytest.mark.asyncio
+async def test_archive_list_files_workflow_logs_parameters_and_stats(sample_archive_files) -> None:
+    """File-list workflows should emit semantic start and completion logs."""
+    workflow = ArchiveListFilesWorkflow(
+        trade_type=TradeType.um,
+        data_freq=DataFrequency.monthly,
+        data_type=DataType.funding_rate,
+        symbols=["BTCUSDT", "ETHUSDT"],
+        client=FakeArchiveClient(
+            files_by_symbol={"BTCUSDT": sample_archive_files},
+            errors_by_symbol={"ETHUSDT": aiohttp.ClientError("boom")},
+        ),
+    )
+    messages, sink_id = _capture_info_logs()
+
+    try:
+        result = await workflow.run()
+    finally:
+        logger.remove(sink_id)
+
+    assert result.requested_symbols == 2
+    assert result.successful_symbols == 1
+    assert result.failed_symbols == 1
+    assert result.total_remote_files == len(sample_archive_files)
+    assert (
+        "listing 2 symbols for trade_type=um data_freq=monthly data_type=fundingRate "
+        "interval=None"
+    ) in messages
+    assert (
+        "listed files: requested_symbols=2 successful_symbols=1 failed_symbols=1 "
+        f"total_remote_files={len(sample_archive_files)}"
+    ) in messages
 
 
 def test_archive_list_files_workflow_requires_interval_for_kline_types() -> None:
@@ -446,7 +528,7 @@ def test_archive_download_workflow_uses_tqdm_write_for_batch_messages(
         def close(self) -> None:
             return None
 
-    monkeypatch.setattr("binance_datatool.bhds.workflow.archive.tqdm", FakeTqdm)
+    monkeypatch.setattr("binance_datatool.bhds.workflow.archive.download.tqdm", FakeTqdm)
 
     workflow = ArchiveDownloadWorkflow(
         trade_type=TradeType.um,

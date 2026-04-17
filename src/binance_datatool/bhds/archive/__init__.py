@@ -6,7 +6,12 @@ from binance_datatool.bhds.archive.checksum import (
     read_expected_checksum,
     verify_single_file,
 )
-from binance_datatool.bhds.archive.client import ArchiveClient, ArchiveFile, list_symbols
+from binance_datatool.bhds.archive.client import (
+    ArchiveClient,
+    ArchiveFile,
+    SymbolListingResult,
+    list_symbols,
+)
 from binance_datatool.bhds.archive.downloader import (
     Aria2DownloadResult,
     Aria2NotFoundError,
@@ -21,6 +26,13 @@ from binance_datatool.bhds.archive.filter import (
     UmSymbolFilter,
     build_symbol_filter,
 )
+from binance_datatool.bhds.archive.markers import (
+    clear_markers,
+    is_marker_valid,
+    max_source_mtime,
+    symbol_dir,
+    write_marker,
+)
 
 __all__ = [
     "ArchiveClient",
@@ -31,6 +43,7 @@ __all__ = [
     "CmSymbolFilter",
     "DownloadRequest",
     "SpotSymbolFilter",
+    "SymbolListingResult",
     "SymbolFilter",
     "UmSymbolFilter",
     "VerifyFileResult",
@@ -38,6 +51,11 @@ __all__ = [
     "calc_sha256",
     "download_archive_files",
     "list_symbols",
+    "clear_markers",
+    "is_marker_valid",
+    "max_source_mtime",
     "read_expected_checksum",
+    "symbol_dir",
     "verify_single_file",
+    "write_marker",
 ]

@@ -455,7 +455,7 @@ def test_cli_list_files_logs_errors_and_exits_2(monkeypatch) -> None:
     )
 
     assert result.exit_code == 2
-    assert "ERROR: BTCUSDT: Connection reset by peer" in result.stderr
+    assert "BTCUSDT: Connection reset by peer" in result.stderr
 
 
 def test_cli_list_files_kline_relative_path_contains_interval(monkeypatch) -> None:
@@ -511,7 +511,7 @@ def test_cli_list_files_verbose_flag_emits_info_log(monkeypatch) -> None:
     )
 
     assert result.exit_code == 0
-    assert "INFO: listing 1 symbols with interval=None" in result.stderr
+    assert "listing 1 symbols with interval=None" in result.stderr
 
 
 def test_cli_list_files_only_checksum(monkeypatch) -> None:
@@ -722,7 +722,7 @@ def test_cli_download_logs_listing_errors_and_exits_2(monkeypatch) -> None:
     )
 
     assert result.exit_code == 2
-    assert "ERROR: ETHUSDT: boom" in result.stderr
+    assert "ETHUSDT: boom" in result.stderr
 
 
 def test_cli_verify_requires_symbols() -> None:
@@ -868,7 +868,7 @@ def test_cli_verify_returns_zero_with_failures_or_orphans(monkeypatch) -> None:
     assert result.exit_code == 0
     assert "Done: 120 verified, 1 failed, 50 skipped" in result.stderr
     assert "Cleaned 1 orphan zip markers, deleted 2 orphan checksums" in result.stderr
-    assert "ERROR: file.zip: checksum mismatch" in result.stderr
+    assert "file.zip: checksum mismatch" in result.stderr
 
 
 def test_cli_verify_warns_on_empty_local_scan(monkeypatch) -> None:

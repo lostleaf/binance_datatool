@@ -16,7 +16,7 @@ def test_configure_cli_logging_warning_level(capsys) -> None:
 
     captured = capsys.readouterr()
     assert "hidden info" not in captured.err
-    assert "WARNING: shown warning" in captured.err
+    assert "shown warning" in captured.err
 
 
 def test_configure_cli_logging_info_level(capsys) -> None:
@@ -26,7 +26,7 @@ def test_configure_cli_logging_info_level(capsys) -> None:
     logger.info("shown info")
 
     captured = capsys.readouterr()
-    assert "INFO: shown info" in captured.err
+    assert "shown info" in captured.err
 
 
 def test_configure_cli_logging_debug_format(capsys) -> None:

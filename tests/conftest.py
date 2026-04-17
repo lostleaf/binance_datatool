@@ -41,6 +41,28 @@ class FakeArchiveClient:
             raise self._errors[symbol]
         return list(self._files.get(symbol, []))
 
+    async def list_symbol_files_batch(
+        self,
+        trade_type,
+        data_freq,
+        data_type,
+        symbols,
+        interval=None,
+    ) -> dict[str, tuple[list[ArchiveFile], str | None]]:
+        del trade_type, data_freq, data_type, interval
+        return {
+            symbol: (
+                [],
+                str(self._errors[symbol]),
+            )
+            if symbol in self._errors
+            else (
+                list(self._files.get(symbol, [])),
+                None,
+            )
+            for symbol in symbols
+        }
+
 
 @pytest.fixture
 def sample_archive_files() -> list[ArchiveFile]:

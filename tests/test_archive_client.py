@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 import pytest
@@ -14,6 +14,9 @@ from binance_datatool.bhds.archive.client import (
     _extract_files_from_payload,
 )
 from binance_datatool.common import S3_HTTP_TIMEOUT_SECONDS, DataFrequency, DataType, TradeType
+
+if TYPE_CHECKING:
+    from binance_datatool.bhds.archive.client import SymbolListingResult
 
 
 @pytest.mark.asyncio
@@ -213,6 +216,125 @@ async def test_archive_client_list_symbol_files_validates_interval() -> None:
             "BTCUSDT",
             interval="1m",
         )
+
+
+@pytest.mark.asyncio
+async def test_archive_client_list_symbol_files_batch_preserves_order_and_shares_session(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Batch listings should preserve symbol order and reuse one shared session."""
+    client = ArchiveClient()
+    shared_session = object()
+
+    class FakeSession:
+        async def __aenter__(self) -> object:
+            return shared_session
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:
+            return None
+
+    captured_sessions: list[object] = []
+    per_symbol_files = {
+        "ETHUSDT": [],
+        "BTCUSDT": [
+            ArchiveFile(
+                key="data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip",
+                size=1048,
+                last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
+            )
+        ],
+    }
+
+    async def fake_list_symbol_files(
+        trade_type: TradeType,
+        data_freq: DataFrequency,
+        data_type: DataType,
+        symbol: str,
+        interval: str | None = None,
+        *,
+        session: object | None = None,
+    ) -> list[ArchiveFile]:
+        del trade_type, data_freq, data_type, interval
+        captured_sessions.append(session)
+        return per_symbol_files[symbol]
+
+    monkeypatch.setattr(client, "_create_session", lambda: FakeSession())
+    monkeypatch.setattr(client, "list_symbol_files", fake_list_symbol_files)
+
+    result: dict[str, SymbolListingResult] = await client.list_symbol_files_batch(
+        TradeType.um,
+        DataFrequency.monthly,
+        DataType.funding_rate,
+        ["ETHUSDT", "BTCUSDT"],
+    )
+
+    assert isinstance(result["BTCUSDT"], tuple)
+    assert list(result) == ["ETHUSDT", "BTCUSDT"]
+    assert result == {
+        "ETHUSDT": ([], None),
+        "BTCUSDT": (per_symbol_files["BTCUSDT"], None),
+    }
+    assert captured_sessions == [shared_session, shared_session]
+
+
+@pytest.mark.asyncio
+async def test_archive_client_list_symbol_files_batch_isolates_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Batch listings should convert per-symbol exceptions into structured errors."""
+    client = ArchiveClient()
+
+    class FakeSession:
+        async def __aenter__(self) -> object:
+            return object()
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:
+            return None
+
+    async def fake_list_symbol_files(
+        trade_type: TradeType,
+        data_freq: DataFrequency,
+        data_type: DataType,
+        symbol: str,
+        interval: str | None = None,
+        *,
+        session: object | None = None,
+    ) -> list[ArchiveFile]:
+        del trade_type, data_freq, data_type, interval, session
+        if symbol == "ETHUSDT":
+            raise aiohttp.ClientError("boom")
+        return []
+
+    monkeypatch.setattr(client, "_create_session", lambda: FakeSession())
+    monkeypatch.setattr(client, "list_symbol_files", fake_list_symbol_files)
+
+    result: dict[str, SymbolListingResult] = await client.list_symbol_files_batch(
+        TradeType.um,
+        DataFrequency.monthly,
+        DataType.funding_rate,
+        ["BTCUSDT", "ETHUSDT"],
+    )
+
+    assert result == {
+        "BTCUSDT": ([], None),
+        "ETHUSDT": ([], "boom"),
+    }
+
+
+@pytest.mark.asyncio
+async def test_archive_client_list_symbol_files_batch_returns_empty_dict_for_no_symbols() -> None:
+    """Empty input should short-circuit without creating a session."""
+    client = ArchiveClient()
+
+    result = await client.list_symbol_files_batch(
+        TradeType.um,
+        DataFrequency.monthly,
+        DataType.funding_rate,
+        [],
+    )
+
+    assert result == {}
+    assert isinstance(result, dict)
 
 
 @pytest.mark.integration

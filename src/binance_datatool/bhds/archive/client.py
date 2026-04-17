@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeAlias
 from urllib.parse import urlencode
 
 import aiohttp
@@ -16,7 +16,7 @@ from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt,
 from binance_datatool.common import S3_HTTP_TIMEOUT_SECONDS, S3_LISTING_PREFIX
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
 
     from binance_datatool.common.enums import DataFrequency, DataType, TradeType
 
@@ -106,6 +106,9 @@ class ArchiveFile:
     key: str
     size: int
     last_modified: datetime
+
+
+SymbolListingResult: TypeAlias = tuple[list[ArchiveFile], str | None]
 
 
 class ArchiveClient:
@@ -304,6 +307,52 @@ class ArchiveClient:
                 return await self.list_files_in_dir(local_session, prefix)
 
         return await self.list_files_in_dir(session, prefix)
+
+    async def list_symbol_files_batch(
+        self,
+        trade_type: TradeType,
+        data_freq: DataFrequency,
+        data_type: DataType,
+        symbols: Sequence[str],
+        interval: str | None = None,
+    ) -> dict[str, SymbolListingResult]:
+        """List files for multiple symbols concurrently via a shared session.
+
+        Args:
+            trade_type: Market segment (spot, um, cm).
+            data_freq: Partition frequency (daily, monthly).
+            data_type: Dataset type (klines, fundingRate, etc.).
+            symbols: Symbols to list in caller-provided order.
+            interval: Kline interval directory such as ``"1m"``. Required
+                when ``data_type.has_interval_layer`` is ``True`` and must
+                be ``None`` otherwise.
+
+        Returns:
+            Ordered mapping from each input symbol to ``(files, error)``.
+            Successful results store ``([], None)`` for empty directories.
+            Failed results store ``([], "<message>")``.
+        """
+        if not symbols:
+            return {}
+
+        async with self._create_session() as session:
+            tasks = [
+                self.list_symbol_files(
+                    trade_type,
+                    data_freq,
+                    data_type,
+                    symbol,
+                    interval,
+                    session=session,
+                )
+                for symbol in symbols
+            ]
+            outcomes = await asyncio.gather(*tasks, return_exceptions=True)
+
+        return {
+            symbol: (([], str(outcome)) if isinstance(outcome, BaseException) else (outcome, None))
+            for symbol, outcome in zip(symbols, outcomes, strict=True)
+        }
 
 
 async def list_symbols(
