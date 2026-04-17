@@ -7,6 +7,8 @@ import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import TYPE_CHECKING
 
+from loguru import logger
+
 from binance_datatool.bhds.archive import (
     clear_markers,
     is_marker_valid,
@@ -177,11 +179,29 @@ class ArchiveVerifyWorkflow:
             :class:`VerifyResult` with aggregated counts and per-file failure
             details.
         """
+        logger.info("scanning local store for verify work")
         diff_result = self._scan()
+        logger.info(
+            "scan complete: {} already verified, {} to verify, {} orphan zip(s),"
+            " {} orphan checksum(s)",
+            diff_result.skipped,
+            len(diff_result.to_verify),
+            len(diff_result.orphan_zips),
+            len(diff_result.orphan_checksums),
+        )
+
         if self.dry_run:
             return diff_result
 
+        if diff_result.orphan_zips or diff_result.orphan_checksums:
+            logger.info(
+                "cleaning {} orphan zip(s) and {} orphan checksum(s)",
+                len(diff_result.orphan_zips),
+                len(diff_result.orphan_checksums),
+            )
         self._clean_orphans(diff_result)
+
+        logger.info("verifying {} file(s) with {} worker(s)", len(diff_result.to_verify), self.n_workers)
         verify_results = self._verify_paths(diff_result.to_verify)
         failed_details: dict[Path, str] = {}
         verified = 0
@@ -192,6 +212,8 @@ class ArchiveVerifyWorkflow:
                 verified += 1
                 continue
             failed_details[result.zip_path] = result.detail
+
+        logger.info("verify complete: {} passed, {} failed", verified, len(failed_details))
 
         return VerifyResult(
             skipped=diff_result.skipped,
