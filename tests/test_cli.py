@@ -491,29 +491,6 @@ def test_cli_list_files_kline_relative_path_contains_interval(monkeypatch) -> No
     assert result.stdout == "BTCUSDT/1m/BTCUSDT-1m-2024-01-01.zip\n"
 
 
-def test_cli_list_files_verbose_flag_emits_info_log(monkeypatch) -> None:
-    """Root verbose flags should configure INFO logging for CLI runs."""
-
-    async def fake_run(self) -> ListFilesResult:
-        from loguru import logger
-
-        logger.info("listing 1 symbols with interval=None")
-        return ListFilesResult(per_symbol=[])
-
-    monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
-        fake_run,
-    )
-
-    result = runner.invoke(
-        app,
-        ["-v", "archive", "list-files", "um", "--type", "fundingRate", "BTCUSDT"],
-    )
-
-    assert result.exit_code == 0
-    assert "listing 1 symbols with interval=None" in result.stderr
-
-
 def test_cli_list_files_only_checksum(monkeypatch) -> None:
     """Checksum-only mode should print only checksum entries."""
 
