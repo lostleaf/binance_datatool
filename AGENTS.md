@@ -75,6 +75,8 @@
 - Use `pytest` as the test runner and keep tests readable enough for agent-assisted maintenance.
 - When adding data-processing behavior, include representative fixtures or focused regression
   coverage.
+- Focus tests on functional correctness and observable behavior, not on logging implementation
+  details such as how loguru renders or routes messages to stderr.
 
 ## Repository Boundaries
 - `temp/` is git-ignored and may contain temporary or non-public materials.
