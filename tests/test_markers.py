@@ -9,7 +9,8 @@ import pytest
 
 from binance_datatool.bhds.archive.markers import (
     clear_markers,
-    is_marker_valid,
+    collect_markers_by_zip,
+    is_marker_fresh,
     max_source_mtime,
     symbol_dir,
     write_marker,
@@ -117,42 +118,6 @@ def test_max_source_mtime_uses_newer_checksum_mtime(tmp_path: Path) -> None:
     assert max_source_mtime(zip_path) == 1001
 
 
-def test_is_marker_valid_with_fresh_timestamped_marker(tmp_path: Path) -> None:
-    """Fresh timestamped markers should skip verification."""
-    zip_path = _write_verify_pair(tmp_path, "sample.zip")
-    marker = tmp_path / "sample.zip.1001.verified"
-    os.utime(zip_path, (1000.1, 1000.1))
-    os.utime(tmp_path / "sample.zip.CHECKSUM", (1000.9, 1000.9))
-    marker.write_text("", encoding="utf-8")
-
-    assert is_marker_valid(zip_path) is True
-
-
-def test_is_marker_valid_with_stale_timestamped_marker(tmp_path: Path) -> None:
-    """Stale timestamped markers should not skip verification."""
-    zip_path = _write_verify_pair(tmp_path, "sample.zip")
-    marker = tmp_path / "sample.zip.1000.verified"
-    os.utime(zip_path, (1000.1, 1000.1))
-    os.utime(tmp_path / "sample.zip.CHECKSUM", (1000.9, 1000.9))
-    marker.write_text("", encoding="utf-8")
-
-    assert is_marker_valid(zip_path) is False
-
-
-def test_is_marker_valid_without_timestamped_marker(tmp_path: Path) -> None:
-    """Missing timestamped markers should force verification."""
-    zip_path = _write_verify_pair(tmp_path, "sample.zip")
-
-    assert is_marker_valid(zip_path) is False
-
-
-def test_is_marker_valid_with_legacy_marker_only(tmp_path: Path) -> None:
-    """Legacy markers alone should not count as fresh verification state."""
-    zip_path = _write_verify_pair(tmp_path, "sample.zip")
-    (tmp_path / "sample.zip.verified").write_text("", encoding="utf-8")
-
-    assert is_marker_valid(zip_path) is False
-
 
 def test_write_marker_creates_fresh_timestamped_marker(
     tmp_path: Path,
@@ -171,3 +136,120 @@ def test_write_marker_creates_fresh_timestamped_marker(
     assert len(markers) == 1
     timestamp = int(markers[0].name.removeprefix("sample.zip.").removesuffix(".verified"))
     assert timestamp >= max_source_mtime(zip_path)
+
+
+# ---------------------------------------------------------------------------
+# is_marker_fresh
+# ---------------------------------------------------------------------------
+
+
+def test_is_marker_fresh_returns_true_when_timestamp_equals_source_mtime(tmp_path: Path) -> None:
+    """A marker timestamp exactly matching the source mtime should be considered fresh."""
+    zip_path = _write_verify_pair(tmp_path, "sample.zip")
+    os.utime(zip_path, (1000.0, 1000.0))
+    os.utime(tmp_path / "sample.zip.CHECKSUM", (1000.0, 1000.0))
+
+    assert is_marker_fresh(zip_path, [1000]) is True
+
+
+def test_is_marker_fresh_returns_true_when_timestamp_newer_than_source(tmp_path: Path) -> None:
+    """A marker timestamp newer than the source files should be considered fresh."""
+    zip_path = _write_verify_pair(tmp_path, "sample.zip")
+    os.utime(zip_path, (1000.0, 1000.0))
+    os.utime(tmp_path / "sample.zip.CHECKSUM", (1000.0, 1000.0))
+
+    assert is_marker_fresh(zip_path, [999, 1001]) is True
+
+
+def test_is_marker_fresh_returns_false_when_all_timestamps_older_than_source(tmp_path: Path) -> None:
+    """Marker timestamps all older than the source files should not be considered fresh."""
+    zip_path = _write_verify_pair(tmp_path, "sample.zip")
+    os.utime(zip_path, (1000.9, 1000.9))
+    os.utime(tmp_path / "sample.zip.CHECKSUM", (1000.9, 1000.9))
+    # max_source_mtime will be ceil(1000.9) == 1001
+
+    assert is_marker_fresh(zip_path, [1000]) is False
+
+
+def test_is_marker_fresh_returns_false_for_empty_timestamps(tmp_path: Path) -> None:
+    """An empty timestamp list should not be considered fresh."""
+    zip_path = _write_verify_pair(tmp_path, "sample.zip")
+
+    assert is_marker_fresh(zip_path, []) is False
+
+
+# ---------------------------------------------------------------------------
+# collect_markers_by_zip
+# ---------------------------------------------------------------------------
+
+
+def test_collect_markers_by_zip_returns_empty_for_no_markers(tmp_path: Path) -> None:
+    """collect_markers_by_zip should return an empty dict when no markers exist."""
+    zip_path = _write_verify_pair(tmp_path, "a.zip")
+
+    result = collect_markers_by_zip([zip_path])
+
+    assert result == {}
+
+
+def test_collect_markers_by_zip_collects_legacy_marker(tmp_path: Path) -> None:
+    """collect_markers_by_zip should find legacy {zip}.verified markers."""
+    zip_path = _write_verify_pair(tmp_path, "a.zip")
+    marker = tmp_path / "a.zip.verified"
+    marker.touch()
+
+    result = collect_markers_by_zip([zip_path])
+
+    assert result == {zip_path: [marker]}
+
+
+def test_collect_markers_by_zip_collects_timestamped_markers(tmp_path: Path) -> None:
+    """collect_markers_by_zip should find all timestamped {zip}.{ts}.verified markers."""
+    zip_path = _write_verify_pair(tmp_path, "a.zip")
+    m1 = tmp_path / "a.zip.100.verified"
+    m2 = tmp_path / "a.zip.200.verified"
+    m1.touch()
+    m2.touch()
+
+    result = collect_markers_by_zip([zip_path])
+
+    assert zip_path in result
+    assert set(result[zip_path]) == {m1, m2}
+
+
+def test_collect_markers_by_zip_ignores_markers_for_other_zips(tmp_path: Path) -> None:
+    """collect_markers_by_zip should not return markers belonging to other zip files."""
+    zip_a = _write_verify_pair(tmp_path, "a.zip")
+    _write_verify_pair(tmp_path, "b.zip")
+    (tmp_path / "b.zip.100.verified").touch()
+
+    result = collect_markers_by_zip([zip_a])
+
+    assert result == {}
+
+
+def test_collect_markers_by_zip_handles_multiple_directories(tmp_path: Path) -> None:
+    """collect_markers_by_zip should scan each unique directory once."""
+    dir_a = tmp_path / "dir_a"
+    dir_b = tmp_path / "dir_b"
+    zip_a = _write_verify_pair(dir_a, "a.zip")
+    zip_b = _write_verify_pair(dir_b, "b.zip")
+    m_a = dir_a / "a.zip.100.verified"
+    m_b = dir_b / "b.zip.200.verified"
+    m_a.touch()
+    m_b.touch()
+
+    result = collect_markers_by_zip([zip_a, zip_b])
+
+    assert result == {zip_a: [m_a], zip_b: [m_b]}
+
+
+def test_collect_markers_by_zip_malformed_marker_is_collected(tmp_path: Path) -> None:
+    """Malformed {zip}.bad.verified markers should be collected for cleanup."""
+    zip_path = _write_verify_pair(tmp_path, "a.zip")
+    malformed = tmp_path / "a.zip.bad.verified"
+    malformed.touch()
+
+    result = collect_markers_by_zip([zip_path])
+
+    assert result == {zip_path: [malformed]}

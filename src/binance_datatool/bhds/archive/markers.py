@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import time
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -73,32 +74,6 @@ def max_source_mtime(zip_path: Path) -> int:
     return math.ceil(max(zip_path.stat().st_mtime, checksum_path.stat().st_mtime))
 
 
-def is_marker_valid(zip_path: Path) -> bool:
-    """Return whether a zip file already has a fresh timestamped marker.
-
-    Args:
-        zip_path: Zip file path.
-
-    Returns:
-        ``True`` when at least one timestamped marker is fresh enough for
-        the current zip/checksum pair, otherwise ``False``.
-    """
-    timestamps: list[int] = []
-    for marker_path in zip_path.parent.glob(f"{zip_path.name}.*.verified"):
-        timestamp_str = (
-            marker_path.name.removeprefix(zip_path.name).removesuffix(".verified").strip(".")
-        )
-        try:
-            timestamps.append(int(timestamp_str))
-        except ValueError:
-            continue
-
-    if not timestamps:
-        return False
-
-    return max(timestamps) >= max_source_mtime(zip_path)
-
-
 def write_marker(zip_path: Path) -> None:
     """Create a fresh timestamped marker for a verified zip file.
 
@@ -108,3 +83,65 @@ def write_marker(zip_path: Path) -> None:
     timestamp = max(int(time.time()), max_source_mtime(zip_path))
     marker_path = zip_path.parent / f"{zip_path.name}.{timestamp}.verified"
     marker_path.touch()
+
+
+def _match_marker_to_zip(marker_name: str, zip_names: set[str]) -> str | None:
+    """Match a ``*.verified`` filename to the zip file it belongs to.
+
+    Handles both legacy (``{zip}.verified``) and timestamped
+    (``{zip}.{ts}.verified``) patterns. Malformed marker names that cannot be
+    matched are treated as belonging to the zip for cleanup purposes.
+
+    Returns:
+        The matching zip filename, or ``None`` if no match is found.
+    """
+    without_suffix = marker_name.removesuffix(".verified")
+    if without_suffix in zip_names:
+        return without_suffix
+    last_dot = without_suffix.rfind(".")
+    if last_dot != -1 and without_suffix[:last_dot] in zip_names:
+        return without_suffix[:last_dot]
+    return None
+
+
+def is_marker_fresh(zip_path: Path, timestamps: list[int]) -> bool:
+    """Return True if any marker timestamp is no older than the zip/checksum pair.
+
+    Args:
+        zip_path: Zip file to check. Both the zip and its sibling ``.CHECKSUM``
+            file must exist on disk; this function calls ``max_source_mtime``
+            which stats both files.
+        timestamps: List of marker timestamps for this zip.
+
+    Returns:
+        True if the newest marker timestamp is at least as recent as the source
+        files; False when the list is empty or all timestamps are stale.
+    """
+    return bool(timestamps) and max(timestamps) >= max_source_mtime(zip_path)
+
+
+def collect_markers_by_zip(zip_paths: list[Path]) -> dict[Path, list[Path]]:
+    """Collect all verification markers for a list of zip files.
+
+    Scans each unique parent directory once and maps each zip path to its
+    matching marker paths. Zip paths with no markers are omitted from the
+    returned mapping.
+
+    Args:
+        zip_paths: Zip file paths to find markers for.
+
+    Returns:
+        Mapping from zip path to its associated marker paths.
+    """
+    dirs_to_zip_names: dict[Path, set[str]] = defaultdict(set)
+    for zip_path in zip_paths:
+        dirs_to_zip_names[zip_path.parent].add(zip_path.name)
+
+    markers_by_zip: dict[Path, list[Path]] = defaultdict(list)
+    for dir_path, zip_names in dirs_to_zip_names.items():
+        for marker_path in dir_path.glob("*.verified"):
+            zip_name = _match_marker_to_zip(marker_path.name, zip_names)
+            if zip_name is not None:
+                markers_by_zip[dir_path / zip_name].append(marker_path)
+
+    return dict(markers_by_zip)
