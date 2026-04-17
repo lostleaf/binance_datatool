@@ -32,6 +32,7 @@ class ArchiveListFilesWorkflow:
         data_type: DataType,
         symbols: Sequence[str],
         interval: str | None = None,
+        progress_bar: bool = False,
         client: ArchiveClient | None = None,
     ) -> None:
         """Initialize the workflow.
@@ -42,6 +43,7 @@ class ArchiveListFilesWorkflow:
             data_type: Dataset type.
             symbols: Symbols to list, preserving caller order.
             interval: Interval directory for kline-class data types.
+            progress_bar: Whether to render an interactive tqdm progress bar.
             client: Optional pre-configured archive client.
         """
         validate_interval(data_type, interval)
@@ -51,6 +53,7 @@ class ArchiveListFilesWorkflow:
         self.data_type = data_type
         self.symbols = list(symbols)
         self.interval = interval
+        self.progress_bar = progress_bar
         self.client = client or ArchiveClient()
 
     async def run(self) -> ListFilesResult:
@@ -75,6 +78,7 @@ class ArchiveListFilesWorkflow:
             self.data_type,
             self.symbols,
             self.interval,
+            progress_bar=self.progress_bar,
         )
         per_symbol = [
             SymbolListFilesResult(symbol=symbol, files=files, error=error)

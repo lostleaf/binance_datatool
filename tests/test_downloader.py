@@ -120,3 +120,74 @@ def test_download_archive_files_splits_batches_and_retries(monkeypatch, tmp_path
     assert call_count == 3
     assert result.succeeded == 3
     assert result.failed_requests == []
+
+
+def test_download_archive_files_reports_round_progress(monkeypatch, tmp_path) -> None:
+    """Each retry round should create one reporter and tick it per processed batch."""
+    returncodes = [1, 0, 0]
+    captured_reporters: list[dict[str, object]] = []
+
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/aria2c")
+
+    def fake_run(cmd, check, env):  # noqa: ANN001
+        del cmd, check, env
+        return SimpleNamespace(returncode=returncodes.pop(0))
+
+    class FakeReporter:
+        def __init__(self, metadata: dict[str, object]) -> None:
+            self.metadata = metadata
+
+        def __enter__(self) -> FakeReporter:
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def tick(self, event) -> None:  # noqa: ANN001
+            self.metadata["events"].append((event.name, event.ok, event.count))
+
+    def fake_make_reporter(progress_bar: bool, *, total: int, description: str) -> FakeReporter:
+        metadata: dict[str, object] = {
+            "progress_bar": progress_bar,
+            "total": total,
+            "description": description,
+            "events": [],
+        }
+        captured_reporters.append(metadata)
+        return FakeReporter(metadata)
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "binance_datatool.bhds.archive.downloader.make_reporter", fake_make_reporter
+    )
+
+    requests = [
+        DownloadRequest(
+            url=f"https://data.binance.vision/data/spot/file-{index}.zip",
+            local_path=tmp_path / f"file-{index}.zip",
+        )
+        for index in range(3)
+    ]
+    result = download_archive_files(
+        requests,
+        inherit_proxy=False,
+        batch_size=2,
+        max_tries=2,
+        progress_bar=True,
+    )
+
+    assert result.failed_requests == []
+    assert captured_reporters == [
+        {
+            "progress_bar": True,
+            "total": 3,
+            "description": "download",
+            "events": [("batch 1/2", False, 2), ("batch 2/2", True, 1)],
+        },
+        {
+            "progress_bar": True,
+            "total": 2,
+            "description": "download retry 1",
+            "events": [("batch 1/1", True, 2)],
+        },
+    ]

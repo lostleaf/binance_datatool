@@ -14,10 +14,10 @@ from binance_datatool.bhds.archive import (
     ArchiveClient,
     ArchiveFile,
     Aria2DownloadResult,
-    BatchProgressEvent,
     CmSymbolFilter,
     SpotSymbolFilter,
     UmSymbolFilter,
+    VerifyFileResult,
 )
 from binance_datatool.bhds.workflow.archive import (
     ArchiveDownloadWorkflow,
@@ -182,6 +182,26 @@ async def test_archive_list_files_workflow_preserves_input_order(sample_archive_
     assert result.per_symbol[0].files == []
     assert result.per_symbol[1].files == sample_archive_files
     assert result.has_failures is False
+
+
+@pytest.mark.asyncio
+async def test_archive_list_files_workflow_passes_progress_bar_to_client(
+    sample_archive_files,
+) -> None:
+    """Workflow progress-bar settings should flow through to the archive client."""
+    client = FakeArchiveClient(files_by_symbol={"BTCUSDT": sample_archive_files})
+    workflow = ArchiveListFilesWorkflow(
+        trade_type=TradeType.um,
+        data_freq=DataFrequency.monthly,
+        data_type=DataType.funding_rate,
+        symbols=["BTCUSDT"],
+        progress_bar=True,
+        client=client,
+    )
+
+    await workflow.run()
+
+    assert client.last_list_symbol_files_batch_progress_bar is True
 
 
 @pytest.mark.asyncio
@@ -412,41 +432,22 @@ async def test_archive_download_workflow_returns_listing_failures_and_download_c
     assert (tmp_path / "missing-home").exists()
 
 
-def test_archive_download_workflow_uses_tqdm_write_for_batch_messages(
-    monkeypatch,
+@pytest.mark.asyncio
+async def test_archive_download_workflow_passes_progress_bar_to_dependencies(
     tmp_path,
 ) -> None:
-    """Progress-mode batch messages should go through tqdm to preserve the bar state."""
+    """Download workflow should pass progress-bar settings to list and download layers."""
+    remote_file = ArchiveFile(
+        key="data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip",
+        size=100,
+        last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),
+    )
+    client = FakeArchiveClient(files_by_symbol={"BTCUSDT": [remote_file]})
+    captured_kwargs: dict[str, object] = {}
 
-    class FakeTqdm:
-        def __init__(
-            self,
-            *,
-            total: int,
-            disable: bool,
-            file,
-            unit: str,
-            leave: bool,
-        ) -> None:
-            self.total = total
-            self.disable = disable
-            self.file = file
-            self.unit = unit
-            self.leave = leave
-            self.messages: list[str] = []
-            self.updates: list[int] = []
-
-        def write(self, message: str, *, file) -> None:
-            assert file is self.file
-            self.messages.append(message)
-
-        def update(self, amount: int) -> None:
-            self.updates.append(amount)
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr("binance_datatool.bhds.workflow.archive.download.tqdm", FakeTqdm)
+    def fake_download(requests, **kwargs):  # noqa: ANN001
+        captured_kwargs.update(kwargs)
+        return Aria2DownloadResult(requested=len(requests), failed_requests=[])
 
     workflow = ArchiveDownloadWorkflow(
         trade_type=TradeType.um,
@@ -455,34 +456,113 @@ def test_archive_download_workflow_uses_tqdm_write_for_batch_messages(
         symbols=["BTCUSDT"],
         bhds_home=tmp_path,
         dry_run=False,
-        client=FakeArchiveClient(),
-        show_progress=True,
+        progress_bar=True,
+        client=client,
+        download_func=fake_download,
     )
 
-    callback, progress_bar = workflow._build_progress_callback(total_requests=2)
-    callback(
-        BatchProgressEvent(
-            phase="start",
-            batch_index=1,
-            total_batches=1,
-            requested=2,
-            attempt=1,
-            max_tries=3,
+    result = await workflow.run()
+
+    assert result.downloaded == 1
+    assert client.last_list_symbol_files_batch_progress_bar is True
+    assert captured_kwargs == {
+        "inherit_proxy": False,
+        "progress_bar": True,
+    }
+
+
+def test_verify_workflow_reports_progress_via_shared_reporter(monkeypatch, tmp_path) -> None:
+    """Verify progress should flow through the shared reporter abstraction."""
+    first = tmp_path / "first.zip"
+    second = tmp_path / "second.zip"
+    zip_paths = [first, second]
+    captured: dict[str, object] = {}
+    events: list[tuple[str, bool, int]] = []
+
+    class FakeReporter:
+        def __enter__(self) -> FakeReporter:
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def tick(self, event) -> None:  # noqa: ANN001
+            events.append((event.name, event.ok, event.count))
+
+    class FakeFuture:
+        def __init__(self, result: VerifyFileResult) -> None:
+            self._result = result
+
+        def result(self) -> VerifyFileResult:
+            return self._result
+
+    class FakeExecutor:
+        def __init__(self, *, max_workers: int, mp_context) -> None:  # noqa: ANN001
+            del max_workers, mp_context
+
+        def __enter__(self) -> FakeExecutor:
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def submit(self, func, zip_path: Path) -> FakeFuture:  # noqa: ANN001
+            return FakeFuture(func(zip_path))
+
+    def fake_make_reporter(progress_bar: bool, *, total: int, description: str) -> FakeReporter:
+        captured.update(
+            progress_bar=progress_bar,
+            total=total,
+            description=description,
         )
+        return FakeReporter()
+
+    def fake_verify_single_file(zip_path: Path) -> VerifyFileResult:
+        return VerifyFileResult(
+            zip_path=zip_path,
+            passed=zip_path.name == "second.zip",
+            detail="" if zip_path.name == "second.zip" else "checksum mismatch",
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.verify.make_reporter",
+        fake_make_reporter,
     )
-    callback(
-        BatchProgressEvent(
-            phase="success",
-            batch_index=1,
-            total_batches=1,
-            requested=2,
-            attempt=1,
-            max_tries=3,
-        )
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.verify.ProcessPoolExecutor",
+        FakeExecutor,
+    )
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.verify.as_completed",
+        lambda futures: list(reversed(futures)),
+    )
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.verify.verify_single_file",
+        fake_verify_single_file,
     )
 
-    assert progress_bar.messages == ["Downloading batch 1/1 (2 files)..."]
-    assert progress_bar.updates == [2]
+    workflow = ArchiveVerifyWorkflow(
+        trade_type=TradeType.spot,
+        data_freq=DataFrequency.daily,
+        data_type=DataType.klines,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        interval="1m",
+        progress_bar=True,
+    )
+
+    results = workflow._verify_paths(zip_paths)
+
+    assert results == [
+        VerifyFileResult(zip_path=first, passed=False, detail="checksum mismatch"),
+        VerifyFileResult(zip_path=second, passed=True, detail=""),
+    ]
+    assert captured == {
+        "progress_bar": True,
+        "total": 2,
+        "description": "Verify",
+    }
+    assert events == [("second.zip", True, 1), ("first.zip", False, 1)]
 
 
 def test_verify_workflow_diff_classifies_files(tmp_path) -> None:

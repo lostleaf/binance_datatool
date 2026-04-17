@@ -15,7 +15,6 @@ from binance_datatool.bhds.archive.client import (
 from binance_datatool.bhds.archive.downloader import (
     Aria2DownloadResult,
     Aria2NotFoundError,
-    BatchProgressEvent,
     DownloadRequest,
     download_archive_files,
 )
@@ -39,7 +38,6 @@ __all__ = [
     "ArchiveFile",
     "Aria2DownloadResult",
     "Aria2NotFoundError",
-    "BatchProgressEvent",
     "CmSymbolFilter",
     "DownloadRequest",
     "SpotSymbolFilter",

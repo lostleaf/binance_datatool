@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from loguru import logger
-from tqdm import tqdm
 
 from binance_datatool.bhds.archive import (
     ArchiveClient,
@@ -22,7 +20,7 @@ from .results import DiffEntry, DiffResult, DownloadResult, SymbolListingError
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from binance_datatool.bhds.archive import Aria2DownloadResult, BatchProgressEvent
+    from binance_datatool.bhds.archive import Aria2DownloadResult
     from binance_datatool.common import DataFrequency, DataType, TradeType
 
     from .results import ListFilesResult
@@ -41,7 +39,7 @@ class ArchiveDownloadWorkflow:
         interval: str | None = None,
         dry_run: bool = False,
         inherit_aria2_proxy: bool = False,
-        show_progress: bool = False,
+        progress_bar: bool = False,
         client: ArchiveClient | None = None,
         download_func: Callable[..., Aria2DownloadResult] | None = None,
     ) -> None:
@@ -56,7 +54,7 @@ class ArchiveDownloadWorkflow:
             interval: Interval directory for kline-class data types.
             dry_run: When ``True``, compute the diff without downloading.
             inherit_aria2_proxy: Whether aria2c should inherit proxy env vars.
-            show_progress: Whether to display a tqdm progress bar on stderr.
+            progress_bar: Whether to display a tqdm progress bar on stderr.
             client: Optional pre-configured archive client.
             download_func: Optional download callable for dependency injection.
         """
@@ -68,7 +66,7 @@ class ArchiveDownloadWorkflow:
         self.interval = interval
         self.dry_run = dry_run
         self.inherit_aria2_proxy = inherit_aria2_proxy
-        self.show_progress = show_progress
+        self.progress_bar = progress_bar
         self.client = client or ArchiveClient()
         self.download_func = download_func or download_archive_files
 
@@ -120,45 +118,6 @@ class ArchiveDownloadWorkflow:
         for zip_path in targets:
             clear_markers(zip_path)
 
-    def _build_progress_callback(
-        self,
-        total_requests: int,
-    ) -> tuple[Callable[[BatchProgressEvent], None], tqdm]:
-        """Create a callback that prints batch progress to stderr."""
-        progress_bar = tqdm(
-            total=total_requests,
-            disable=not self.show_progress,
-            file=sys.stderr,
-            unit="file",
-            leave=True,
-        )
-
-        def emit(message: str) -> None:
-            """Write batch-status messages without corrupting the tqdm cursor state."""
-            if self.show_progress:
-                progress_bar.write(message, file=sys.stderr)
-                return
-            logger.info(message)
-
-        def callback(event: BatchProgressEvent) -> None:
-            if event.phase == "start":
-                if event.attempt == 1:
-                    emit(
-                        f"Downloading batch {event.batch_index}/{event.total_batches} "
-                        f"({event.requested} files)..."
-                    )
-                else:
-                    emit(
-                        f"Retrying batch {event.batch_index}/{event.total_batches} "
-                        f"({event.requested} files), attempt {event.attempt}/{event.max_tries}..."
-                    )
-                return
-
-            if event.phase in {"success", "failed"}:
-                progress_bar.update(event.requested)
-
-        return callback, progress_bar
-
     async def run(self) -> DiffResult | DownloadResult:
         """Execute the workflow and return either a diff or a download result.
 
@@ -172,6 +131,7 @@ class ArchiveDownloadWorkflow:
             data_type=self.data_type,
             symbols=self.symbols,
             interval=self.interval,
+            progress_bar=self.progress_bar,
             client=self.client,
         )
         list_result = await list_workflow.run()
@@ -204,15 +164,11 @@ class ArchiveDownloadWorkflow:
         ]
 
         logger.info("downloading {} file(s)", len(requests))
-        callback, progress_bar = self._build_progress_callback(len(requests))
-        try:
-            aria2_result = self.download_func(
-                requests,
-                inherit_proxy=self.inherit_aria2_proxy,
-                progress_callback=callback,
-            )
-        finally:
-            progress_bar.close()
+        aria2_result = self.download_func(
+            requests,
+            inherit_proxy=self.inherit_aria2_proxy,
+            progress_bar=self.progress_bar,
+        )
 
         return DownloadResult(
             total_remote=diff_result.total_remote,

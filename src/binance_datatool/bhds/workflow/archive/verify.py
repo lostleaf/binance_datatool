@@ -4,11 +4,8 @@ from __future__ import annotations
 
 import multiprocessing
 import os
-import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import TYPE_CHECKING
-
-from tqdm import tqdm
 
 from binance_datatool.bhds.archive import (
     clear_markers,
@@ -17,6 +14,7 @@ from binance_datatool.bhds.archive import (
     verify_single_file,
     write_marker,
 )
+from binance_datatool.common.progress import ProgressEvent, make_reporter
 
 from ._shared import validate_interval
 from .results import VerifyDiffResult, VerifyResult
@@ -43,7 +41,7 @@ class ArchiveVerifyWorkflow:
         keep_failed: bool = False,
         dry_run: bool = False,
         n_workers: int | None = None,
-        show_progress: bool = False,
+        progress_bar: bool = False,
     ) -> None:
         """Initialize the verify workflow.
 
@@ -59,7 +57,7 @@ class ArchiveVerifyWorkflow:
             dry_run: When ``True``, scan and classify files without verifying
                 or mutating the filesystem.
             n_workers: Process pool size. Defaults to ``max(1, cpu_count - 2)``.
-            show_progress: Whether to display a tqdm progress bar on stderr.
+            progress_bar: Whether to display a tqdm progress bar on stderr.
         """
         validate_interval(data_type, interval)
 
@@ -72,7 +70,7 @@ class ArchiveVerifyWorkflow:
         self.keep_failed = keep_failed
         self.dry_run = dry_run
         self.n_workers = n_workers or max(1, (os.cpu_count() or 1) - 2)
-        self.show_progress = show_progress
+        self.progress_bar = progress_bar
 
     def _scan(self) -> VerifyDiffResult:
         """Scan local symbol directories and classify verify work."""
@@ -134,25 +132,23 @@ class ArchiveVerifyWorkflow:
         if not zip_paths:
             return []
 
-        progress_bar = tqdm(
-            total=len(zip_paths),
-            disable=not self.show_progress,
-            file=sys.stderr,
-            unit="file",
-            leave=True,
-        )
-        try:
-            with ProcessPoolExecutor(
+        with (
+            make_reporter(
+                self.progress_bar,
+                total=len(zip_paths),
+                description="Verify",
+            ) as reporter,
+            ProcessPoolExecutor(
                 max_workers=self.n_workers,
                 mp_context=multiprocessing.get_context("spawn"),
-            ) as executor:
-                futures = [executor.submit(verify_single_file, zip_path) for zip_path in zip_paths]
-                results: list[VerifyFileResult] = []
-                for future in as_completed(futures):
-                    results.append(future.result())
-                    progress_bar.update(1)
-        finally:
-            progress_bar.close()
+            ) as executor,
+        ):
+            futures = [executor.submit(verify_single_file, zip_path) for zip_path in zip_paths]
+            results: list[VerifyFileResult] = []
+            for future in as_completed(futures):
+                result = future.result()
+                results.append(result)
+                reporter.tick(ProgressEvent(name=result.zip_path.name, ok=result.passed))
 
         result_by_path = {result.zip_path: result for result in results}
         return [result_by_path[zip_path] for zip_path in zip_paths]

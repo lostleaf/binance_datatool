@@ -10,8 +10,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from loguru import logger
+
+from binance_datatool.common.progress import ProgressEvent, make_reporter
+
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Sequence
 
 PROXY_ENV_VARS = (
     "http_proxy",
@@ -35,18 +39,6 @@ class DownloadRequest:
 
     url: str
     local_path: Path
-
-
-@dataclass(slots=True, frozen=True)
-class BatchProgressEvent:
-    """Progress callback payload for one batch event."""
-
-    phase: str
-    batch_index: int
-    total_batches: int
-    requested: int
-    attempt: int
-    max_tries: int
 
 
 @dataclass(slots=True)
@@ -140,7 +132,7 @@ def download_archive_files(
     inherit_proxy: bool,
     batch_size: int = 4096,
     max_tries: int = 3,
-    progress_callback: Callable[[BatchProgressEvent], None] | None = None,
+    progress_bar: bool = False,
 ) -> Aria2DownloadResult:
     """Download requests with aria2 using batch retry semantics.
 
@@ -149,7 +141,7 @@ def download_archive_files(
         inherit_proxy: Whether aria2 should inherit proxy-related env vars.
         batch_size: Number of files per aria2 batch.
         max_tries: Maximum retry rounds for failed batches.
-        progress_callback: Optional callback for batch lifecycle events.
+        progress_bar: Whether to render an interactive tqdm progress bar.
 
     Returns:
         Aggregated aria2 result.
@@ -161,50 +153,33 @@ def download_archive_files(
     pending_batches = _chunk_requests(list(requests), batch_size=batch_size)
 
     for attempt in range(1, max_tries + 1):
-        total_batches = len(pending_batches)
+        total_this_round = sum(len(batch) for batch in pending_batches)
+        description = "download" if attempt == 1 else f"download retry {attempt - 1}"
+        logger.info(
+            "{}: {} file(s) in {} batch(es)",
+            description,
+            total_this_round,
+            len(pending_batches),
+        )
         failed_batches: list[list[DownloadRequest]] = []
 
-        for batch_index, batch in enumerate(pending_batches, start=1):
-            if progress_callback is not None:
-                progress_callback(
-                    BatchProgressEvent(
-                        phase="start",
-                        batch_index=batch_index,
-                        total_batches=total_batches,
-                        requested=len(batch),
-                        attempt=attempt,
-                        max_tries=max_tries,
+        with make_reporter(
+            progress_bar,
+            total=total_this_round,
+            description=description,
+        ) as reporter:
+            for batch_index, batch in enumerate(pending_batches, start=1):
+                returncode = _run_batch(executable, batch, inherit_proxy=inherit_proxy)
+                ok = returncode == 0
+                reporter.tick(
+                    ProgressEvent(
+                        name=f"batch {batch_index}/{len(pending_batches)}",
+                        ok=ok,
+                        count=len(batch),
                     )
                 )
-
-            returncode = _run_batch(executable, batch, inherit_proxy=inherit_proxy)
-            if returncode == 0:
-                if progress_callback is not None:
-                    progress_callback(
-                        BatchProgressEvent(
-                            phase="success",
-                            batch_index=batch_index,
-                            total_batches=total_batches,
-                            requested=len(batch),
-                            attempt=attempt,
-                            max_tries=max_tries,
-                        )
-                    )
-                continue
-
-            failed_batches.append(batch)
-            phase = "retry" if attempt < max_tries else "failed"
-            if progress_callback is not None:
-                progress_callback(
-                    BatchProgressEvent(
-                        phase=phase,
-                        batch_index=batch_index,
-                        total_batches=total_batches,
-                        requested=len(batch),
-                        attempt=attempt,
-                        max_tries=max_tries,
-                    )
-                )
+                if not ok:
+                    failed_batches.append(batch)
 
         if not failed_batches:
             return Aria2DownloadResult(requested=len(requests), failed_requests=[])

@@ -565,6 +565,34 @@ def test_cli_list_files_warns_on_empty_remote_without_failures(monkeypatch) -> N
     assert "Warning: no archive files found" in result.stderr
 
 
+def test_cli_list_files_passes_progress_bar_flag(monkeypatch) -> None:
+    """The list-files progress-bar flag should reach the workflow."""
+
+    async def fake_run(self) -> ListFilesResult:
+        assert self.progress_bar is True
+        return ListFilesResult(per_symbol=[])
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "archive",
+            "list-files",
+            "um",
+            "--type",
+            "fundingRate",
+            "--progress-bar",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
+
+
 def test_cli_download_requires_symbols() -> None:
     """Download should reject calls without symbols from args or stdin."""
     result = runner.invoke(app, ["archive", "download", "um", "--type", "fundingRate"])
@@ -633,7 +661,6 @@ def test_cli_download_passes_bhds_home_and_proxy_flag(monkeypatch) -> None:
     async def fake_run(self) -> DownloadResult:
         assert self.bhds_home == Path("/tmp/bhds-home")
         assert self.inherit_aria2_proxy is True
-        assert self.show_progress is False
         return DownloadResult(
             total_remote=1,
             skipped=0,
@@ -658,6 +685,42 @@ def test_cli_download_passes_bhds_home_and_proxy_flag(monkeypatch) -> None:
             "--type",
             "fundingRate",
             "--aria2-proxy",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
+
+
+def test_cli_download_passes_progress_bar_flag(monkeypatch) -> None:
+    """The download progress-bar flag should reach the workflow."""
+
+    async def fake_run(self) -> DownloadResult:
+        assert self.progress_bar is True
+        return DownloadResult(
+            total_remote=1,
+            skipped=0,
+            downloaded=1,
+            failed=0,
+            listing_errors=[],
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveDownloadWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--bhds-home",
+            "/tmp/bhds-home",
+            "archive",
+            "download",
+            "um",
+            "--type",
+            "fundingRate",
+            "--progress-bar",
             "BTCUSDT",
         ],
     )
@@ -729,7 +792,6 @@ def test_cli_verify_passes_bhds_home_and_keep_failed(monkeypatch) -> None:
         assert isinstance(self, ArchiveVerifyWorkflow)
         assert self.bhds_home == Path("/tmp/bhds-home")
         assert self.keep_failed is True
-        assert self.show_progress is False
         return VerifyResult(
             skipped=0,
             verified=1,
@@ -760,6 +822,42 @@ def test_cli_verify_passes_bhds_home_and_keep_failed(monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert "Done: 1 verified, 0 failed, 0 skipped" in result.stderr
+
+
+def test_cli_verify_passes_progress_bar_flag(monkeypatch) -> None:
+    """The verify progress-bar flag should reach the workflow."""
+
+    def fake_run(self) -> VerifyResult:
+        assert self.progress_bar is True
+        return VerifyResult(
+            skipped=0,
+            verified=1,
+            orphan_zips=0,
+            orphan_checksums=0,
+            failed_details={},
+        )
+
+    monkeypatch.setattr(
+        "binance_datatool.bhds.workflow.archive.ArchiveVerifyWorkflow.run",
+        fake_run,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--bhds-home",
+            "/tmp/bhds-home",
+            "archive",
+            "verify",
+            "um",
+            "--type",
+            "fundingRate",
+            "--progress-bar",
+            "BTCUSDT",
+        ],
+    )
+
+    assert result.exit_code == 0
 
 
 def test_cli_verify_dry_run_outputs_paths_and_summary(monkeypatch) -> None:

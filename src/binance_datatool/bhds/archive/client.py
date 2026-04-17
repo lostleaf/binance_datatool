@@ -14,6 +14,7 @@ from loguru import logger
 from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from binance_datatool.common import S3_HTTP_TIMEOUT_SECONDS, S3_LISTING_PREFIX
+from binance_datatool.common.progress import ProgressEvent, make_reporter
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -315,6 +316,8 @@ class ArchiveClient:
         data_type: DataType,
         symbols: Sequence[str],
         interval: str | None = None,
+        *,
+        progress_bar: bool = False,
     ) -> dict[str, SymbolListingResult]:
         """List files for multiple symbols concurrently via a shared session.
 
@@ -326,6 +329,7 @@ class ArchiveClient:
             interval: Kline interval directory such as ``"1m"``. Required
                 when ``data_type.has_interval_layer`` is ``True`` and must
                 be ``None`` otherwise.
+            progress_bar: Whether to render an interactive tqdm progress bar.
 
         Returns:
             Ordered mapping from each input symbol to ``(files, error)``.
@@ -336,23 +340,34 @@ class ArchiveClient:
             return {}
 
         async with self._create_session() as session:
-            tasks = [
-                self.list_symbol_files(
-                    trade_type,
-                    data_freq,
-                    data_type,
-                    symbol,
-                    interval,
-                    session=session,
-                )
-                for symbol in symbols
-            ]
-            outcomes = await asyncio.gather(*tasks, return_exceptions=True)
 
-        return {
-            symbol: (([], str(outcome)) if isinstance(outcome, BaseException) else (outcome, None))
-            for symbol, outcome in zip(symbols, outcomes, strict=True)
-        }
+            async def _one(symbol: str) -> tuple[str, list[ArchiveFile], str | None]:
+                try:
+                    files = await self.list_symbol_files(
+                        trade_type,
+                        data_freq,
+                        data_type,
+                        symbol,
+                        interval,
+                        session=session,
+                    )
+                    return symbol, files, None
+                except Exception as exc:
+                    return symbol, [], str(exc)
+
+            coroutines = [_one(symbol) for symbol in symbols]
+            outcomes: dict[str, SymbolListingResult] = {}
+            with make_reporter(
+                progress_bar,
+                total=len(symbols),
+                description="List files",
+            ) as reporter:
+                for coroutine in asyncio.as_completed(coroutines):
+                    symbol, files, error = await coroutine
+                    outcomes[symbol] = (files, error)
+                    reporter.tick(ProgressEvent(name=symbol, ok=error is None))
+
+        return {symbol: outcomes[symbol] for symbol in symbols}
 
 
 async def list_symbols(

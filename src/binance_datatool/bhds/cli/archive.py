@@ -236,6 +236,15 @@ def list_files_command(
         bool,
         typer.Option("--only-checksum", help="Print only .zip.CHECKSUM files."),
     ] = False,
+    progress_bar: Annotated[
+        bool,
+        typer.Option(
+            "--progress-bar",
+            help=(
+                "Show interactive tqdm progress bar. By default no interactive progress is shown."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """List archive files under one or more symbol directories."""
     if only_zip and only_checksum:
@@ -256,6 +265,7 @@ def list_files_command(
         data_type=data_type,
         symbols=resolved_symbols,
         interval=interval,
+        progress_bar=progress_bar,
     )
     result = asyncio.run(workflow.run())
 
@@ -325,6 +335,15 @@ def download_command(
             help="Allow aria2c to inherit system proxy environment variables.",
         ),
     ] = False,
+    progress_bar: Annotated[
+        bool,
+        typer.Option(
+            "--progress-bar",
+            help=(
+                "Show interactive tqdm progress bar. By default no interactive progress is shown."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Download archive files into the local BHDS data directory."""
     _validate_interval(data_type, interval)
@@ -343,7 +362,7 @@ def download_command(
         interval=interval,
         dry_run=dry_run,
         inherit_aria2_proxy=aria2_proxy,
-        show_progress=sys.stderr.isatty(),
+        progress_bar=progress_bar,
     )
     result = asyncio.run(workflow.run())
 
@@ -392,6 +411,15 @@ def verify_command(
         bool,
         typer.Option("-n", "--dry-run", help="Show what would be verified without writing files."),
     ] = False,
+    progress_bar: Annotated[
+        bool,
+        typer.Option(
+            "--progress-bar",
+            help=(
+                "Show interactive tqdm progress bar. By default no interactive progress is shown."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Verify local archive zip files against sibling checksum files."""
     _validate_interval(data_type, interval)
@@ -410,7 +438,7 @@ def verify_command(
         interval=interval,
         keep_failed=keep_failed,
         dry_run=dry_run,
-        show_progress=sys.stderr.isatty(),
+        progress_bar=progress_bar,
     )
     result = workflow.run()
 
