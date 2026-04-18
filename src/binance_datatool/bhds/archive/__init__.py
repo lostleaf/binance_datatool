@@ -25,13 +25,9 @@ from binance_datatool.bhds.archive.filter import (
     UmSymbolFilter,
     build_symbol_filter,
 )
-from binance_datatool.bhds.archive.markers import (
-    clear_markers,
-    collect_markers_by_zip,
-    is_marker_fresh,
-    max_source_mtime,
-    symbol_dir,
-    write_marker,
+from binance_datatool.bhds.archive.symbol_dir import (
+    SymbolArchiveDir,
+    create_symbol_archive_dir,
 )
 
 __all__ = [
@@ -42,20 +38,16 @@ __all__ = [
     "CmSymbolFilter",
     "DownloadRequest",
     "SpotSymbolFilter",
+    "SymbolArchiveDir",
     "SymbolListingResult",
     "SymbolFilter",
     "UmSymbolFilter",
     "VerifyFileResult",
     "build_symbol_filter",
     "calc_sha256",
-    "clear_markers",
-    "collect_markers_by_zip",
+    "create_symbol_archive_dir",
     "download_archive_files",
-    "is_marker_fresh",
     "list_symbols",
-    "max_source_mtime",
     "read_expected_checksum",
-    "symbol_dir",
     "verify_single_file",
-    "write_marker",
 ]

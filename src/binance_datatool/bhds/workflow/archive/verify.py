@@ -6,19 +6,16 @@ import multiprocessing
 import os
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from loguru import logger
 
 from binance_datatool.bhds.archive import (
-    clear_markers,
-    collect_markers_by_zip,
-    is_marker_fresh,
-    symbol_dir,
+    SymbolArchiveDir,
+    create_symbol_archive_dir,
     verify_single_file,
-    write_marker,
 )
+from binance_datatool.bhds.archive.symbol_dir import collect_markers_by_zip
 from binance_datatool.common.progress import ProgressEvent, make_reporter
 
 from ._shared import validate_interval
@@ -32,46 +29,6 @@ if TYPE_CHECKING:
     from binance_datatool.common import DataFrequency, DataType, TradeType
 
 _SCAN_WORKERS = 16
-
-
-@dataclass(slots=True)
-class _SymbolScanResult:
-    """Per-symbol scan outcome used internally by the verify workflow."""
-
-    to_verify: list[Path]
-    orphan_zips: list[Path]
-    orphan_checksums: list[Path]
-    skipped: int
-
-
-def _parse_marker_timestamps(
-    verified_names: set[str],
-    zip_names: set[str],
-) -> dict[str, list[int]]:
-    """Parse timestamped verified markers and group by zip name.
-
-    Args:
-        verified_names: Set of ``*.verified`` filenames from a symbol directory.
-        zip_names: Set of known ``*.zip`` filenames in the same directory.
-
-    Returns:
-        Mapping from zip filename to its list of marker timestamps.
-    """
-    markers: dict[str, list[int]] = defaultdict(list)
-    for name in verified_names:
-        without_suffix = name.removesuffix(".verified")
-        last_dot = without_suffix.rfind(".")
-        if last_dot == -1:
-            continue
-        ts_str = without_suffix[last_dot + 1 :]
-        zip_name = without_suffix[:last_dot]
-        try:
-            ts = int(ts_str)
-        except ValueError:
-            continue
-        if zip_name in zip_names:
-            markers[zip_name].append(ts)
-    return markers
 
 
 class ArchiveVerifyWorkflow:
@@ -119,9 +76,9 @@ class ArchiveVerifyWorkflow:
         self.n_workers = n_workers or max(1, (os.cpu_count() or 1) - 2)
         self.progress_bar = progress_bar
 
-    def _scan_symbol(self, symbol: str) -> _SymbolScanResult:
-        """Scan one symbol directory and classify its files using pre-globbed sets."""
-        local_symbol_dir = symbol_dir(
+    def _scan_symbol(self, symbol: str):
+        """Scan one symbol directory and classify its files."""
+        dir_obj = create_symbol_archive_dir(
             self.bhds_home,
             self.trade_type,
             self.data_freq,
@@ -129,43 +86,7 @@ class ArchiveVerifyWorkflow:
             symbol,
             self.interval,
         )
-        if not local_symbol_dir.exists():
-            return _SymbolScanResult(to_verify=[], orphan_zips=[], orphan_checksums=[], skipped=0)
-
-        zip_paths = sorted(local_symbol_dir.glob("*.zip"))
-        zip_names = {p.name for p in zip_paths}
-        checksum_names = {p.name for p in local_symbol_dir.glob("*.zip.CHECKSUM")}
-        verified_names = {p.name for p in local_symbol_dir.glob("*.verified")}
-
-        marker_ts = _parse_marker_timestamps(verified_names, zip_names)
-
-        to_verify: list[Path] = []
-        orphan_zips: list[Path] = []
-        skipped = 0
-
-        for zip_path in zip_paths:
-            if f"{zip_path.name}.CHECKSUM" not in checksum_names:
-                orphan_zips.append(zip_path)
-                continue
-
-            timestamps = marker_ts.get(zip_path.name, [])
-            if is_marker_fresh(zip_path, timestamps):
-                skipped += 1
-            else:
-                to_verify.append(zip_path)
-
-        orphan_checksums = sorted(
-            local_symbol_dir / cn
-            for cn in checksum_names
-            if cn.removesuffix(".CHECKSUM") not in zip_names
-        )
-
-        return _SymbolScanResult(
-            to_verify=to_verify,
-            orphan_zips=orphan_zips,
-            orphan_checksums=orphan_checksums,
-            skipped=skipped,
-        )
+        return dir_obj.scan()
 
     def _scan(self) -> VerifyDiffResult:
         """Scan local symbol directories and classify verify work."""
@@ -188,8 +109,7 @@ class ArchiveVerifyWorkflow:
             ThreadPoolExecutor(max_workers=max_workers) as executor,
         ):
             futures = {
-                executor.submit(self._scan_symbol, symbol): symbol
-                for symbol in self.symbols
+                executor.submit(self._scan_symbol, symbol): symbol for symbol in self.symbols
             }
             for future in as_completed(futures):
                 symbol = futures[future]
@@ -209,13 +129,24 @@ class ArchiveVerifyWorkflow:
 
     def _clean_orphans(self, diff_result: VerifyDiffResult) -> None:
         """Apply orphan cleanup rules before verification."""
+        marker_targets_by_dir: dict[Path, set[str]] = defaultdict(set)
+        checksum_targets_by_dir: dict[Path, list[str]] = defaultdict(list)
+
         for zip_path in diff_result.orphan_zips:
-            clear_markers(zip_path)
+            marker_targets_by_dir[zip_path.parent].add(zip_path.name)
 
         for checksum_path in diff_result.orphan_checksums:
-            zip_path = checksum_path.with_name(checksum_path.name.removesuffix(".CHECKSUM"))
-            checksum_path.unlink(missing_ok=True)
-            clear_markers(zip_path)
+            dir_path = checksum_path.parent
+            checksum_targets_by_dir[dir_path].append(checksum_path.name)
+            marker_targets_by_dir[dir_path].add(checksum_path.name.removesuffix(".CHECKSUM"))
+
+        for dir_path, zip_names in marker_targets_by_dir.items():
+            SymbolArchiveDir(dir_path).clear_markers_many(zip_names)
+
+        for dir_path, checksum_names in checksum_targets_by_dir.items():
+            dir_obj = SymbolArchiveDir(dir_path)
+            for checksum_name in checksum_names:
+                dir_obj.remove_orphan_checksum(checksum_name)
 
     def _verify_paths(self, zip_paths: list[Path]) -> list[VerifyFileResult]:
         """Verify zip files in parallel using a process pool."""
@@ -244,7 +175,8 @@ class ArchiveVerifyWorkflow:
         return [result_by_path[zip_path] for zip_path in zip_paths]
 
     def _apply_all_verify_results(
-        self, results: list[VerifyFileResult],
+        self,
+        results: list[VerifyFileResult],
     ) -> tuple[int, dict[Path, str]]:
         """Apply filesystem side effects for all verify outcomes.
 
@@ -260,20 +192,20 @@ class ArchiveVerifyWorkflow:
 
         for result in results:
             zip_path = result.zip_path
+            dir_obj = SymbolArchiveDir(zip_path.parent)
+            zip_name = zip_path.name
 
             for marker_path in markers_by_zip.get(zip_path, []):
                 marker_path.unlink(missing_ok=True)
 
             if result.passed:
-                write_marker(zip_path)
+                dir_obj.write_marker(zip_name)
                 verified += 1
                 continue
 
             failed_details[zip_path] = result.detail
             if not self.keep_failed:
-                checksum_path = zip_path.parent / f"{zip_path.name}.CHECKSUM"
-                zip_path.unlink(missing_ok=True)
-                checksum_path.unlink(missing_ok=True)
+                dir_obj.discard_failed(zip_name)
 
         return verified, failed_details
 
@@ -307,7 +239,9 @@ class ArchiveVerifyWorkflow:
             )
         self._clean_orphans(diff_result)
 
-        logger.info("verifying {} file(s) with {} worker(s)", len(diff_result.to_verify), self.n_workers)
+        logger.info(
+            "verifying {} file(s) with {} worker(s)", len(diff_result.to_verify), self.n_workers
+        )
         verify_results = self._verify_paths(diff_result.to_verify)
         verified, failed_details = self._apply_all_verify_results(verify_results)
 

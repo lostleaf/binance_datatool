@@ -16,6 +16,7 @@ from binance_datatool.bhds.archive import (
     Aria2DownloadResult,
     CmSymbolFilter,
     SpotSymbolFilter,
+    SymbolArchiveDir,
     UmSymbolFilter,
     VerifyFileResult,
 )
@@ -24,6 +25,7 @@ from binance_datatool.bhds.workflow.archive import (
     ArchiveListFilesWorkflow,
     ArchiveListSymbolsWorkflow,
     ArchiveVerifyWorkflow,
+    DiffEntry,
     DiffResult,
     ListFilesResult,
     ListSymbolsResult,
@@ -394,6 +396,78 @@ async def test_archive_download_workflow_dry_run_keeps_verified_markers(tmp_path
     assert timestamped_marker.exists()
 
 
+def test_archive_download_workflow_groups_marker_invalidation_by_directory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Updated files in one directory should clear markers through one grouped call."""
+    base_dir = (
+        tmp_path / "aws_data" / "data" / "futures" / "um" / "monthly" / "fundingRate" / "BTCUSDT"
+    )
+    _write_verify_pair(base_dir, "first.zip")
+    _write_verify_pair(base_dir, "second.zip")
+    first_marker = base_dir / "first.zip.verified"
+    second_marker = base_dir / "second.zip.bad.verified"
+    unrelated_marker = base_dir / "third.zip.100.verified"
+    first_marker.write_text("", encoding="utf-8")
+    second_marker.write_text("", encoding="utf-8")
+    unrelated_marker.write_text("", encoding="utf-8")
+
+    calls: list[tuple[Path, set[str]]] = []
+    original_clear = SymbolArchiveDir.clear_markers_many
+
+    def record_clear(self: SymbolArchiveDir, zip_names) -> None:  # noqa: ANN001
+        calls.append((self.path, set(zip_names)))
+        original_clear(self, zip_names)
+
+    monkeypatch.setattr(SymbolArchiveDir, "clear_markers_many", record_clear)
+
+    workflow = ArchiveDownloadWorkflow(
+        trade_type=TradeType.um,
+        data_freq=DataFrequency.monthly,
+        data_type=DataType.funding_rate,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        dry_run=True,
+    )
+    entries = [
+        DiffEntry(
+            remote=ArchiveFile(
+                key="data/futures/um/monthly/fundingRate/BTCUSDT/first.zip",
+                size=10,
+                last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),
+            ),
+            local_path=base_dir / "first.zip",
+            reason="updated",
+        ),
+        DiffEntry(
+            remote=ArchiveFile(
+                key="data/futures/um/monthly/fundingRate/BTCUSDT/second.zip.CHECKSUM",
+                size=10,
+                last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),
+            ),
+            local_path=base_dir / "second.zip.CHECKSUM",
+            reason="updated",
+        ),
+        DiffEntry(
+            remote=ArchiveFile(
+                key="data/futures/um/monthly/fundingRate/BTCUSDT/third.zip",
+                size=10,
+                last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),
+            ),
+            local_path=base_dir / "third.zip",
+            reason="new",
+        ),
+    ]
+
+    workflow._invalidate_verified_markers(entries)
+
+    assert calls == [(base_dir, {"first.zip", "second.zip"})]
+    assert not first_marker.exists()
+    assert not second_marker.exists()
+    assert unrelated_marker.exists()
+
+
 @pytest.mark.asyncio
 async def test_archive_download_workflow_returns_listing_failures_and_download_counts(
     tmp_path,
@@ -746,6 +820,60 @@ def test_verify_workflow_keep_failed_preserves_files(tmp_path) -> None:
     assert checksum_path.exists()
     assert not legacy_marker.exists()
     assert not timestamped_marker.exists()
+
+
+def test_verify_workflow_groups_orphan_marker_cleanup_by_directory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Orphan cleanup should batch marker invalidation per directory."""
+    base_dir = _symbol_verify_dir(tmp_path)
+    orphan_zip_a = base_dir / "orphan-a.zip"
+    orphan_zip_b = base_dir / "orphan-b.zip"
+    orphan_zip_a.parent.mkdir(parents=True, exist_ok=True)
+    orphan_zip_a.write_bytes(b"orphan-a")
+    orphan_zip_b.write_bytes(b"orphan-b")
+
+    orphan_checksum = base_dir / "missing.zip.CHECKSUM"
+    orphan_checksum.write_text("checksum", encoding="utf-8")
+
+    marker_a = base_dir / "orphan-a.zip.100.verified"
+    marker_b = base_dir / "orphan-b.zip.bad.verified"
+    marker_c = base_dir / "missing.zip.200.verified"
+    unrelated_marker = base_dir / "keep.zip.300.verified"
+    marker_a.write_text("", encoding="utf-8")
+    marker_b.write_text("", encoding="utf-8")
+    marker_c.write_text("", encoding="utf-8")
+    unrelated_marker.write_text("", encoding="utf-8")
+
+    calls: list[tuple[Path, set[str]]] = []
+    original_clear = SymbolArchiveDir.clear_markers_many
+
+    def record_clear(self: SymbolArchiveDir, zip_names) -> None:  # noqa: ANN001
+        calls.append((self.path, set(zip_names)))
+        original_clear(self, zip_names)
+
+    monkeypatch.setattr(SymbolArchiveDir, "clear_markers_many", record_clear)
+
+    workflow = ArchiveVerifyWorkflow(
+        trade_type=TradeType.spot,
+        data_freq=DataFrequency.daily,
+        data_type=DataType.klines,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        interval="1m",
+        n_workers=1,
+    )
+
+    result = workflow.run()
+
+    assert isinstance(result, VerifyResult)
+    assert calls == [(base_dir, {"orphan-a.zip", "orphan-b.zip", "missing.zip"})]
+    assert not marker_a.exists()
+    assert not marker_b.exists()
+    assert not marker_c.exists()
+    assert unrelated_marker.exists()
+    assert not orphan_checksum.exists()
 
 
 def test_verify_workflow_marker_timestamp_rounding(tmp_path) -> None:

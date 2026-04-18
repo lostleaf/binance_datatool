@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -10,7 +11,7 @@ from loguru import logger
 from binance_datatool.bhds.archive import (
     ArchiveClient,
     DownloadRequest,
-    clear_markers,
+    SymbolArchiveDir,
     download_archive_files,
 )
 
@@ -104,19 +105,19 @@ class ArchiveDownloadWorkflow:
 
     def _invalidate_verified_markers(self, entries: Sequence[DiffEntry]) -> None:
         """Delete stale verify markers for updated zip or checksum files."""
-        targets: set[Path] = set()
+        targets_by_dir: dict[Path, set[str]] = defaultdict(set)
         for entry in entries:
             if entry.reason != "updated":
                 continue
 
             path = entry.local_path
             if path.name.endswith(".CHECKSUM"):
-                targets.add(path.with_name(path.name.removesuffix(".CHECKSUM")))
+                targets_by_dir[path.parent].add(path.name.removesuffix(".CHECKSUM"))
             elif path.name.endswith(".zip"):
-                targets.add(path)
+                targets_by_dir[path.parent].add(path.name)
 
-        for zip_path in targets:
-            clear_markers(zip_path)
+        for dir_path, zip_names in targets_by_dir.items():
+            SymbolArchiveDir(dir_path).clear_markers_many(zip_names)
 
     async def run(self) -> DiffResult | DownloadResult:
         """Execute the workflow and return either a diff or a download result.
