@@ -126,6 +126,25 @@ def _run_batch(
     return completed.returncode
 
 
+def _is_download_complete(request: DownloadRequest) -> bool:
+    """Check whether a single download request completed successfully.
+
+    A file is considered complete when it exists on disk and has no
+    leftover aria2 control file (which indicates a partial download).
+    """
+    if not request.local_path.exists():
+        return False
+    control_file = request.local_path.with_name(request.local_path.name + ".aria2")
+    return not control_file.exists()
+
+
+def _find_missing_requests(
+    requests: Sequence[DownloadRequest],
+) -> list[DownloadRequest]:
+    """Return only the requests whose files were not fully downloaded."""
+    return [r for r in requests if not _is_download_complete(r)]
+
+
 def download_archive_files(
     requests: Sequence[DownloadRequest],
     *,
@@ -134,7 +153,7 @@ def download_archive_files(
     max_tries: int = 3,
     progress_bar: bool = False,
 ) -> Aria2DownloadResult:
-    """Download requests with aria2 using batch retry semantics.
+    """Download requests with aria2 using per-file retry semantics.
 
     Args:
         requests: Direct download requests to execute.
@@ -150,43 +169,49 @@ def download_archive_files(
         return Aria2DownloadResult(requested=0, failed_requests=[])
 
     executable = _find_aria2c()
-    pending_batches = _chunk_requests(list(requests), batch_size=batch_size)
+    pending: list[DownloadRequest] = list(requests)
 
     for attempt in range(1, max_tries + 1):
-        total_this_round = sum(len(batch) for batch in pending_batches)
         description = "download" if attempt == 1 else f"download retry {attempt - 1}"
         logger.info(
-            "{}: {} file(s) in {} batch(es)",
+            "{}: {} file(s)",
             description,
-            total_this_round,
-            len(pending_batches),
+            len(pending),
         )
-        failed_batches: list[list[DownloadRequest]] = []
+        still_missing: list[DownloadRequest] = []
+        batches = _chunk_requests(pending, batch_size=batch_size)
 
         with make_reporter(
             progress_bar,
-            total=total_this_round,
+            total=len(pending),
             description=description,
         ) as reporter:
-            for batch_index, batch in enumerate(pending_batches, start=1):
+            for batch_index, batch in enumerate(batches, start=1):
+                batch_label = f"batch {batch_index}/{len(batches)}"
                 returncode = _run_batch(executable, batch, inherit_proxy=inherit_proxy)
-                ok = returncode == 0
-                reporter.tick(
-                    ProgressEvent(
-                        name=f"batch {batch_index}/{len(pending_batches)}",
-                        ok=ok,
-                        count=len(batch),
-                    )
-                )
-                if not ok:
-                    failed_batches.append(batch)
 
-        if not failed_batches:
+                if returncode == 0:
+                    reporter.tick(ProgressEvent(name=batch_label, ok=True, count=len(batch)))
+                    continue
+
+                # aria2 returned non-zero — check which files are actually missing.
+                batch_missing = _find_missing_requests(batch)
+                batch_ok_count = len(batch) - len(batch_missing)
+
+                if batch_ok_count > 0:
+                    reporter.tick(ProgressEvent(name=batch_label, ok=True, count=batch_ok_count))
+                if batch_missing:
+                    reporter.tick(
+                        ProgressEvent(name=batch_label, ok=False, count=len(batch_missing))
+                    )
+                    still_missing.extend(batch_missing)
+
+        if not still_missing:
             return Aria2DownloadResult(requested=len(requests), failed_requests=[])
 
-        pending_batches = failed_batches
+        pending = still_missing
 
     return Aria2DownloadResult(
         requested=len(requests),
-        failed_requests=[request for batch in pending_batches for request in batch],
+        failed_requests=pending,
     )

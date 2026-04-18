@@ -3,14 +3,20 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
 import pytest
 
 from binance_datatool.bhds.archive.downloader import (
     Aria2NotFoundError,
     DownloadRequest,
+    _find_missing_requests,
+    _is_download_complete,
     download_archive_files,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_download_archive_files_raises_when_aria2_is_missing(monkeypatch, tmp_path) -> None:
@@ -89,8 +95,8 @@ def test_download_archive_files_can_inherit_proxy_env(monkeypatch, tmp_path) -> 
     assert seen_envs == [None]
 
 
-def test_download_archive_files_splits_batches_and_retries(monkeypatch, tmp_path) -> None:
-    """Failed batches should be retried as whole batches."""
+def test_download_archive_files_retries_only_missing_files(monkeypatch, tmp_path) -> None:
+    """When aria2 fails but some files land on disk, only missing files are retried."""
     call_count = 0
 
     monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/aria2c")
@@ -99,16 +105,20 @@ def test_download_archive_files_splits_batches_and_retries(monkeypatch, tmp_path
         nonlocal call_count
         del cmd, check, env
         call_count += 1
-        return SimpleNamespace(returncode=1 if call_count == 1 else 0)
+        if call_count == 1:
+            # Simulate: first batch fails but file-0 lands on disk.
+            (tmp_path / "file-0.zip").write_bytes(b"ok")
+            return SimpleNamespace(returncode=1)
+        return SimpleNamespace(returncode=0)
 
     monkeypatch.setattr("subprocess.run", fake_run)
 
     requests = [
         DownloadRequest(
-            url=f"https://data.binance.vision/data/spot/file-{index}.zip",
-            local_path=tmp_path / f"file-{index}.zip",
+            url=f"https://data.binance.vision/data/spot/file-{i}.zip",
+            local_path=tmp_path / f"file-{i}.zip",
         )
-        for index in range(3)
+        for i in range(3)
     ]
     result = download_archive_files(
         requests,
@@ -117,21 +127,65 @@ def test_download_archive_files_splits_batches_and_retries(monkeypatch, tmp_path
         max_tries=3,
     )
 
+    # Batch 1 (file-0, file-1) fails; file-0 exists, only file-1 retried.
+    # Batch 2 (file-2) succeeds.
+    # Retry round: file-1 only → succeeds.
     assert call_count == 3
     assert result.succeeded == 3
     assert result.failed_requests == []
 
 
+def test_download_archive_files_partial_download_detected(monkeypatch, tmp_path) -> None:
+    """A file with a leftover .aria2 control file is treated as incomplete."""
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/aria2c")
+
+    call_count = 0
+
+    def fake_run(cmd, check, env):  # noqa: ANN001
+        nonlocal call_count
+        del cmd, check, env
+        call_count += 1
+        if call_count == 1:
+            # file-0 downloaded fully; file-1 is partial (has .aria2 control file).
+            (tmp_path / "file-0.zip").write_bytes(b"ok")
+            (tmp_path / "file-1.zip").write_bytes(b"partial")
+            (tmp_path / "file-1.zip.aria2").write_bytes(b"ctrl")
+            return SimpleNamespace(returncode=1)
+        # Retry succeeds; clean up the control file.
+        (tmp_path / "file-1.zip.aria2").unlink(missing_ok=True)
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+
+    requests = [
+        DownloadRequest(
+            url=f"https://data.binance.vision/data/spot/file-{i}.zip",
+            local_path=tmp_path / f"file-{i}.zip",
+        )
+        for i in range(2)
+    ]
+    result = download_archive_files(requests, inherit_proxy=False, max_tries=3)
+
+    assert call_count == 2
+    assert result.succeeded == 2
+    assert result.failed_requests == []
+
+
 def test_download_archive_files_reports_round_progress(monkeypatch, tmp_path) -> None:
-    """Each retry round should create one reporter and tick it per processed batch."""
-    returncodes = [1, 0, 0]
-    captured_reporters: list[dict[str, object]] = []
+    """Each retry round should create one reporter and tick per-file accuracy."""
+    call_count = 0
 
     monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/aria2c")
 
     def fake_run(cmd, check, env):  # noqa: ANN001
+        nonlocal call_count
         del cmd, check, env
-        return SimpleNamespace(returncode=returncodes.pop(0))
+        call_count += 1
+        if call_count == 1:
+            # Batch 1 fails; file-0 lands on disk, file-1 does not.
+            (tmp_path / "file-0.zip").write_bytes(b"ok")
+            return SimpleNamespace(returncode=1)
+        return SimpleNamespace(returncode=0)
 
     class FakeReporter:
         def __init__(self, metadata: dict[str, object]) -> None:
@@ -145,6 +199,8 @@ def test_download_archive_files_reports_round_progress(monkeypatch, tmp_path) ->
 
         def tick(self, event) -> None:  # noqa: ANN001
             self.metadata["events"].append((event.name, event.ok, event.count))
+
+    captured_reporters: list[dict[str, object]] = []
 
     def fake_make_reporter(progress_bar: bool, *, total: int, description: str) -> FakeReporter:
         metadata: dict[str, object] = {
@@ -182,12 +238,64 @@ def test_download_archive_files_reports_round_progress(monkeypatch, tmp_path) ->
             "progress_bar": True,
             "total": 3,
             "description": "download",
-            "events": [("batch 1/2", False, 2), ("batch 2/2", True, 1)],
+            "events": [
+                # Batch 1 fails: file-0 ok, file-1 missing → two ticks
+                ("batch 1/2", True, 1),
+                ("batch 1/2", False, 1),
+                # Batch 2 succeeds: single ok tick
+                ("batch 2/2", True, 1),
+            ],
         },
         {
             "progress_bar": True,
-            "total": 2,
+            "total": 1,
             "description": "download retry 1",
-            "events": [("batch 1/1", True, 2)],
+            "events": [
+                # Only file-1 retried and succeeds
+                ("batch 1/1", True, 1),
+            ],
         },
     ]
+
+
+# --- Unit tests for helper functions ---
+
+
+def test_is_download_complete_missing_file(tmp_path: Path) -> None:
+    """A file that does not exist is not complete."""
+    req = DownloadRequest(url="https://example.com/a.zip", local_path=tmp_path / "a.zip")
+    assert _is_download_complete(req) is False
+
+
+def test_is_download_complete_full_file(tmp_path: Path) -> None:
+    """A file that exists without a control file is complete."""
+    target = tmp_path / "a.zip"
+    target.write_bytes(b"data")
+    req = DownloadRequest(url="https://example.com/a.zip", local_path=target)
+    assert _is_download_complete(req) is True
+
+
+def test_is_download_complete_partial_file(tmp_path: Path) -> None:
+    """A file with a sibling .aria2 control file is not complete."""
+    target = tmp_path / "a.zip"
+    target.write_bytes(b"partial")
+    (tmp_path / "a.zip.aria2").write_bytes(b"ctrl")
+    req = DownloadRequest(url="https://example.com/a.zip", local_path=target)
+    assert _is_download_complete(req) is False
+
+
+def test_find_missing_requests_filters_correctly(tmp_path: Path) -> None:
+    """Only requests with missing or incomplete files should be returned."""
+    (tmp_path / "exists.zip").write_bytes(b"ok")
+    (tmp_path / "partial.zip").write_bytes(b"partial")
+    (tmp_path / "partial.zip.aria2").write_bytes(b"ctrl")
+
+    requests = [
+        DownloadRequest(url="https://example.com/exists.zip", local_path=tmp_path / "exists.zip"),
+        DownloadRequest(url="https://example.com/missing.zip", local_path=tmp_path / "missing.zip"),
+        DownloadRequest(url="https://example.com/partial.zip", local_path=tmp_path / "partial.zip"),
+    ]
+    missing = _find_missing_requests(requests)
+    assert len(missing) == 2
+    assert missing[0].local_path.name == "missing.zip"
+    assert missing[1].local_path.name == "partial.zip"

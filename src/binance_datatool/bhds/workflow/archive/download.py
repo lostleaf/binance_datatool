@@ -119,6 +119,18 @@ class ArchiveDownloadWorkflow:
         for dir_path, zip_names in targets_by_dir.items():
             SymbolArchiveDir(dir_path).clear_markers_many(zip_names)
 
+    @staticmethod
+    def _delete_updated_files(entries: Sequence[DiffEntry]) -> None:
+        """Remove local files that are scheduled for re-download.
+
+        Deleting stale copies before the download starts ensures that the
+        downloader's per-file existence check treats every request uniformly
+        as a "file does not yet exist" scenario.
+        """
+        for entry in entries:
+            if entry.reason == "updated":
+                entry.local_path.unlink(missing_ok=True)
+
     async def run(self) -> DiffResult | DownloadResult:
         """Execute the workflow and return either a diff or a download result.
 
@@ -158,6 +170,7 @@ class ArchiveDownloadWorkflow:
 
         self.bhds_home.mkdir(parents=True, exist_ok=True)
         self._invalidate_verified_markers(diff_result.to_download)
+        self._delete_updated_files(diff_result.to_download)
 
         requests = [
             DownloadRequest(url=entry.url, local_path=entry.local_path)

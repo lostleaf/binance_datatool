@@ -358,6 +358,55 @@ async def test_archive_download_workflow_invalidates_new_and_legacy_verified_mar
 
 
 @pytest.mark.asyncio
+async def test_archive_download_workflow_deletes_updated_files_before_download(
+    tmp_path,
+) -> None:
+    """Updated files should be removed before the download so the downloader sees them as new."""
+    remote_updated = ArchiveFile(
+        key="data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-02.zip",
+        size=100,
+        last_modified=datetime(2026, 4, 2, 8, 6, 34, tzinfo=UTC),
+    )
+    remote_new = ArchiveFile(
+        key="data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2026-03.zip",
+        size=100,
+        last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),
+    )
+
+    # Create the stale local file for the "updated" entry.
+    local_updated = tmp_path / "aws_data" / Path(remote_updated.key)
+    local_updated.parent.mkdir(parents=True, exist_ok=True)
+    local_updated.write_text("stale content", encoding="utf-8")
+    os.utime(local_updated, (remote_updated.last_modified.timestamp() - 100,) * 2)
+
+    files_existed_at_download: dict[str, bool] = {}
+
+    def fake_download(requests, **kwargs):  # noqa: ANN001
+        del kwargs
+        for req in requests:
+            files_existed_at_download[req.local_path.name] = req.local_path.exists()
+        return Aria2DownloadResult(requested=len(requests), failed_requests=[])
+
+    workflow = ArchiveDownloadWorkflow(
+        trade_type=TradeType.um,
+        data_freq=DataFrequency.monthly,
+        data_type=DataType.funding_rate,
+        symbols=["BTCUSDT"],
+        bhds_home=tmp_path,
+        dry_run=False,
+        client=FakeArchiveClient(files_by_symbol={"BTCUSDT": [remote_updated, remote_new]}),
+        download_func=fake_download,
+    )
+
+    result = await workflow.run()
+
+    assert result.failed == 0
+    # The updated file should have been deleted before download was called.
+    assert files_existed_at_download[local_updated.name] is False
+    # The new file never existed.
+    assert files_existed_at_download["BTCUSDT-fundingRate-2026-03.zip"] is False
+
+
 async def test_archive_download_workflow_dry_run_keeps_verified_markers(tmp_path) -> None:
     """Dry-run mode should not mutate verification markers."""
     checksum_remote = ArchiveFile(
