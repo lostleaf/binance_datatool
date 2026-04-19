@@ -1,4 +1,4 @@
-# Binance DataTool - Built for Agents. Binance Data Delivered.
+# Binance DataTool - Built for Agents, Data Delivered.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-green)](LICENSE)
@@ -18,7 +18,7 @@ called by AI agents just as easily as by a human:
 - **Composable CLI** — stdin/stdout pipelines let agents chain
   commands without glue code
 - **Atomic operations** — each command does one thing well; agents
-  can inspect state, decide, and act step by step
+  can inspect, decide, and act step by step
 - **Deterministic output** — structured, parseable results that
   agents can reason about
 - **Zero interaction** — no prompts, no confirmations; dry-run mode
