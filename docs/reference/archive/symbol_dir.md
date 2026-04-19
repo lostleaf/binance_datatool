@@ -21,7 +21,7 @@ from binance_datatool.archive import create_symbol_archive_dir
 from binance_datatool.common import DataFrequency, DataType, TradeType
 
 symbol_dir = create_symbol_archive_dir(
-    archive_home=Path("/data/binance-archive"),
+    archive_home=Path("/data/binance_archive"),
     trade_type=TradeType.um,
     data_freq=DataFrequency.daily,
     data_type=DataType.klines,

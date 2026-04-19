@@ -155,7 +155,7 @@ workflow = ArchiveDownloadWorkflow(
     data_freq=DataFrequency.monthly,
     data_type=DataType.funding_rate,
     symbols=["BTCUSDT"],
-    archive_home=Path("/data/binance-archive"),
+    archive_home=Path("/data/binance_archive"),
 )
 result = await workflow.run()
 ```
@@ -256,7 +256,7 @@ workflow = ArchiveVerifyWorkflow(
     data_freq=DataFrequency.daily,
     data_type=DataType.klines,
     symbols=["BTCUSDT"],
-    archive_home=Path("/data/binance-archive"),
+    archive_home=Path("/data/binance_archive"),
     interval="1m",
 )
 result = workflow.run()

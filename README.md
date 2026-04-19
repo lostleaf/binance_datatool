@@ -51,7 +51,7 @@ called by AI agents just as easily as by a human:
 git clone https://github.com/lostleaf/binance_datatool.git
 cd binance_datatool
 uv sync
-export BINANCE_DATATOOL_ARCHIVE_HOME=$HOME/crypto_data/binance-archive
+export BINANCE_DATATOOL_ARCHIVE_HOME=$HOME/crypto_data/binance_archive
 ```
 
 ### Try it
