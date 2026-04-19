@@ -128,11 +128,52 @@ class _StderrSinkSnapshot:
 
     stream: Any
     level: int
-    format_string: str
+    decolorized_format: str | None
+    precolorized_formats: dict[str | None, str] | None
     filter_value: Any
     colorize: bool
     serialize: bool
     enqueue: bool
+
+
+def _resolve_restore_format(
+    snapshot: _StderrSinkSnapshot,
+) -> tuple[Any, bool]:
+    """Choose the format value and colorize flag for restoring a snapshotted sink.
+
+    When the original handler was colorized, loguru stores per-level ANSI
+    format strings in ``_precolorized_formats`` but leaves
+    ``_decolorized_format`` as ``None``.  We restore such handlers by
+    returning a dynamic format function that picks the right pre-colored
+    template for the log level, with ``colorize=False`` so loguru does not
+    double-apply ANSI escapes.
+
+    For non-colorized handlers, ``_decolorized_format`` is usable directly
+    after stripping the ``\\n{exception}`` suffix that loguru appends
+    internally (``logger.add`` will re-append it).
+
+    Returns:
+        ``(format, colorize)`` pair suitable for ``logger.add()``.
+    """
+    if snapshot.precolorized_formats is not None:
+        pcf = snapshot.precolorized_formats
+        fallback = pcf.get(None, "{message}\n{exception}")
+
+        def _make_dynamic(formats: dict[str | None, str], fb: str) -> Any:
+            def _format(record: dict[str, Any]) -> str:
+                return formats.get(record["level"].name, fb)
+
+            return _format
+
+        return _make_dynamic(pcf, fallback), False
+
+    fmt = snapshot.decolorized_format
+    if isinstance(fmt, str):
+        if fmt.endswith("\n{exception}"):
+            fmt = fmt[: -len("\n{exception}")]
+        return fmt, snapshot.colorize
+
+    return "{message}", snapshot.colorize
 
 
 class TqdmReporter(_ReporterState):
@@ -165,8 +206,9 @@ class TqdmReporter(_ReporterState):
             self._bar = tqdm(total=self._total, desc=self._description, file=self._stderr)
             self._stderr_snapshots = self._remove_stderr_sinks()
             if self._stderr_snapshots:
+                redirect_level = min(s.level for s in self._stderr_snapshots)
                 self._redirect_sink_id = logger.add(
-                    self._write_log_line, level=0, format="{message}"
+                    self._write_log_line, level=redirect_level, format="{message}"
                 )
             return self
         except Exception:
@@ -227,7 +269,15 @@ class TqdmReporter(_ReporterState):
                 _StderrSinkSnapshot(
                     stream=stream,
                     level=handler._levelno,
-                    format_string=getattr(handler, "_decolorized_format", "{message}"),
+                    decolorized_format=getattr(handler, "_decolorized_format", None),
+                    precolorized_formats=(
+                        dict(handler._precolorized_formats)
+                        if handler._colorize
+                        and isinstance(
+                            getattr(handler, "_precolorized_formats", None), dict
+                        )
+                        else None
+                    ),
                     filter_value=handler._filter,
                     colorize=handler._colorize,
                     serialize=handler._serialize,
@@ -241,12 +291,13 @@ class TqdmReporter(_ReporterState):
         """Restore stderr-bound sinks removed during reporter entry."""
         while self._stderr_snapshots:
             snapshot = self._stderr_snapshots.pop(0)
+            fmt, colorize = _resolve_restore_format(snapshot)
             logger.add(
                 snapshot.stream,
                 level=snapshot.level,
-                format=snapshot.format_string,
+                format=fmt,
                 filter=snapshot.filter_value,
-                colorize=snapshot.colorize,
+                colorize=colorize,
                 serialize=snapshot.serialize,
                 enqueue=snapshot.enqueue,
             )
