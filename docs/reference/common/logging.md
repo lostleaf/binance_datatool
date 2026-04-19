@@ -9,13 +9,23 @@ configure_cli_logging(verbosity=1)  # 0 = WARNING, 1 = INFO, 2+ = DEBUG
 ```
 
 `configure_cli_logging(verbosity: int) -> None` resets `loguru` and installs a
-single `stderr` sink with a level and format chosen from the verbosity level:
+single `stderr` sink with a level chosen from the verbosity level. All levels
+use the same format:
 
-| `verbosity` | `loguru` level | Format |
-|-------------|----------------|--------|
-| `0` | `WARNING` | `<level>{level}</level>: {message}` |
-| `1` | `INFO` | `<level>{level}</level>: {message}` |
-| `2` or more | `DEBUG` | `<green>{time:HH:mm:ss.SSS}</green> \| <level>{level: <8}</level> \| <cyan>{name}</cyan>:<cyan>{line}</cyan> - {message}` |
+| `verbosity` | `loguru` level |
+|-------------|----------------|
+| `0` | `WARNING` |
+| `1` | `INFO` |
+| `2` or more | `DEBUG` |
+
+**Format** (all levels):
+
+```
+{time:YYYY-MM-DD HH:mm:ss} | {level} | {module} - {message}
+```
+
+The timestamp includes the date, and the module name identifies the source
+without cluttering output with file paths or line numbers.
 
 The sink uses `colorize=sys.stderr.isatty()` so ANSI colour escapes appear on
 interactive terminals but are stripped from logs redirected to files or pipes.

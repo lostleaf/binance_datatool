@@ -16,6 +16,7 @@ src/binance_datatool/
 │   ├── enums.py             # TradeType, DataFrequency, DataType, ContractType
 │   ├── logging.py           # configure_cli_logging for CLI entry points
 │   ├── path.py              # BHDS_HOME resolution and BhdsHomeNotConfiguredError
+│   ├── progress.py          # ProgressEvent, ProgressReporter protocol, make_reporter()
 │   ├── types.py             # SymbolInfoBase, SpotSymbolInfo, UmSymbolInfo, CmSymbolInfo
 │   └── symbols.py           # infer_spot_info, infer_um_info, infer_cm_info
 │
@@ -23,15 +24,23 @@ src/binance_datatool/
     ├── __init__.py
     │
     ├── archive/             # S3 data access, typed filters, checksum, and download helpers
-    │   ├── __init__.py      # Re-exports client, filter, checksum, and downloader symbols
+    │   ├── __init__.py      # Re-exports client, filter, checksum, downloader, and symbol_dir symbols
     │   ├── checksum.py      # SHA256 verification helpers (calc, read, verify_single_file)
     │   ├── client.py        # HTTP client, XML parsing, ArchiveFile metadata
-    │   ├── downloader.py    # aria2c batch downloader with retry and proxy control
-    │   └── filter.py        # Spot/Um/Cm symbol filters and build_symbol_filter()
+    │   ├── downloader.py    # aria2c batch downloader with per-file retry and proxy control
+    │   ├── filter.py        # Spot/Um/Cm symbol filters and build_symbol_filter()
+    │   └── symbol_dir.py    # SymbolArchiveDir, local marker management, directory scanning
     │
     ├── workflow/            # Business logic orchestration
     │   ├── __init__.py
-    │   └── archive.py       # ArchiveListSymbolsWorkflow, ArchiveListFilesWorkflow, ArchiveDownloadWorkflow, ArchiveVerifyWorkflow
+    │   └── archive/         # Archive workflows (modular package)
+    │       ├── __init__.py  # Re-exports all workflow classes and result types
+    │       ├── _shared.py   # Shared helpers (infer_symbol_info, validate_interval)
+    │       ├── download.py  # ArchiveDownloadWorkflow
+    │       ├── list_files.py    # ArchiveListFilesWorkflow
+    │       ├── list_symbols.py  # ArchiveListSymbolsWorkflow
+    │       ├── results.py   # Result dataclasses (ListSymbolsResult, DiffResult, VerifyResult, etc.)
+    │       └── verify.py    # ArchiveVerifyWorkflow
     │
     └── cli/                 # Typer CLI layer
         ├── __init__.py      # Root callback with -v/-vv verbosity, --bhds-home; sub-command registration

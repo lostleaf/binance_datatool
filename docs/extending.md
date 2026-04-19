@@ -48,7 +48,7 @@ See `list_symbols` and `list_symbol_files` in `bhds/archive/client.py` for real 
 
 ### Step 2: Create a Workflow Class
 
-Create a workflow in `bhds/workflow/archive.py` (or a new module if the scope warrants it).
+Create a workflow in `bhds/workflow/archive/` (or a new module if the scope warrants it).
 Accept an optional `client` parameter for testability and return a typed result dataclass.
 
 ```python
@@ -61,7 +61,7 @@ class ArchiveListDatesWorkflow:
 ```
 
 See `ArchiveListSymbolsWorkflow`, `ArchiveListFilesWorkflow`, `ArchiveDownloadWorkflow`,
-and `ArchiveVerifyWorkflow` in `bhds/workflow/archive.py` for real examples.
+and `ArchiveVerifyWorkflow` in `bhds/workflow/archive/` for real examples.
 
 ### Step 3: Add a CLI Command
 

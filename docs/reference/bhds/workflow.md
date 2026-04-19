@@ -89,6 +89,7 @@ result: ListFilesResult = await workflow.run()
 | `data_type` | *(required)* | Dataset type. |
 | `symbols` | *(required)* | Sequence of symbols to list. Caller order is preserved. |
 | `interval` | `None` | Kline interval directory. Required when `data_type.has_interval_layer` is `True`; must be `None` otherwise. |
+| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr via the shared progress-reporting framework. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../../common/progress.md). |
 | `client` | `None` | Optional pre-configured `ArchiveClient`. A default client is created when omitted. |
 
 The constructor validates the `interval` vs `data_type.has_interval_layer` invariant
@@ -101,15 +102,12 @@ the three-layer interval consistency check (CLI / Workflow / Client).
 async def run(self) -> ListFilesResult
 ```
 
-1. Opens a single shared `aiohttp.ClientSession` configured with
-   `S3_HTTP_TIMEOUT_SECONDS` and `trust_env=True`.
-2. Creates one `client.list_symbol_files(...)` coroutine per symbol, passing the
-   shared session so every concurrent request reuses one connection pool.
-3. Awaits them through `asyncio.gather(*, return_exceptions=True)` — no semaphore,
-   no explicit rate limiting; the underlying aiohttp connection pool caps concurrency.
-4. Wraps successes into `SymbolListFilesResult(symbol, files, error=None)` and
-   exceptions into `SymbolListFilesResult(symbol, files=[], error=str(exc))`,
-   preserving caller input order.
+1. Delegates to `ArchiveClient.list_symbol_files_batch()` with the configured
+   market, symbols, interval, and progress bar settings. The batch method
+   opens a single shared `aiohttp.ClientSession` and concurrently lists every
+   symbol via `asyncio.as_completed`.
+2. Wraps each `(files, error)` tuple from the batch result into a
+   `SymbolListFilesResult`, preserving caller input order.
 
 Returns a `ListFilesResult` that always covers every requested symbol.
 
@@ -133,7 +131,10 @@ Aggregate result for `ArchiveListFilesWorkflow.run()`.
 | Field / Property | Type | Description |
 |------------------|------|-------------|
 | `per_symbol` | `list[SymbolListFilesResult]` | One entry per requested symbol, in caller-provided input order. |
+| `requested_symbols` | `int` *(property)* | Number of requested symbols. |
 | `has_failures` | `bool` *(property)* | `True` when any `per_symbol` entry has a non-`None` `error`. Used by the CLI to set exit code 2. |
+| `failed_symbols` | `int` *(property)* | Number of symbols whose listing failed. |
+| `successful_symbols` | `int` *(property)* | Number of symbols that listed successfully. |
 | `total_remote_files` | `int` *(property)* | Total number of successfully listed remote files across all symbols. |
 
 ## `ArchiveDownloadWorkflow`
@@ -169,7 +170,7 @@ result = await workflow.run()
 | `interval` | `None` | Kline interval directory. Required for kline-class data types. |
 | `dry_run` | `False` | When `True`, compute the diff without downloading. |
 | `inherit_aria2_proxy` | `False` | Whether aria2c should inherit proxy env vars. |
-| `show_progress` | `False` | Whether to display a tqdm progress bar on stderr. |
+| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../../common/progress.md). |
 | `client` | `None` | Optional pre-configured `ArchiveClient`. |
 | `download_func` | `None` | Optional download callable for dependency injection. Defaults to `download_archive_files`. |
 
@@ -187,8 +188,8 @@ async def run(self) -> DiffResult | DownloadResult
    or `"updated"`.
 3. In dry-run mode, returns a `DiffResult` immediately.
 4. Otherwise, invalidates stale `.verified` markers for updated zip/checksum files,
-   then downloads via `download_archive_files` with batch retry and optional tqdm
-   progress.
+   deletes stale local copies of updated files, then downloads via
+   `download_archive_files` with per-file retry and optional progress reporting.
 
 Returns `DiffResult` when `dry_run=True`, otherwise `DownloadResult`.
 
@@ -272,7 +273,7 @@ result = workflow.run()
 | `keep_failed` | `False` | When `True`, retain failed zip and checksum files instead of deleting them. |
 | `dry_run` | `False` | When `True`, scan and classify files without verifying or mutating the filesystem. |
 | `n_workers` | `None` | Process pool size. Defaults to `max(1, cpu_count - 2)`. |
-| `show_progress` | `False` | Whether to display a tqdm progress bar on stderr. |
+| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../../common/progress.md). |
 
 ### `run()`
 
@@ -284,18 +285,22 @@ This is a **synchronous** method (no `async`) because the verify workflow is pur
 local I/O and CPU work — no network access is needed.
 
 1. **Scan** — walks each symbol's local directory under
-   `bhds_home/aws_data/data/{s3_path}/{freq}/{type}/{symbol}[/{interval}]`,
-   classifying each `.zip` file as pending verification, already verified (valid
-   timestamped marker), orphan zip (missing `.CHECKSUM` sibling), or orphan checksum
-   (missing `.zip` sibling).
+   `bhds_home/aws_data/data/{s3_path}/{freq}/{type}/{symbol}[/{interval}]` using a
+   `ThreadPoolExecutor` (up to 16 workers), classifying each `.zip` file as pending
+   verification, already verified (valid timestamped marker), orphan zip (missing
+   `.CHECKSUM` sibling), or orphan checksum (missing `.zip` sibling). Reports
+   progress via the shared progress-reporting framework.
 2. In **dry-run mode**, returns a `VerifyDiffResult` immediately.
 3. **Orphan cleanup** — orphan zips have their markers cleared (zip file is kept);
    orphan checksums and their markers are deleted.
 4. **Parallel verification** — submits `verify_single_file` tasks to a
    `ProcessPoolExecutor` with `spawn` context. SHA256 is CPU-intensive, so process
-   isolation avoids GIL contention.
-5. **Post-verify** — for each result: clears old markers, writes a fresh timestamped
-   marker on pass, or deletes the zip + checksum on failure (unless `keep_failed`).
+   isolation avoids GIL contention. Reports progress via the shared
+   progress-reporting framework.
+5. **Post-verify** — pre-collects existing markers per directory (via
+   `collect_markers_by_zip`) to avoid per-file glob calls, then for each result:
+   clears old markers, writes a fresh timestamped marker on pass, or deletes the
+   zip + checksum on failure (unless `keep_failed`).
 
 Returns `VerifyDiffResult` when `dry_run=True`, otherwise `VerifyResult`.
 

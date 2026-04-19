@@ -31,6 +31,7 @@ from binance_datatool.common.path import BHDS_HOME_ENV_VAR
 | [common.logging](common/logging.md) | `configure_cli_logging` helper for CLI entry points. |
 | [common.path](common/path.md) | BHDS home directory resolution. |
 | [common.symbols](common/symbols.md) | Symbol inference functions and quote parsing rules. |
+| [common.progress](common/progress.md) | Progress-reporting framework (`ProgressEvent`, `ProgressReporter`, `make_reporter`). |
 
 ## BHDS
 
@@ -41,6 +42,7 @@ from binance_datatool.common.path import BHDS_HOME_ENV_VAR
 | [bhds.archive.filter](bhds/archive/filter.md) | Typed symbol filters and `build_symbol_filter()`. |
 | [bhds.archive.downloader](bhds/archive/downloader.md) | Aria2-backed batch download helpers and result types. |
 | [bhds.archive.checksum](bhds/archive/checksum.md) | SHA256 verification helpers and `VerifyFileResult`. |
+| [bhds.archive.symbol_dir](bhds/archive/symbol_dir.md) | Local symbol archive directory helpers and marker management. |
 | [bhds.archive (S3 protocol)](bhds/s3-protocol.md) | S3 XML listing protocol, pagination, retry, and proxy. |
 | [bhds.workflow](bhds/workflow.md) | Business logic orchestration. |
 | [bhds.cli](bhds/cli/) | Typer CLI overview, verbosity, and sub-command index. |

@@ -3,10 +3,10 @@
 S3 listing client for data.binance.vision.
 
 The package-level `binance_datatool.bhds.archive` re-exports `ArchiveClient`,
-`ArchiveFile`, and `list_symbols`, so most imports can use the package surface:
+`ArchiveFile`, `SymbolListingResult`, and `list_symbols`, so most imports can use the package surface:
 
 ```python
-from binance_datatool.bhds.archive import ArchiveClient, list_symbols
+from binance_datatool.bhds.archive import ArchiveClient, SymbolListingResult, list_symbols
 ```
 
 ## `ArchiveClient`
@@ -32,6 +32,7 @@ client = ArchiveClient(timeout_seconds=15, trust_env=True)
 | `list_files_in_dir` | `async (session, prefix) -> list[ArchiveFile]` | List files directly under an S3 prefix without recursion, handling pagination automatically. |
 | `list_symbols` | `async (trade_type, data_freq, data_type) -> list[str]` | List sorted symbol names for a given archive path. Creates its own session internally. |
 | `list_symbol_files` | `async (trade_type, data_freq, data_type, symbol, interval=None, *, session=None) -> list[ArchiveFile]` | Build the S3 prefix and list every file for one symbol. Reuses a caller-supplied session when provided; otherwise creates and closes a short-lived one internally. Raises `ValueError` when `interval` does not match `data_type.has_interval_layer`. |
+| `list_symbol_files_batch` | `async (trade_type, data_freq, data_type, symbols, interval=None, *, progress_bar=False) -> dict[str, SymbolListingResult]` | List files for multiple symbols concurrently via a shared session. Returns an ordered mapping from each symbol to `(files, error)`. |
 
 `list_dir()` and `list_files_in_dir()` are the low-level pagination primitives.
 The higher-level methods build archive prefixes for you.
@@ -64,6 +65,17 @@ symbols = await list_symbols(TradeType.spot, DataFrequency.daily, DataType.kline
 ```
 
 Creates a temporary `ArchiveClient` and delegates to `ArchiveClient.list_symbols()`.
+
+## `SymbolListingResult` (type alias)
+
+```python
+SymbolListingResult: TypeAlias = tuple[list[ArchiveFile], str | None]
+```
+
+Per-symbol outcome from `ArchiveClient.list_symbol_files_batch()`. The first
+element is the file list (empty on both success-with-empty-directory and
+failure); the second is `None` on success or a text error description on
+failure.
 
 For S3 XML protocol details such as request format, pagination, retry, and proxy
 behavior, see [S3 Listing Protocol](../s3-protocol.md).

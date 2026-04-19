@@ -20,9 +20,9 @@ The root `bhds` app defines a callback that runs before any sub-command:
 
 | Flag | Effect |
 |------|--------|
-| *(default)* | `loguru` level `WARNING`, simple `LEVEL: message` format |
-| `-v` | `loguru` level `INFO`, simple format |
-| `-vv` | `loguru` level `DEBUG`, rich format with time, level, module, and line |
+| *(default)* | `loguru` level `WARNING`, unified `date \| level \| module - message` format |
+| `-v` | `loguru` level `INFO`, same unified format |
+| `-vv` | `loguru` level `DEBUG`, same unified format |
 | `--bhds-home` | Override the BHDS data directory. Stored in `ctx.obj["bhds_home_override"]` and consumed by commands that need local archive storage (`download`, `verify`). See [`common.path`](../../common/path.md) for resolution priority. |
 
 `-v` is `count`-based — pass `-v -v` or `-vv` for DEBUG. All CLI logging is written

@@ -29,7 +29,7 @@ result = download_archive_files(
     inherit_proxy=False,
     batch_size=4096,
     max_tries=3,
-    progress_callback=None,
+    progress_bar=False,
 )
 ```
 
@@ -38,14 +38,23 @@ result = download_archive_files(
 | `requests` | *(required)* | Sequence of `DownloadRequest` items to download. |
 | `inherit_proxy` | *(required)* | When `False`, proxy env vars (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, etc.) are stripped from the aria2c subprocess environment. When `True`, aria2c inherits the caller's proxy settings. |
 | `batch_size` | `4096` | Maximum files per aria2c invocation. Larger sets are chunked. |
-| `max_tries` | `3` | Maximum retry rounds for failed batches. Each retry re-runs the entire failed batch. |
-| `progress_callback` | `None` | Optional `Callable[[BatchProgressEvent], None]` invoked at batch lifecycle events. |
+| `max_tries` | `3` | Maximum retry rounds for incomplete files. |
+| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr via the shared progress-reporting framework. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../../common/progress.md). |
 
 Returns an `Aria2DownloadResult`.
 
 Aria2 is invoked with `--allow-overwrite=true` and
 `--auto-file-renaming=false` so updated files replace existing ones instead of
 producing `.1.zip`-style renamed duplicates.
+
+### Per-file retry semantics
+
+Downloads use **per-file retry granularity**. After each aria2 batch
+completes, individual files are checked for completeness: a file is
+considered complete when it exists on disk and has no leftover `.aria2`
+control file (which indicates a partial download). Only files that are
+still missing or incomplete are retried in subsequent rounds. This avoids
+re-downloading already-completed files within a batch that partially failed.
 
 ## `Aria2DownloadResult`
 
@@ -55,19 +64,6 @@ producing `.1.zip`-style renamed duplicates.
 | `failed_requests` | `list[DownloadRequest]` | Requests that still failed after all retries. |
 | `succeeded` | `int` *(property)* | `requested - len(failed_requests)`. |
 
-## `BatchProgressEvent`
-
-Frozen dataclass payload for the progress callback.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `phase` | `str` | One of `"start"`, `"success"`, `"retry"`, `"failed"`. |
-| `batch_index` | `int` | 1-based index within the current retry round. |
-| `total_batches` | `int` | Total batches in the current retry round. |
-| `requested` | `int` | Number of files in this batch. |
-| `attempt` | `int` | Current retry attempt, 1-based. |
-| `max_tries` | `int` | Maximum retry attempts configured. |
-
 ## `Aria2NotFoundError`
 
 Custom `FileNotFoundError` subclass raised when `aria2c` is not available in
@@ -75,4 +71,4 @@ Custom `FileNotFoundError` subclass raised when `aria2c` is not available in
 
 ---
 
-See also: [Archive package](README.md) | [Workflow](../workflow.md) | [S3 protocol](../s3-protocol.md)
+See also: [Archive package](README.md) | [Workflow](../workflow.md) | [S3 protocol](../s3-protocol.md) | [Progress reporting](../../common/progress.md)

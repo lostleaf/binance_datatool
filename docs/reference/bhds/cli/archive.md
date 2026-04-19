@@ -50,7 +50,7 @@ User runs:
                          │ trade_type, data_freq, data_type,
                          │ symbol_filter
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (bhds/workflow/archive.py)                 │
+  │ Workflow  (bhds/workflow/archive/)                  │
   │  Fetches raw symbols, infers typed metadata per      │
   │  market, applies the filter, and returns a           │
   │  ListSymbolsResult.                                  │
@@ -71,6 +71,7 @@ bhds archive list-files <TRADE_TYPE> [SYMBOLS...]
     [--freq FREQ] [--type TYPE] [--interval INTERVAL]
     [-l | --long]
     [--only-zip | --only-checksum]
+    [--progress-bar]
 ```
 
 Lists every file under one or more symbol directories on `data.binance.vision`,
@@ -86,6 +87,7 @@ preserving the caller-provided symbol order.
 | `-l` / `--long` | `bool` | `False` | Switch from short relative-path output to a three-column TSV: `size_bytes<TAB>last_modified_iso<TAB>relative_path`. |
 | `--only-zip` | `bool` | `False` | Print only `.zip` files. Mutually exclusive with `--only-checksum`. |
 | `--only-checksum` | `bool` | `False` | Print only `.zip.CHECKSUM` files. Mutually exclusive with `--only-zip`. |
+| `--progress-bar` | `bool` | `False` | Show interactive tqdm progress bar on stderr. By default no interactive progress is shown; sampled log lines at INFO level are emitted instead. See [`common.progress`](../../common/progress.md). |
 
 ### Symbol input resolution
 
@@ -189,13 +191,13 @@ User runs:
                          │ trade_type, data_freq, data_type,
                          │ symbols, interval
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (bhds/workflow/archive.py)                 │
+  │ Workflow  (bhds/workflow/archive/)                  │
   │  Re-validates interval consistency at construction;  │
-  │  opens one shared aiohttp session; concurrently      │
-  │  issues list_symbol_files per symbol via             │
-  │  asyncio.gather(return_exceptions=True); wraps       │
-  │  exceptions into SymbolListFilesResult.error and     │
-  │  preserves caller input order.                       │
+  │  delegates to ArchiveClient.list_symbol_files_batch  │
+  │  which opens one shared aiohttp session and          │
+  │  concurrently lists every symbol; wraps exceptions   │
+  │  into SymbolListFilesResult.error and preserves      │
+  │  caller input order.                                 │
   └──────────────────────┬───────────────────────────────┘
                          │ trade_type, data_freq, data_type,
                          │ symbol, interval, session
@@ -220,6 +222,7 @@ bhds [--bhds-home PATH] archive download <TRADE_TYPE> [SYMBOLS...]
     [--freq FREQ] [--type TYPE] [--interval INTERVAL]
     [-n | --dry-run]
     [--aria2-proxy]
+    [--progress-bar]
 ```
 
 Downloads new or updated archive files into the local BHDS data directory.
@@ -234,6 +237,7 @@ Requires `aria2c` to be available in `PATH`.
 | `--interval` | `str \| None` | `None` | Kline interval directory. Same validation as `list-files`. |
 | `-n` / `--dry-run` | `bool` | `False` | Show what would be downloaded without writing files. Outputs TSV to stdout. |
 | `--aria2-proxy` | `bool` | `False` | Allow aria2c to inherit system proxy environment variables. By default, proxy env vars (`HTTP_PROXY`, `HTTPS_PROXY`, etc.) are stripped from the aria2c subprocess. |
+| `--progress-bar` | `bool` | `False` | Show interactive tqdm progress bar on stderr. By default no interactive progress is shown; sampled log lines at INFO level are emitted instead. See [`common.progress`](../../common/progress.md). |
 
 ### BHDS home resolution
 
@@ -277,11 +281,12 @@ to stderr: `N files to download, M up to date`.
 
 ### Normal output
 
-In download mode, progress is shown on stderr with:
-- Scan summary: symbol count and file counts
-- Per-batch status messages such as `Downloading batch ...` and `Retrying batch ...`
-- A tqdm progress bar when stderr is a TTY
-- Final summary: `Done: N downloaded, M failed, K skipped`
+In download mode, the following are printed to stderr:
+- Scan summary: symbol count and file counts.
+- A final summary line: `Done: N downloaded, M failed, K skipped`.
+- If `--progress-bar` is passed, an interactive tqdm bar is rendered on stderr
+  during both the listing and download phases. Otherwise, sampled INFO log lines
+  report progress.
 
 ### Exit codes
 
@@ -325,12 +330,12 @@ User runs:
                          │ symbols, bhds_home, interval,
                          │ dry_run, inherit_aria2_proxy
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (bhds/workflow/archive.py)                 │
+  │ Workflow  (bhds/workflow/archive/)                  │
   │  Delegates to ArchiveListFilesWorkflow for remote    │
   │  listing; computes diff (new/updated/skipped) by     │
   │  comparing local timestamps; invalidates stale       │
-  │  .verified markers; invokes aria2 downloader with    │
-  │  batch retry.                                        │
+  │  .verified markers; deletes stale local copies;      │
+  │  invokes aria2 downloader with per-file retry.       │
   └──────────────────────┬───────────────────────────────┘
                          │
           ┌──────────────┴──────────────┐
@@ -352,6 +357,7 @@ bhds [--bhds-home PATH] archive verify <TRADE_TYPE> [SYMBOLS...]
     [--freq FREQ] [--type TYPE] [--interval INTERVAL]
     [--keep-failed]
     [-n | --dry-run]
+    [--progress-bar]
 ```
 
 Verifies local archive zip files against their sibling `.CHECKSUM` files using
@@ -366,6 +372,7 @@ SHA256. Requires `BHDS_HOME` to be configured (same resolution as `download`).
 | `--interval` | `str \| None` | `None` | Kline interval directory. Same validation as `list-files`. |
 | `--keep-failed` | `bool` | `False` | Keep failed zip and checksum files instead of deleting them. |
 | `-n` / `--dry-run` | `bool` | `False` | Show what would be verified without computing checksums or modifying files. |
+| `--progress-bar` | `bool` | `False` | Show interactive tqdm progress bar on stderr. By default no interactive progress is shown; sampled log lines at INFO level are emitted instead. See [`common.progress`](../../common/progress.md). |
 
 ### Symbol input resolution
 
@@ -394,11 +401,12 @@ selection flags, and the symbol list.
 
 ### Normal output
 
-In verify mode, results are printed to stderr:
-
-```
-Done: 12 verified, 0 failed, 5 skipped
-```
+In verify mode, the following are printed to stderr:
+- Scan summary: file counts and orphan counts.
+- A final summary line: `Done: N verified, M failed, K skipped`.
+- If `--progress-bar` is passed, interactive tqdm bars are rendered on stderr
+  during both the scan and verify phases. Otherwise, sampled INFO log lines
+  report progress.
 
 If orphans were found, an additional line describes the cleanup:
 
@@ -477,12 +485,13 @@ User runs:
                          │ symbols, bhds_home, interval,
                          │ keep_failed, dry_run
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (bhds/workflow/archive.py)                 │
+  │ Workflow  (bhds/workflow/archive/)                  │
   │  Scans local symbol directories; classifies zips     │
   │  into verify/skip/orphan buckets; cleans orphans;    │
   │  verifies SHA256 checksums in parallel via           │
   │  ProcessPoolExecutor (spawn); writes/clears markers; │
-  │  optionally deletes failed files.                    │
+  │  optionally deletes failed files. Reports progress   │
+  │  via the shared progress-reporting framework.        │
   └──────────────────────┬───────────────────────────────┘
                          │ zip_path
   ┌──────────────────────▼───────────────────────────────┐
