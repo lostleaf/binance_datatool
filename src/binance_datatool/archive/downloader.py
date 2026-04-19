@@ -172,12 +172,7 @@ def download_archive_files(
     pending: list[DownloadRequest] = list(requests)
 
     for attempt in range(1, max_tries + 1):
-        description = "download" if attempt == 1 else f"download retry {attempt - 1}"
-        logger.info(
-            "{}: {} file(s)",
-            description,
-            len(pending),
-        )
+        description = "Download" if attempt == 1 else f"Download retry {attempt - 1}"
         still_missing: list[DownloadRequest] = []
         batches = _chunk_requests(pending, batch_size=batch_size)
 
