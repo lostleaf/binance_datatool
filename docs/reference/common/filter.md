@@ -1,12 +1,12 @@
-# binance_datatool.archive.filter
+# binance_datatool.common.filter
 
-Typed symbol filters for archive symbol listings.
+Typed symbol filters for inferred Binance symbol metadata.
 
-The package-level `binance_datatool.archive` re-exports every public filter
+The package-level `binance_datatool.common` re-exports every public filter
 type, so most imports can use:
 
 ```python
-from binance_datatool.archive import SpotSymbolFilter, build_symbol_filter
+from binance_datatool.common import SpotSymbolFilter, build_symbol_filter
 ```
 
 Filters operate on parsed `SymbolInfo` values, not raw symbol strings. Callers
@@ -22,7 +22,7 @@ All three filter classes are `@dataclass(slots=True)` without `frozen=True`.
 ## `SpotSymbolFilter`
 
 ```python
-from binance_datatool.archive import SpotSymbolFilter
+from binance_datatool.common import SpotSymbolFilter
 
 spot_filter = SpotSymbolFilter(
     quote_assets=frozenset({"USDT"}),
@@ -58,7 +58,7 @@ Union alias `SpotSymbolFilter | UmSymbolFilter | CmSymbolFilter`.
 ## `build_symbol_filter()`
 
 ```python
-from binance_datatool.archive import build_symbol_filter
+from binance_datatool.common import build_symbol_filter
 
 symbol_filter = build_symbol_filter(
     trade_type=TradeType.spot,
@@ -82,4 +82,4 @@ short-circuit filtering when no constraints are active.
 
 ---
 
-See also: [Archive package](README.md) | [Common symbol inference](../common/symbols.md) | [Common types](../common/types.md) | [Workflow](../workflow/)
+See also: [Common symbols](symbols.md) | [Common types](types.md) | [Architecture](../../architecture.md)

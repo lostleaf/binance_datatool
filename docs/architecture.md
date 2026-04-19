@@ -10,22 +10,22 @@ src/binance_datatool/
 ├── __init__.py              # Package root — exports __version__
 ├── py.typed                 # PEP 561 type stub marker
 │
-├── common/                  # Shared types and constants
+├── common/                  # Shared types, filters, and constants
 │   ├── __init__.py          # Re-exports public symbols
 │   ├── constants.py         # S3 settings, quote assets, stablecoins, leverage rules
 │   ├── enums.py             # TradeType, DataFrequency, DataType, ContractType
+│   ├── filter.py            # Spot/Um/Cm symbol filters and build_symbol_filter()
 │   ├── logging.py           # configure_cli_logging for CLI entry points
 │   ├── path.py              # Archive-home resolution and ArchiveHomeNotConfiguredError
 │   ├── progress.py          # ProgressEvent, ProgressReporter protocol, make_reporter()
 │   ├── types.py             # SymbolInfoBase, SpotSymbolInfo, UmSymbolInfo, CmSymbolInfo
 │   └── symbols.py           # infer_spot_info, infer_um_info, infer_cm_info
 │
-├── archive/                 # S3 data access, typed filters, checksum, and download helpers
-│   ├── __init__.py          # Re-exports client, filter, checksum, downloader, and symbol_dir symbols
+├── archive/                 # S3 data access, checksum, and download helpers
+│   ├── __init__.py          # Re-exports client, checksum, downloader, and symbol_dir symbols
 │   ├── checksum.py          # SHA256 verification helpers (calc, read, verify_single_file)
 │   ├── client.py            # HTTP client, XML parsing, ArchiveFile metadata
 │   ├── downloader.py        # aria2c batch downloader with per-file retry and proxy control
-│   ├── filter.py            # Spot/Um/Cm symbol filters and build_symbol_filter()
 │   └── symbol_dir.py        # SymbolArchiveDir, local marker management, directory scanning
 │
 ├── workflow/                # Business logic orchestration
@@ -56,7 +56,7 @@ CLI  (cli/)
 
 | Layer | Package | Responsibility |
 |-------|---------|----------------|
-| **Common** | `binance_datatool.common` | Shared enums, constants, and types used across the project. |
+| **Common** | `binance_datatool.common` | Shared enums, constants, types, and symbol filters used across the project. |
 | **Archive Client** | `binance_datatool.archive` | S3 HTTP communication with data.binance.vision. |
 | **Workflow** | `binance_datatool.workflow` | Business logic orchestration; decouples CLI from the client. |
 | **CLI** | `binance_datatool.cli` | Typer command definitions, argument parsing, output formatting. |

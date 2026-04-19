@@ -8,9 +8,8 @@ Fetches raw symbols via `ArchiveClient`, infers typed metadata per market segmen
 optionally applies a typed symbol filter.
 
 ```python
-from binance_datatool.archive import SpotSymbolFilter
 from binance_datatool.workflow import ArchiveListSymbolsWorkflow, ListSymbolsResult
-from binance_datatool.common import DataFrequency, DataType, TradeType
+from binance_datatool.common import DataFrequency, DataType, SpotSymbolFilter, TradeType
 
 workflow = ArchiveListSymbolsWorkflow(
     trade_type=TradeType.spot,

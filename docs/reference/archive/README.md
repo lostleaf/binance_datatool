@@ -8,7 +8,7 @@ Most user-facing imports can prefer the package-level re-export surface:
 from binance_datatool.archive import (
     ArchiveClient,
     DownloadRequest,
-    SpotSymbolFilter,
+    SymbolArchiveDir,
     download_archive_files,
     verify_single_file,
 )
@@ -22,7 +22,6 @@ details.
 | Module | Description |
 |--------|-------------|
 | [client](client.md) | `ArchiveClient`, `ArchiveFile`, and `list_symbols()`. |
-| [filter](filter.md) | Typed symbol filters and `build_symbol_filter()`. |
 | [downloader](downloader.md) | Aria2-backed batch download helpers and result types. |
 | [checksum](checksum.md) | SHA256 checksum helpers and `VerifyFileResult`. |
 | [symbol_dir](symbol_dir.md) | Local symbol archive directory helpers and marker management. |
@@ -33,7 +32,6 @@ details.
 | Source module | Re-exported names |
 |---------------|-------------------|
 | [`client`](client.md) | `ArchiveClient`, `ArchiveFile`, `SymbolListingResult`, `list_symbols` |
-| [`filter`](filter.md) | `SpotSymbolFilter`, `UmSymbolFilter`, `CmSymbolFilter`, `SymbolFilter`, `build_symbol_filter` |
 | [`downloader`](downloader.md) | `DownloadRequest`, `Aria2DownloadResult`, `Aria2NotFoundError`, `download_archive_files` |
 | [`checksum`](checksum.md) | `VerifyFileResult`, `calc_sha256`, `read_expected_checksum`, `verify_single_file` |
 | [`symbol_dir`](symbol_dir.md) | `SymbolArchiveDir`, `create_symbol_archive_dir` |

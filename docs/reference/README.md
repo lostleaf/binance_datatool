@@ -13,8 +13,8 @@ from binance_datatool.common import DataFrequency, DataType, TradeType, resolve_
 ```
 
 That package currently re-exports the shared enums, symbol-info dataclasses,
-symbol inference helpers, CLI logging helper, archive-home resolver, and the main
-S3 / leverage / stablecoin constants. Names that are documented but not
+symbol filters, symbol inference helpers, CLI logging helper, archive-home
+resolver, and the main S3 / leverage / stablecoin constants. Names that are documented but not
 re-exported from `binance_datatool.common` should be imported from their
 defining module, for example:
 
@@ -27,6 +27,7 @@ from binance_datatool.common.path import ARCHIVE_HOME_ENV_VAR
 |--------|-------------|
 | [common.constants](common/constants.md) | S3 settings, quote assets, stablecoins, leverage rules. |
 | [common.enums](common/enums.md) | TradeType, DataFrequency, DataType, ContractType. |
+| [common.filter](common/filter.md) | Typed symbol filters and `build_symbol_filter()`. |
 | [common.types](common/types.md) | SymbolInfoBase and per-market symbol info dataclasses. |
 | [common.logging](common/logging.md) | `configure_cli_logging` helper for CLI entry points. |
 | [common.path](common/path.md) | Archive-home directory resolution. |
@@ -39,7 +40,6 @@ from binance_datatool.common.path import ARCHIVE_HOME_ENV_VAR
 |--------|-------------|
 | [archive](archive/) | Package index and re-export surface for archive access helpers. |
 | [archive.client](archive/client.md) | S3 listing client, `ArchiveFile`, and `list_symbols()`. |
-| [archive.filter](archive/filter.md) | Typed symbol filters and `build_symbol_filter()`. |
 | [archive.downloader](archive/downloader.md) | Aria2-backed batch download helpers and result types. |
 | [archive.checksum](archive/checksum.md) | SHA256 verification helpers and `VerifyFileResult`. |
 | [archive.symbol_dir](archive/symbol_dir.md) | Local symbol archive directory helpers and marker management. |
