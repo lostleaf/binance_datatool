@@ -100,8 +100,8 @@ bhds_home/aws_data/data/{trade_type.s3_path}/{data_freq}/{data_type}/{symbol}[/{
 ## `collect_markers_by_zip()`
 
 Module-level helper that collects all verification marker files for a list
-of zip paths, grouped by their parent zip. Used by the download workflow to
-invalidate stale markers in bulk.
+of zip paths, grouped by their parent zip. Used by the verify workflow to
+pre-collect markers and avoid per-file glob calls when applying verify results.
 
 ```python
 from binance_datatool.bhds.archive.symbol_dir import collect_markers_by_zip
