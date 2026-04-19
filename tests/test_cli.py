@@ -8,14 +8,16 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from binance_datatool.archive import (
-    ArchiveFile,
-    CmSymbolFilter,
-    SpotSymbolFilter,
-    UmSymbolFilter,
-)
+from binance_datatool.archive import ArchiveFile
 from binance_datatool.cli import app
-from binance_datatool.common import ContractType, SpotSymbolInfo, UmSymbolInfo
+from binance_datatool.common import (
+    CmSymbolFilter,
+    ContractType,
+    SpotSymbolFilter,
+    SpotSymbolInfo,
+    UmSymbolFilter,
+    UmSymbolInfo,
+)
 from binance_datatool.workflow import (
     ArchiveVerifyWorkflow,
     DiffEntry,

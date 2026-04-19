@@ -1,9 +1,18 @@
-"""Tests for archive symbol filters."""
+"""Tests for common symbol filters."""
 
 from __future__ import annotations
 
-from binance_datatool.archive import CmSymbolFilter, SpotSymbolFilter, UmSymbolFilter
-from binance_datatool.common import CmSymbolInfo, ContractType, SpotSymbolInfo, UmSymbolInfo
+from binance_datatool.common import (
+    CmSymbolFilter,
+    CmSymbolInfo,
+    ContractType,
+    SpotSymbolFilter,
+    SpotSymbolInfo,
+    TradeType,
+    UmSymbolFilter,
+    UmSymbolInfo,
+    build_symbol_filter,
+)
 
 
 def test_spot_symbol_filter_matches_all_supported_dimensions() -> None:
@@ -148,3 +157,75 @@ def test_cm_symbol_filter_matches_contract_type() -> None:
     assert CmSymbolFilter(contract_type=ContractType.perpetual).matches(delivery) is False
     assert CmSymbolFilter(contract_type=ContractType.delivery)([perpetual, delivery]) == [delivery]
     assert CmSymbolFilter(contract_type=ContractType.delivery)([]) == []
+
+
+def test_build_symbol_filter_returns_none_when_no_applicable_constraints_are_enabled() -> None:
+    """The builder should skip creating filters when every relevant option is a no-op."""
+    assert (
+        build_symbol_filter(
+            trade_type=TradeType.spot,
+            quote_assets=None,
+            exclude_leverage=False,
+            exclude_stable_pairs=False,
+            contract_type=None,
+        )
+        is None
+    )
+    assert (
+        build_symbol_filter(
+            trade_type=TradeType.um,
+            quote_assets=None,
+            exclude_leverage=True,
+            exclude_stable_pairs=False,
+            contract_type=None,
+        )
+        is None
+    )
+    assert (
+        build_symbol_filter(
+            trade_type=TradeType.cm,
+            quote_assets=frozenset({"USDT"}),
+            exclude_leverage=True,
+            exclude_stable_pairs=True,
+            contract_type=None,
+        )
+        is None
+    )
+
+
+def test_build_symbol_filter_returns_market_specific_filter_types() -> None:
+    """The builder should produce the expected filter dataclass for each market."""
+    spot_filter = build_symbol_filter(
+        trade_type=TradeType.spot,
+        quote_assets=frozenset({"USDT"}),
+        exclude_leverage=True,
+        exclude_stable_pairs=True,
+        contract_type=ContractType.delivery,
+    )
+    um_filter = build_symbol_filter(
+        trade_type=TradeType.um,
+        quote_assets=frozenset({"USDT"}),
+        exclude_leverage=True,
+        exclude_stable_pairs=True,
+        contract_type=ContractType.perpetual,
+    )
+    cm_filter = build_symbol_filter(
+        trade_type=TradeType.cm,
+        quote_assets=frozenset({"USDT"}),
+        exclude_leverage=True,
+        exclude_stable_pairs=True,
+        contract_type=ContractType.delivery,
+    )
+
+    assert isinstance(spot_filter, SpotSymbolFilter)
+    assert spot_filter.quote_assets == frozenset({"USDT"})
+    assert spot_filter.exclude_leverage is True
+    assert spot_filter.exclude_stable_pairs is True
+
+    assert isinstance(um_filter, UmSymbolFilter)
+    assert um_filter.quote_assets == frozenset({"USDT"})
+    assert um_filter.contract_type is ContractType.perpetual
+    assert um_filter.exclude_stable_pairs is True
+
+    assert isinstance(cm_filter, CmSymbolFilter)
+    assert cm_filter.contract_type is ContractType.delivery

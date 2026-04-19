@@ -14,12 +14,17 @@ from binance_datatool.archive import (
     ArchiveClient,
     ArchiveFile,
     Aria2DownloadResult,
-    CmSymbolFilter,
-    SpotSymbolFilter,
     SymbolArchiveDir,
+)
+from binance_datatool.common import (
+    CmSymbolFilter,
+    ContractType,
+    DataFrequency,
+    DataType,
+    SpotSymbolFilter,
+    TradeType,
     UmSymbolFilter,
 )
-from binance_datatool.common import ContractType, DataFrequency, DataType, TradeType
 from binance_datatool.workflow import (
     ArchiveDownloadWorkflow,
     ArchiveListFilesWorkflow,

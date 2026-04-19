@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Annotated
 import typer
 from loguru import logger
 
-from binance_datatool.archive import build_symbol_filter
 from binance_datatool.cli import app
 from binance_datatool.common import (
     ArchiveHomeNotConfiguredError,
@@ -18,6 +17,7 @@ from binance_datatool.common import (
     DataFrequency,
     DataType,
     TradeType,
+    build_symbol_filter,
     resolve_archive_home,
 )
 from binance_datatool.workflow import (

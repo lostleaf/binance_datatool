@@ -1,16 +1,17 @@
-"""Symbol filters for archive listings."""
+"""Typed symbol filters shared across archive workflows and CLI entrypoints."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from binance_datatool.common import TradeType
+from binance_datatool.common.enums import TradeType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from binance_datatool.common import CmSymbolInfo, ContractType, SpotSymbolInfo, UmSymbolInfo
+    from binance_datatool.common.enums import ContractType
+    from binance_datatool.common.types import CmSymbolInfo, SpotSymbolInfo, UmSymbolInfo
 
 
 @dataclass(slots=True)

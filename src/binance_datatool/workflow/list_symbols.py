@@ -12,8 +12,7 @@ from ._shared import infer_symbol_info
 from .results import ListSymbolsResult
 
 if TYPE_CHECKING:
-    from binance_datatool.archive import SymbolFilter
-    from binance_datatool.common import DataFrequency, DataType, TradeType
+    from binance_datatool.common import DataFrequency, DataType, SymbolFilter, TradeType
 
 
 def _format_filter_values(
