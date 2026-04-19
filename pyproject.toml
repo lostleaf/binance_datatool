@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "binance-datatool"
 version = "0.1.1"
-description = "Modern tools for exploring and managing Binance historical market data."
+description = "A non-official Python toolkit for managing historical market data from data.binance.vision"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "BSD-3-Clause"
@@ -37,9 +37,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/lostleaf/binance_datatool"
 Repository = "https://github.com/lostleaf/binance_datatool"
-Issues = "https://github.com/lostleaf/binance_datatool/issues"
 
 [project.scripts]
 binance-datatool = "binance_datatool.cli:app"
