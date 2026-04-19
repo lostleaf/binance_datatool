@@ -11,7 +11,7 @@ import typer
 from loguru import logger
 
 from binance_datatool.archive import build_symbol_filter
-from binance_datatool.cli import archive_app
+from binance_datatool.cli import app
 from binance_datatool.common import (
     ArchiveHomeNotConfiguredError,
     ContractType,
@@ -20,7 +20,7 @@ from binance_datatool.common import (
     TradeType,
     resolve_archive_home,
 )
-from binance_datatool.workflow.archive import (
+from binance_datatool.workflow import (
     ArchiveDownloadWorkflow,
     ArchiveListFilesWorkflow,
     ArchiveListSymbolsWorkflow,
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-@archive_app.command("list-symbols")
+@app.command("list-symbols")
 def list_symbols_command(
     trade_type: Annotated[TradeType, typer.Argument(help="Market segment.")],
     data_freq: Annotated[
@@ -206,7 +206,7 @@ def _finalize_download_result(result: DiffResult | DownloadResult) -> None:
         raise typer.Exit(code=2)
 
 
-@archive_app.command("list-files")
+@app.command("list-files")
 def list_files_command(
     trade_type: Annotated[TradeType, typer.Argument(help="Market segment.")],
     symbols: Annotated[list[str] | None, typer.Argument(help="Symbols to list files for.")] = None,
@@ -303,7 +303,7 @@ def list_files_command(
         raise typer.Exit(code=2)
 
 
-@archive_app.command("download")
+@app.command("download")
 def download_command(
     ctx: typer.Context,
     trade_type: Annotated[TradeType, typer.Argument(help="Market segment.")],
@@ -384,7 +384,7 @@ def download_command(
         raise typer.Exit(code=2)
 
 
-@archive_app.command("verify")
+@app.command("verify")
 def verify_command(
     ctx: typer.Context,
     trade_type: Annotated[TradeType, typer.Argument(help="Market segment.")],

@@ -20,7 +20,7 @@ from binance_datatool.archive import (
     UmSymbolFilter,
 )
 from binance_datatool.common import ContractType, DataFrequency, DataType, TradeType
-from binance_datatool.workflow.archive import (
+from binance_datatool.workflow import (
     ArchiveDownloadWorkflow,
     ArchiveListFilesWorkflow,
     ArchiveListSymbolsWorkflow,

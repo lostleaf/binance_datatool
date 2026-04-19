@@ -9,8 +9,6 @@ import typer
 from binance_datatool.common import configure_cli_logging
 
 app = typer.Typer(name="binance-datatool", help="Binance DataTool CLI.", add_completion=False)
-archive_app = typer.Typer(name="archive", help="Browse data.binance.vision archive paths.")
-app.add_typer(archive_app)
 
 
 @app.callback()
@@ -39,5 +37,5 @@ def root_callback(
     ctx.obj["archive_home_override"] = archive_home
 
 
-# Register sub-command modules (side-effect import).
+# Register root command modules (side-effect import).
 from binance_datatool.cli import archive as _archive  # noqa: F401,E402

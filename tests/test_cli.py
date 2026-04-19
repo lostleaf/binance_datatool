@@ -16,7 +16,7 @@ from binance_datatool.archive import (
 )
 from binance_datatool.cli import app
 from binance_datatool.common import ContractType, SpotSymbolInfo, UmSymbolInfo
-from binance_datatool.workflow.archive import (
+from binance_datatool.workflow import (
     ArchiveVerifyWorkflow,
     DiffEntry,
     DiffResult,
@@ -33,13 +33,18 @@ runner = CliRunner()
 
 
 def test_cli_root_help_uses_new_app_name() -> None:
-    """Root help should only expose the new CLI name and archive-home option."""
+    """Root help should expose root commands without an archive namespace."""
     result = runner.invoke(app, ["--help"])
 
     assert result.exit_code == 0
     assert "binance-datatool" in result.stdout
     assert "Binance DataTool CLI." in result.stdout
     assert "--archive-home" in result.stdout
+    assert "list-symbols" in result.stdout
+    assert "list-files" in result.stdout
+    assert "download" in result.stdout
+    assert "verify" in result.stdout
+    assert "\n  archive" not in result.stdout
 
 
 def test_cli_list_symbols_outputs_only_matched_symbols(monkeypatch) -> None:
@@ -77,18 +82,18 @@ def test_cli_list_symbols_outputs_only_matched_symbols(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListSymbolsWorkflow.run",
+        "binance_datatool.workflow.ArchiveListSymbolsWorkflow.run",
         fake_run,
     )
 
-    result = runner.invoke(app, ["archive", "list-symbols", "spot"])
+    result = runner.invoke(app, ["list-symbols", "spot"])
 
     assert result.exit_code == 0
     assert result.stdout == "BTCUSDT\nETHUSDT\n"
 
 
 def test_cli_list_symbols_builds_um_filter_from_flags(monkeypatch) -> None:
-    """The archive CLI should normalize repeated quote filters for USD-M."""
+    """The CLI should normalize repeated quote filters for USD-M."""
 
     async def fake_run(self) -> ListSymbolsResult:
         assert self.data_freq.value == "monthly"
@@ -112,14 +117,13 @@ def test_cli_list_symbols_builds_um_filter_from_flags(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListSymbolsWorkflow.run",
+        "binance_datatool.workflow.ArchiveListSymbolsWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "archive",
             "list-symbols",
             "um",
             "--freq",
@@ -149,14 +153,13 @@ def test_cli_list_symbols_ignores_inapplicable_flags(monkeypatch) -> None:
         return ListSymbolsResult(matched=[], unmatched=["BTCUSDT"], filtered_out=[])
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListSymbolsWorkflow.run",
+        "binance_datatool.workflow.ArchiveListSymbolsWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "archive",
             "list-symbols",
             "cm",
             "--quote",
@@ -193,14 +196,13 @@ def test_cli_list_symbols_builds_spot_filter(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListSymbolsWorkflow.run",
+        "binance_datatool.workflow.ArchiveListSymbolsWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "archive",
             "list-symbols",
             "spot",
             "--quote",
@@ -225,13 +227,13 @@ def test_cli_list_symbols_builds_cm_filter(monkeypatch) -> None:
         return ListSymbolsResult(matched=[], unmatched=[], filtered_out=[])
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListSymbolsWorkflow.run",
+        "binance_datatool.workflow.ArchiveListSymbolsWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
-        ["archive", "list-symbols", "cm", "--quote", "usdt", "--contract-type", "delivery"],
+        ["list-symbols", "cm", "--quote", "usdt", "--contract-type", "delivery"],
     )
 
     assert result.exit_code == 0
@@ -243,7 +245,6 @@ def test_cli_list_files_rejects_mutually_exclusive_flags() -> None:
     result = runner.invoke(
         app,
         [
-            "archive",
             "list-files",
             "um",
             "--type",
@@ -260,7 +261,7 @@ def test_cli_list_files_rejects_mutually_exclusive_flags() -> None:
 
 def test_cli_list_files_requires_interval_for_kline_types() -> None:
     """Kline-class data types should require an interval."""
-    result = runner.invoke(app, ["archive", "list-files", "um", "BTCUSDT"])
+    result = runner.invoke(app, ["list-files", "um", "BTCUSDT"])
 
     assert result.exit_code == 2
     assert "--interval" in result.stderr
@@ -271,7 +272,6 @@ def test_cli_list_files_rejects_interval_for_non_kline_types() -> None:
     result = runner.invoke(
         app,
         [
-            "archive",
             "list-files",
             "um",
             "--type",
@@ -288,7 +288,7 @@ def test_cli_list_files_rejects_interval_for_non_kline_types() -> None:
 
 def test_cli_list_files_requires_symbols() -> None:
     """The CLI should reject calls without symbols from args or stdin."""
-    result = runner.invoke(app, ["archive", "list-files", "um", "--type", "fundingRate"])
+    result = runner.invoke(app, ["list-files", "um", "--type", "fundingRate"])
 
     assert result.exit_code == 2
     assert "No symbols given" in result.stderr
@@ -302,13 +302,13 @@ def test_cli_list_files_argument_symbols_override_stdin(monkeypatch) -> None:
         return ListFilesResult(per_symbol=[])
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
-        ["archive", "list-files", "um", "--type", "fundingRate", "btcusdt"],
+        ["list-files", "um", "--type", "fundingRate", "btcusdt"],
         input="ethusdt\n",
     )
 
@@ -323,13 +323,13 @@ def test_cli_list_files_reads_symbols_from_stdin(monkeypatch) -> None:
         return ListFilesResult(per_symbol=[])
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
-        ["archive", "list-files", "um", "--type", "fundingRate"],
+        ["list-files", "um", "--type", "fundingRate"],
         input="btcusdt\n\nethusdt\n",
     )
 
@@ -368,13 +368,13 @@ def test_cli_list_files_short_output(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
-        ["archive", "list-files", "um", "--freq", "monthly", "--type", "fundingRate", "btcusdt"],
+        ["list-files", "um", "--freq", "monthly", "--type", "fundingRate", "btcusdt"],
     )
 
     assert result.exit_code == 0
@@ -415,14 +415,13 @@ def test_cli_list_files_long_output_and_only_zip(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "archive",
             "list-files",
             "um",
             "--freq",
@@ -455,13 +454,13 @@ def test_cli_list_files_logs_errors_and_exits_2(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
-        ["archive", "list-files", "um", "--type", "fundingRate", "BTCUSDT"],
+        ["list-files", "um", "--type", "fundingRate", "BTCUSDT"],
     )
 
     assert result.exit_code == 2
@@ -488,13 +487,13 @@ def test_cli_list_files_kline_relative_path_contains_interval(monkeypatch) -> No
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
-        ["archive", "list-files", "um", "--interval", "1m", "btcusdt"],
+        ["list-files", "um", "--interval", "1m", "btcusdt"],
     )
 
     assert result.exit_code == 0
@@ -532,14 +531,13 @@ def test_cli_list_files_only_checksum(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "archive",
             "list-files",
             "um",
             "--freq",
@@ -562,13 +560,13 @@ def test_cli_list_files_warns_on_empty_remote_without_failures(monkeypatch) -> N
         return ListFilesResult(per_symbol=[SymbolListFilesResult(symbol="BTCUSDT", files=[])])
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
-        ["archive", "list-files", "um", "--type", "fundingRate", "BTCUSDT"],
+        ["list-files", "um", "--type", "fundingRate", "BTCUSDT"],
     )
 
     assert result.exit_code == 0
@@ -583,14 +581,13 @@ def test_cli_list_files_passes_progress_bar_flag(monkeypatch) -> None:
         return ListFilesResult(per_symbol=[])
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "archive",
             "list-files",
             "um",
             "--type",
@@ -605,7 +602,7 @@ def test_cli_list_files_passes_progress_bar_flag(monkeypatch) -> None:
 
 def test_cli_download_requires_symbols() -> None:
     """Download should reject calls without symbols from args or stdin."""
-    result = runner.invoke(app, ["archive", "download", "um", "--type", "fundingRate"])
+    result = runner.invoke(app, ["download", "um", "--type", "fundingRate"])
 
     assert result.exit_code == 2
     assert "No symbols given" in result.stderr
@@ -640,7 +637,7 @@ def test_cli_download_dry_run_outputs_tsv(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveDownloadWorkflow.run",
+        "binance_datatool.workflow.ArchiveDownloadWorkflow.run",
         fake_run,
     )
 
@@ -649,7 +646,6 @@ def test_cli_download_dry_run_outputs_tsv(monkeypatch) -> None:
         [
             "--archive-home",
             "/tmp/archive-home",
-            "archive",
             "download",
             "um",
             "--freq",
@@ -680,7 +676,7 @@ def test_cli_download_passes_archive_home_and_proxy_flag(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveDownloadWorkflow.run",
+        "binance_datatool.workflow.ArchiveDownloadWorkflow.run",
         fake_run,
     )
 
@@ -689,7 +685,6 @@ def test_cli_download_passes_archive_home_and_proxy_flag(monkeypatch) -> None:
         [
             "--archive-home",
             "/tmp/archive-home",
-            "archive",
             "download",
             "um",
             "--type",
@@ -716,7 +711,7 @@ def test_cli_download_passes_progress_bar_flag(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveDownloadWorkflow.run",
+        "binance_datatool.workflow.ArchiveDownloadWorkflow.run",
         fake_run,
     )
 
@@ -725,7 +720,6 @@ def test_cli_download_passes_progress_bar_flag(monkeypatch) -> None:
         [
             "--archive-home",
             "/tmp/archive-home",
-            "archive",
             "download",
             "um",
             "--type",
@@ -750,7 +744,7 @@ def test_cli_download_logs_listing_errors_and_exits_2(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveDownloadWorkflow.run",
+        "binance_datatool.workflow.ArchiveDownloadWorkflow.run",
         fake_run,
     )
 
@@ -759,7 +753,6 @@ def test_cli_download_logs_listing_errors_and_exits_2(monkeypatch) -> None:
         [
             "--archive-home",
             "/tmp/archive-home",
-            "archive",
             "download",
             "um",
             "--type",
@@ -775,7 +768,7 @@ def test_cli_download_logs_listing_errors_and_exits_2(monkeypatch) -> None:
 
 def test_cli_verify_requires_symbols() -> None:
     """Verify should reject calls without symbols from args or stdin."""
-    result = runner.invoke(app, ["archive", "verify", "um", "--type", "fundingRate"])
+    result = runner.invoke(app, ["verify", "um", "--type", "fundingRate"])
 
     assert result.exit_code == 2
     assert "No symbols given" in result.stderr
@@ -783,10 +776,10 @@ def test_cli_verify_requires_symbols() -> None:
 
 def test_cli_verify_validates_interval() -> None:
     """Verify should enforce the same interval validation as list-files/download."""
-    missing_interval = runner.invoke(app, ["archive", "verify", "um", "BTCUSDT"])
+    missing_interval = runner.invoke(app, ["verify", "um", "BTCUSDT"])
     extra_interval = runner.invoke(
         app,
-        ["archive", "verify", "um", "--type", "fundingRate", "--interval", "1m", "BTCUSDT"],
+        ["verify", "um", "--type", "fundingRate", "--interval", "1m", "BTCUSDT"],
     )
 
     assert missing_interval.exit_code == 2
@@ -811,7 +804,7 @@ def test_cli_verify_passes_archive_home_and_keep_failed(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveVerifyWorkflow.run",
+        "binance_datatool.workflow.ArchiveVerifyWorkflow.run",
         fake_run,
     )
 
@@ -820,7 +813,6 @@ def test_cli_verify_passes_archive_home_and_keep_failed(monkeypatch) -> None:
         [
             "--archive-home",
             "/tmp/archive-home",
-            "archive",
             "verify",
             "um",
             "--type",
@@ -848,7 +840,7 @@ def test_cli_verify_passes_progress_bar_flag(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveVerifyWorkflow.run",
+        "binance_datatool.workflow.ArchiveVerifyWorkflow.run",
         fake_run,
     )
 
@@ -857,7 +849,6 @@ def test_cli_verify_passes_progress_bar_flag(monkeypatch) -> None:
         [
             "--archive-home",
             "/tmp/archive-home",
-            "archive",
             "verify",
             "um",
             "--type",
@@ -891,7 +882,7 @@ def test_cli_verify_dry_run_outputs_paths_and_summary(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveVerifyWorkflow.run",
+        "binance_datatool.workflow.ArchiveVerifyWorkflow.run",
         fake_run,
     )
 
@@ -900,7 +891,6 @@ def test_cli_verify_dry_run_outputs_paths_and_summary(monkeypatch) -> None:
         [
             "--archive-home",
             "/tmp/archive-home",
-            "archive",
             "verify",
             "spot",
             "--dry-run",
@@ -930,7 +920,7 @@ def test_cli_verify_returns_zero_with_failures_or_orphans(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveVerifyWorkflow.run",
+        "binance_datatool.workflow.ArchiveVerifyWorkflow.run",
         fake_run,
     )
 
@@ -939,7 +929,6 @@ def test_cli_verify_returns_zero_with_failures_or_orphans(monkeypatch) -> None:
         [
             "--archive-home",
             "/tmp/archive-home",
-            "archive",
             "verify",
             "um",
             "--type",
@@ -966,7 +955,7 @@ def test_cli_verify_warns_on_empty_local_scan(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.workflow.archive.ArchiveVerifyWorkflow.run",
+        "binance_datatool.workflow.ArchiveVerifyWorkflow.run",
         fake_run,
     )
 
@@ -975,7 +964,6 @@ def test_cli_verify_warns_on_empty_local_scan(monkeypatch) -> None:
         [
             "--archive-home",
             "/tmp/archive-home",
-            "archive",
             "verify",
             "spot",
             "--dry-run",
@@ -995,7 +983,6 @@ def test_cli_list_files_integration() -> None:
     result = runner.invoke(
         app,
         [
-            "archive",
             "list-files",
             "um",
             "--freq",
@@ -1018,7 +1005,6 @@ def test_cli_list_files_long_output_integration() -> None:
     result = runner.invoke(
         app,
         [
-            "archive",
             "list-files",
             "um",
             "--freq",
