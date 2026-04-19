@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "binance-datatool"
-version = "0.1.1"
+dynamic = ["version"]
 description = "A non-official Python toolkit for managing historical market data from data.binance.vision"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -44,14 +44,19 @@ binance-datatool = "binance_datatool.cli:app"
 
 [dependency-groups]
 dev = [
+  "build>=1.4.3",
   "pre-commit>=4.5.1",
   "pytest>=9.0.3",
   "pytest-asyncio>=1.3.0",
   "ruff>=0.15.10",
+  "twine>=6.2.0",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/binance_datatool"]
+
+[tool.hatch.version]
+path = "src/binance_datatool/__init__.py"
 
 [tool.ruff]
 target-version = "py311"
