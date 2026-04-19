@@ -67,4 +67,4 @@ No additional proxy configuration is needed at the application level.
 
 ---
 
-See also: [Archive package](archive/) | [Archive client module](archive/client.md) | [Architecture](../../architecture.md)
+See also: [Archive package](./) | [Archive client module](client.md) | [Architecture](../../architecture.md)

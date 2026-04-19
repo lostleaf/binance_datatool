@@ -39,7 +39,7 @@ result = download_archive_files(
 | `inherit_proxy` | *(required)* | When `False`, proxy env vars (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, etc.) are stripped from the aria2c subprocess environment. When `True`, aria2c inherits the caller's proxy settings. |
 | `batch_size` | `4096` | Maximum files per aria2c invocation. Larger sets are chunked. |
 | `max_tries` | `3` | Maximum retry rounds for incomplete files. |
-| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr via the shared progress-reporting framework. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../../common/progress.md). |
+| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr via the shared progress-reporting framework. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../common/progress.md). |
 
 Returns an `Aria2DownloadResult`.
 
@@ -71,4 +71,4 @@ Custom `FileNotFoundError` subclass raised when `aria2c` is not available in
 
 ---
 
-See also: [Archive package](README.md) | [Workflow](../workflow/) | [S3 protocol](s3-protocol.md) | [Progress reporting](../../common/progress.md)
+See also: [Archive package](README.md) | [Workflow](../workflow/) | [S3 protocol](s3-protocol.md) | [Progress reporting](../common/progress.md)

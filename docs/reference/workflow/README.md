@@ -89,7 +89,7 @@ result: ListFilesResult = await workflow.run()
 | `data_type` | *(required)* | Dataset type. |
 | `symbols` | *(required)* | Sequence of symbols to list. Caller order is preserved. |
 | `interval` | `None` | Kline interval directory. Required when `data_type.has_interval_layer` is `True`; must be `None` otherwise. |
-| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr via the shared progress-reporting framework. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../../common/progress.md). |
+| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr via the shared progress-reporting framework. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../common/progress.md). |
 | `client` | `None` | Optional pre-configured `ArchiveClient`. A default client is created when omitted. |
 
 The constructor validates the `interval` vs `data_type.has_interval_layer` invariant
@@ -170,7 +170,7 @@ result = await workflow.run()
 | `interval` | `None` | Kline interval directory. Required for kline-class data types. |
 | `dry_run` | `False` | When `True`, compute the diff without downloading. |
 | `inherit_aria2_proxy` | `False` | Whether aria2c should inherit proxy env vars. |
-| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../../common/progress.md). |
+| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../common/progress.md). |
 | `client` | `None` | Optional pre-configured `ArchiveClient`. |
 | `download_func` | `None` | Optional download callable for dependency injection. Defaults to `download_archive_files`. |
 
@@ -273,7 +273,7 @@ result = workflow.run()
 | `keep_failed` | `False` | When `True`, retain failed zip and checksum files instead of deleting them. |
 | `dry_run` | `False` | When `True`, scan and classify files without verifying or mutating the filesystem. |
 | `n_workers` | `None` | Process pool size. Defaults to `max(1, cpu_count - 2)`. |
-| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../../common/progress.md). |
+| `progress_bar` | `False` | When `True`, display an interactive tqdm progress bar on stderr. When `False`, emit sampled log lines at INFO level. See [`common.progress`](../common/progress.md). |
 
 ### `run()`
 

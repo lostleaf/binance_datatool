@@ -44,7 +44,7 @@ src/binance_datatool/
 
 ## Layered Design
 
-The package follows a strict three-layer architecture. Each layer depends only on the layers
+The package follows a strict four-layer architecture. Each layer depends only on the layers
 below it — outer layers import inner layers, never the reverse.
 
 ```
@@ -63,7 +63,7 @@ CLI  (cli/)
 
 For detailed API docs see the [module reference](reference/).
 
-### Why Three Layers?
+### Why Four Layers?
 
 - **Testability.** Workflows and clients can be tested independently of CLI parsing.
 - **Composability.** Workflows can be reused from scripts or notebooks without importing Typer.
@@ -76,7 +76,7 @@ All CLI logging flows through `stderr`; stdout is reserved exclusively for comma
 results so that sub-commands remain safe to pipe. See the
 [CLI overview](reference/cli/) for verbosity flag details.
 
-Every CLI command follows the same three-layer call path: the CLI function parses
+Every CLI command follows the same four-layer call path: the CLI function parses
 arguments, constructs a workflow, and presents the result. The workflow orchestrates
 business logic and delegates S3 communication to the archive client. Per-command data
 flow diagrams are documented alongside each command in the

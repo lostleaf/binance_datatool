@@ -82,4 +82,4 @@ short-circuit filtering when no constraints are active.
 
 ---
 
-See also: [Archive package](README.md) | [Common symbol inference](../../common/symbols.md) | [Common types](../../common/types.md) | [Workflow](../workflow/)
+See also: [Archive package](README.md) | [Common symbol inference](../common/symbols.md) | [Common types](../common/types.md) | [Workflow](../workflow/)

@@ -112,4 +112,4 @@ markers_by_zip = collect_markers_by_zip(zip_paths)
 
 ---
 
-See also: [Workflow](../workflow/) | [Archive package](README.md) | [Architecture](../../../architecture.md)
+See also: [Workflow](../workflow/) | [Archive package](README.md) | [Architecture](../../architecture.md)

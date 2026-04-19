@@ -87,7 +87,7 @@ preserving the caller-provided symbol order.
 | `-l` / `--long` | `bool` | `False` | Switch from short relative-path output to a three-column TSV: `size_bytes<TAB>last_modified_iso<TAB>relative_path`. |
 | `--only-zip` | `bool` | `False` | Print only `.zip` files. Mutually exclusive with `--only-checksum`. |
 | `--only-checksum` | `bool` | `False` | Print only `.zip.CHECKSUM` files. Mutually exclusive with `--only-zip`. |
-| `--progress-bar` | `bool` | `False` | Show interactive tqdm progress bar on stderr. By default no interactive progress is shown; sampled log lines at INFO level are emitted instead. See [`common.progress`](../../common/progress.md). |
+| `--progress-bar` | `bool` | `False` | Show interactive tqdm progress bar on stderr. By default no interactive progress is shown; sampled log lines at INFO level are emitted instead. See [`common.progress`](../common/progress.md). |
 
 ### Symbol input resolution
 
@@ -237,7 +237,7 @@ Requires `aria2c` to be available in `PATH`.
 | `--interval` | `str \| None` | `None` | Kline interval directory. Same validation as `list-files`. |
 | `-n` / `--dry-run` | `bool` | `False` | Show what would be downloaded without writing files. Outputs TSV to stdout. |
 | `--aria2-proxy` | `bool` | `False` | Allow aria2c to inherit system proxy environment variables. By default, proxy env vars (`HTTP_PROXY`, `HTTPS_PROXY`, etc.) are stripped from the aria2c subprocess. |
-| `--progress-bar` | `bool` | `False` | Show interactive tqdm progress bar on stderr. By default no interactive progress is shown; sampled log lines at INFO level are emitted instead. See [`common.progress`](../../common/progress.md). |
+| `--progress-bar` | `bool` | `False` | Show interactive tqdm progress bar on stderr. By default no interactive progress is shown; sampled log lines at INFO level are emitted instead. See [`common.progress`](../common/progress.md). |
 
 ### archive-home resolution
 
@@ -249,7 +249,7 @@ The download command requires a local data directory. Resolution priority:
 | 2 | `$BINANCE_DATATOOL_ARCHIVE_HOME` environment variable |
 | 3 | Exit 2 with a descriptive error |
 
-See [`common.path`](../../common/path.md) for implementation details.
+See [`common.path`](../common/path.md) for implementation details.
 
 ### Diff semantics
 
@@ -372,7 +372,7 @@ SHA256. Requires `BINANCE_DATATOOL_ARCHIVE_HOME` to be configured (same resoluti
 | `--interval` | `str \| None` | `None` | Kline interval directory. Same validation as `list-files`. |
 | `--keep-failed` | `bool` | `False` | Keep failed zip and checksum files instead of deleting them. |
 | `-n` / `--dry-run` | `bool` | `False` | Show what would be verified without computing checksums or modifying files. |
-| `--progress-bar` | `bool` | `False` | Show interactive tqdm progress bar on stderr. By default no interactive progress is shown; sampled log lines at INFO level are emitted instead. See [`common.progress`](../../common/progress.md). |
+| `--progress-bar` | `bool` | `False` | Show interactive tqdm progress bar on stderr. By default no interactive progress is shown; sampled log lines at INFO level are emitted instead. See [`common.progress`](../common/progress.md). |
 
 ### Symbol input resolution
 

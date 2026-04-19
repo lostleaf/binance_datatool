@@ -82,4 +82,4 @@ behavior, see [S3 Listing Protocol](s3-protocol.md).
 
 ---
 
-See also: [Archive package](README.md) | [Workflow](../workflow/) | [Architecture](../../../architecture.md)
+See also: [Archive package](README.md) | [Workflow](../workflow/) | [Architecture](../../architecture.md)

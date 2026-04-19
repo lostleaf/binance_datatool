@@ -48,6 +48,13 @@ called by AI agents just as easily as by a human:
 ### Install
 
 ```bash
+pip install binance-datatool
+export BINANCE_DATATOOL_ARCHIVE_HOME=$HOME/crypto_data/binance_archive
+```
+
+For development:
+
+```bash
 git clone https://github.com/lostleaf/binance_datatool.git
 cd binance_datatool
 uv sync
