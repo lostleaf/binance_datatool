@@ -21,6 +21,13 @@ from the ground up for AI agents and quantitative workflows.
 - **Zero interaction** — no prompts, no confirmations; dry-run mode
   for safe previews
 
+## Agent Skill
+
+A packaged [Agent Skill](skills/binance-datatool/SKILL.md) is included in this repository. 
+
+It teaches agents how to use `binance-datatool` to discover, download, and 
+verify Binance historical market data — no manual command lookup required.
+
 ## Features
 
 - **Multi-market coverage** — Spot, USD-M Futures, and COIN-M Futures
@@ -124,12 +131,6 @@ Common Layer     Shared types, enums, constants, and utilities
 
 See [docs/architecture.md](docs/architecture.md) for a detailed design overview.
 
-## Vision
-
-binance-datatool is the data foundation for agent-driven quantitative
-research. Next up: **Agent skills** — packaged capabilities that let AI
-agents autonomously discover, fetch, and validate market data end-to-end.
-
 ## Documentation
 
 | Document | Description |
@@ -138,3 +139,4 @@ agents autonomously discover, fetch, and validate market data end-to-end.
 | [Module Reference](docs/reference/README.md) | Per-subpackage API reference |
 | [Extending](docs/extending.md) | How to add commands, enums, workflows, and tests |
 | [Testing Guide](docs/reference/testing.md) | Test organization and conventions |
+| [Agent Skill](skills/binance-datatool/SKILL.md) | Packaged skill for agents |
