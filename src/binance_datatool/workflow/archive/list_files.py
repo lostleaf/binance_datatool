@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 
-from binance_datatool.bhds.archive import ArchiveClient
+from binance_datatool.archive import ArchiveClient
 
 from ._shared import validate_interval
 from .results import ListFilesResult, SymbolListFilesResult

@@ -188,7 +188,7 @@ class SymbolArchiveDir:
 
 
 def create_symbol_archive_dir(
-    bhds_home: Path,
+    archive_home: Path,
     trade_type: TradeType,
     data_freq: DataFrequency,
     data_type: DataType,
@@ -196,15 +196,7 @@ def create_symbol_archive_dir(
     interval: str | None = None,
 ) -> SymbolArchiveDir:
     """Build the local directory helper that stores files for one symbol."""
-    path = (
-        bhds_home
-        / "aws_data"
-        / "data"
-        / trade_type.s3_path
-        / data_freq.value
-        / data_type.value
-        / symbol
-    )
+    path = archive_home / "data" / trade_type.s3_path / data_freq.value / data_type.value / symbol
     if interval is not None:
         path /= interval
 

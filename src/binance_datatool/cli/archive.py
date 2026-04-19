@@ -10,9 +10,17 @@ from typing import TYPE_CHECKING, Annotated
 import typer
 from loguru import logger
 
-from binance_datatool.bhds.archive import build_symbol_filter
-from binance_datatool.bhds.cli import archive_app
-from binance_datatool.bhds.workflow.archive import (
+from binance_datatool.archive import build_symbol_filter
+from binance_datatool.cli import archive_app
+from binance_datatool.common import (
+    ArchiveHomeNotConfiguredError,
+    ContractType,
+    DataFrequency,
+    DataType,
+    TradeType,
+    resolve_archive_home,
+)
+from binance_datatool.workflow.archive import (
     ArchiveDownloadWorkflow,
     ArchiveListFilesWorkflow,
     ArchiveListSymbolsWorkflow,
@@ -22,14 +30,6 @@ from binance_datatool.bhds.workflow.archive import (
     SymbolListingError,
     VerifyDiffResult,
     VerifyResult,
-)
-from binance_datatool.common import (
-    BhdsHomeNotConfiguredError,
-    ContractType,
-    DataFrequency,
-    DataType,
-    TradeType,
-    resolve_bhds_home,
 )
 
 if TYPE_CHECKING:
@@ -139,15 +139,13 @@ def _format_relative_path(
 def _format_local_relative_path(
     path: Path,
     *,
-    bhds_home: Path,
+    archive_home: Path,
     trade_type: TradeType,
     data_freq: DataFrequency,
     data_type: DataType,
 ) -> str:
-    """Format a local aws_data path relative to the shared archive prefix."""
-    prefix = (
-        bhds_home / "aws_data" / "data" / trade_type.s3_path / data_freq.value / data_type.value
-    )
+    """Format a local archive path relative to the shared archive prefix."""
+    prefix = archive_home / "data" / trade_type.s3_path / data_freq.value / data_type.value
     return str(path.relative_to(prefix))
 
 
@@ -172,20 +170,20 @@ def _warn_if_empty_local_scan(*, total_zips: int) -> None:
 
     typer.echo(
         (
-            "Warning: no local zip files found; check --bhds-home, --freq, --type, "
+            "Warning: no local zip files found; check --archive-home, --freq, --type, "
             "--interval, and symbols."
         ),
         err=True,
     )
 
 
-def _resolve_download_home(ctx: typer.Context) -> Path:
-    """Resolve the BHDS home directory for commands that write local files."""
-    override = ctx.obj.get("bhds_home_override")
+def _resolve_archive_home(ctx: typer.Context) -> Path:
+    """Resolve the archive home directory for commands that use local files."""
+    override = ctx.obj.get("archive_home_override")
 
     try:
-        return resolve_bhds_home(override)
-    except BhdsHomeNotConfiguredError as exc:
+        return resolve_archive_home(override)
+    except ArchiveHomeNotConfiguredError as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(code=2) from exc
 
@@ -345,20 +343,20 @@ def download_command(
         ),
     ] = False,
 ) -> None:
-    """Download archive files into the local BHDS data directory."""
+    """Download archive files into the local archive directory."""
     _validate_interval(data_type, interval)
 
     resolved_symbols = _resolve_symbols(symbols)
     if not resolved_symbols:
         raise typer.BadParameter("No symbols given.", param_hint="SYMBOLS")
 
-    bhds_home = _resolve_download_home(ctx)
+    archive_home = _resolve_archive_home(ctx)
     workflow = ArchiveDownloadWorkflow(
         trade_type=trade_type,
         data_freq=data_freq,
         data_type=data_type,
         symbols=resolved_symbols,
-        bhds_home=bhds_home,
+        archive_home=archive_home,
         interval=interval,
         dry_run=dry_run,
         inherit_aria2_proxy=aria2_proxy,
@@ -428,13 +426,13 @@ def verify_command(
     if not resolved_symbols:
         raise typer.BadParameter("No symbols given.", param_hint="SYMBOLS")
 
-    bhds_home = _resolve_download_home(ctx)
+    archive_home = _resolve_archive_home(ctx)
     workflow = ArchiveVerifyWorkflow(
         trade_type=trade_type,
         data_freq=data_freq,
         data_type=data_type,
         symbols=resolved_symbols,
-        bhds_home=bhds_home,
+        archive_home=archive_home,
         interval=interval,
         keep_failed=keep_failed,
         dry_run=dry_run,
@@ -447,7 +445,7 @@ def verify_command(
             typer.echo(
                 _format_local_relative_path(
                     zip_path,
-                    bhds_home=bhds_home,
+                    archive_home=archive_home,
                     trade_type=trade_type,
                     data_freq=data_freq,
                     data_type=data_type,

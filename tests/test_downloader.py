@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from binance_datatool.bhds.archive.downloader import (
+from binance_datatool.archive.downloader import (
     Aria2NotFoundError,
     DownloadRequest,
     _find_missing_requests,

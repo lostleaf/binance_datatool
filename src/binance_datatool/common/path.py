@@ -1,40 +1,40 @@
-"""Local path helpers for BHDS-managed data."""
+"""Local path helpers for archive-managed data."""
 
 from __future__ import annotations
 
 import os
 from pathlib import Path
 
-BHDS_HOME_ENV_VAR = "BHDS_HOME"
+ARCHIVE_HOME_ENV_VAR = "BINANCE_DATATOOL_ARCHIVE_HOME"
 
 
-class BhdsHomeNotConfiguredError(ValueError):
-    """Raised when a command needs BHDS_HOME but none was configured."""
+class ArchiveHomeNotConfiguredError(ValueError):
+    """Raised when a command needs an archive home but none was configured."""
 
 
-def resolve_bhds_home(override: str | Path | None = None) -> Path:
-    """Resolve the BHDS home directory from CLI override or environment.
+def resolve_archive_home(override: str | Path | None = None) -> Path:
+    """Resolve the local archive home from CLI override or environment.
 
     Args:
         override: Optional CLI-provided override path.
 
     Returns:
-        Expanded filesystem path for the BHDS home directory.
+        Expanded filesystem path for the local archive home directory.
 
     Raises:
-        BhdsHomeNotConfiguredError: If neither ``override`` nor the
-            ``BHDS_HOME`` environment variable is set.
+        ArchiveHomeNotConfiguredError: If neither ``override`` nor the
+            ``BINANCE_DATATOOL_ARCHIVE_HOME`` environment variable is set.
     """
     if override is not None:
         return Path(override).expanduser()
 
-    env_value = os.getenv(BHDS_HOME_ENV_VAR)
+    env_value = os.getenv(ARCHIVE_HOME_ENV_VAR)
     if env_value:
         return Path(env_value).expanduser()
 
     msg = (
-        "BHDS_HOME not configured.\n"
-        "Set the BHDS_HOME environment variable or use --bhds-home to specify "
+        "BINANCE_DATATOOL_ARCHIVE_HOME not configured.\n"
+        "Set the BINANCE_DATATOOL_ARCHIVE_HOME environment variable or use --archive-home to specify "
         "where data files should be stored."
     )
-    raise BhdsHomeNotConfiguredError(msg)
+    raise ArchiveHomeNotConfiguredError(msg)

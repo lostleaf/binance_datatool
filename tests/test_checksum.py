@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from binance_datatool.bhds.archive import calc_sha256, read_expected_checksum, verify_single_file
+from binance_datatool.archive import calc_sha256, read_expected_checksum, verify_single_file
 
 
 def test_calc_sha256() -> None:

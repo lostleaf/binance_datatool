@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 import pytest
 
-from binance_datatool.bhds.archive.client import (
+from binance_datatool.archive.client import (
     ArchiveClient,
     ArchiveFile,
     _extract_files_from_payload,
@@ -17,7 +17,7 @@ from binance_datatool.bhds.archive.client import (
 from binance_datatool.common import S3_HTTP_TIMEOUT_SECONDS, DataFrequency, DataType, TradeType
 
 if TYPE_CHECKING:
-    from binance_datatool.bhds.archive.client import SymbolListingResult
+    from binance_datatool.archive.client import SymbolListingResult
 
 
 @pytest.mark.asyncio
@@ -81,7 +81,7 @@ async def test_archive_client_list_symbols_uses_trust_env(monkeypatch: pytest.Mo
         assert prefix == "data/spot/daily/klines/"
         return ["data/spot/daily/klines/ETHUSDT/", "data/spot/daily/klines/BTCUSDT/"]
 
-    monkeypatch.setattr("binance_datatool.bhds.archive.client.aiohttp.ClientSession", FakeSession)
+    monkeypatch.setattr("binance_datatool.archive.client.aiohttp.ClientSession", FakeSession)
     monkeypatch.setattr(ArchiveClient, "list_dir", fake_list_dir)
 
     client = ArchiveClient()

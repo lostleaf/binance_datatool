@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Literal
 
 from loguru import logger
 
-from binance_datatool.bhds.archive import (
+from binance_datatool.archive import (
     ArchiveClient,
     DownloadRequest,
     SymbolArchiveDir,
@@ -21,14 +21,14 @@ from .results import DiffEntry, DiffResult, DownloadResult, SymbolListingError
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from binance_datatool.bhds.archive import Aria2DownloadResult
+    from binance_datatool.archive import Aria2DownloadResult
     from binance_datatool.common import DataFrequency, DataType, TradeType
 
     from .results import ListFilesResult
 
 
 class ArchiveDownloadWorkflow:
-    """Workflow for diffing and downloading archive files to the local BHDS store."""
+    """Workflow for diffing and downloading archive files to the local archive store."""
 
     def __init__(
         self,
@@ -36,7 +36,7 @@ class ArchiveDownloadWorkflow:
         data_freq: DataFrequency,
         data_type: DataType,
         symbols: Sequence[str],
-        bhds_home: Path,
+        archive_home: Path,
         interval: str | None = None,
         dry_run: bool = False,
         inherit_aria2_proxy: bool = False,
@@ -51,7 +51,7 @@ class ArchiveDownloadWorkflow:
             data_freq: Partition frequency.
             data_type: Dataset type.
             symbols: Symbols to download, preserving caller order.
-            bhds_home: Root directory for local BHDS data storage.
+            archive_home: Root directory for local archive data storage.
             interval: Interval directory for kline-class data types.
             dry_run: When ``True``, compute the diff without downloading.
             inherit_aria2_proxy: Whether aria2c should inherit proxy env vars.
@@ -63,7 +63,7 @@ class ArchiveDownloadWorkflow:
         self.data_freq = data_freq
         self.data_type = data_type
         self.symbols = list(symbols)
-        self.bhds_home = bhds_home
+        self.archive_home = archive_home
         self.interval = interval
         self.dry_run = dry_run
         self.inherit_aria2_proxy = inherit_aria2_proxy
@@ -83,7 +83,7 @@ class ArchiveDownloadWorkflow:
                 continue
 
             for remote_file in entry.files:
-                local_path = self.bhds_home / "aws_data" / Path(remote_file.key)
+                local_path = self.archive_home / Path(remote_file.key)
                 if (
                     local_path.exists()
                     and local_path.stat().st_mtime >= remote_file.last_modified.timestamp()
@@ -168,7 +168,7 @@ class ArchiveDownloadWorkflow:
                 listing_errors=diff_result.listing_errors,
             )
 
-        self.bhds_home.mkdir(parents=True, exist_ok=True)
+        self.archive_home.mkdir(parents=True, exist_ok=True)
         self._invalidate_verified_markers(diff_result.to_download)
         self._delete_updated_files(diff_result.to_download)
 

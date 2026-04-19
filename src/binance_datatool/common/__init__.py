@@ -11,7 +11,7 @@ from binance_datatool.common.constants import (
 )
 from binance_datatool.common.enums import ContractType, DataFrequency, DataType, TradeType
 from binance_datatool.common.logging import configure_cli_logging
-from binance_datatool.common.path import BhdsHomeNotConfiguredError, resolve_bhds_home
+from binance_datatool.common.path import ArchiveHomeNotConfiguredError, resolve_archive_home
 from binance_datatool.common.symbols import infer_cm_info, infer_spot_info, infer_um_info
 from binance_datatool.common.types import (
     CmSymbolInfo,
@@ -22,7 +22,7 @@ from binance_datatool.common.types import (
 )
 
 __all__ = [
-    "BhdsHomeNotConfiguredError",
+    "ArchiveHomeNotConfiguredError",
     "CmSymbolInfo",
     "ContractType",
     "DataFrequency",
@@ -43,5 +43,5 @@ __all__ = [
     "infer_cm_info",
     "infer_spot_info",
     "infer_um_info",
-    "resolve_bhds_home",
+    "resolve_archive_home",
 ]

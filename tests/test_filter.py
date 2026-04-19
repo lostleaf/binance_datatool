@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from binance_datatool.bhds.archive import CmSymbolFilter, SpotSymbolFilter, UmSymbolFilter
+from binance_datatool.archive import CmSymbolFilter, SpotSymbolFilter, UmSymbolFilter
 from binance_datatool.common import CmSymbolInfo, ContractType, SpotSymbolInfo, UmSymbolInfo
 
 

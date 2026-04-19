@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 
-from binance_datatool.bhds.archive import ArchiveClient
+from binance_datatool.archive import ArchiveClient
 
 from ._shared import infer_symbol_info
 from .results import ListSymbolsResult
 
 if TYPE_CHECKING:
-    from binance_datatool.bhds.archive import SymbolFilter
+    from binance_datatool.archive import SymbolFilter
     from binance_datatool.common import DataFrequency, DataType, TradeType
 
 

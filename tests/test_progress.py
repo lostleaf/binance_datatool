@@ -8,6 +8,7 @@ from binance_datatool.common.progress import (
     make_reporter,
 )
 
+
 def test_make_reporter_returns_requested_type() -> None:
     """Reporter factory should choose between log and tqdm implementations."""
     assert isinstance(make_reporter(False, total=1, description="x"), LogReporter)

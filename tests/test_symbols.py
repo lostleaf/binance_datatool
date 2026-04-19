@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from binance_datatool.bhds.archive.client import ArchiveClient
+from binance_datatool.archive.client import ArchiveClient
 from binance_datatool.common import (
     QUOTE_ASSETS,
     CmSymbolInfo,

@@ -1,31 +1,31 @@
 """Archive access helpers."""
 
-from binance_datatool.bhds.archive.checksum import (
+from binance_datatool.archive.checksum import (
     VerifyFileResult,
     calc_sha256,
     read_expected_checksum,
     verify_single_file,
 )
-from binance_datatool.bhds.archive.client import (
+from binance_datatool.archive.client import (
     ArchiveClient,
     ArchiveFile,
     SymbolListingResult,
     list_symbols,
 )
-from binance_datatool.bhds.archive.downloader import (
+from binance_datatool.archive.downloader import (
     Aria2DownloadResult,
     Aria2NotFoundError,
     DownloadRequest,
     download_archive_files,
 )
-from binance_datatool.bhds.archive.filter import (
+from binance_datatool.archive.filter import (
     CmSymbolFilter,
     SpotSymbolFilter,
     SymbolFilter,
     UmSymbolFilter,
     build_symbol_filter,
 )
-from binance_datatool.bhds.archive.symbol_dir import (
+from binance_datatool.archive.symbol_dir import (
     SymbolArchiveDir,
     create_symbol_archive_dir,
 )

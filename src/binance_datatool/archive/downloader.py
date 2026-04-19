@@ -87,7 +87,7 @@ def _write_input_file(requests: Sequence[DownloadRequest]) -> Path:
         mode="w",
         encoding="utf-8",
         delete=False,
-        prefix="bhds_aria2_",
+        prefix="archive_aria2_",
     ) as input_file:
         for request in requests:
             request.local_path.parent.mkdir(parents=True, exist_ok=True)

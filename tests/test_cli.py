@@ -8,14 +8,15 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from binance_datatool.bhds.archive import (
+from binance_datatool.archive import (
     ArchiveFile,
     CmSymbolFilter,
     SpotSymbolFilter,
     UmSymbolFilter,
 )
-from binance_datatool.bhds.cli import app
-from binance_datatool.bhds.workflow.archive import (
+from binance_datatool.cli import app
+from binance_datatool.common import ContractType, SpotSymbolInfo, UmSymbolInfo
+from binance_datatool.workflow.archive import (
     ArchiveVerifyWorkflow,
     DiffEntry,
     DiffResult,
@@ -27,9 +28,18 @@ from binance_datatool.bhds.workflow.archive import (
     VerifyDiffResult,
     VerifyResult,
 )
-from binance_datatool.common import ContractType, SpotSymbolInfo, UmSymbolInfo
 
 runner = CliRunner()
+
+
+def test_cli_root_help_uses_new_app_name() -> None:
+    """Root help should only expose the new CLI name and archive-home option."""
+    result = runner.invoke(app, ["--help"])
+
+    assert result.exit_code == 0
+    assert "binance-datatool" in result.stdout
+    assert "Binance DataTool CLI." in result.stdout
+    assert "--archive-home" in result.stdout
 
 
 def test_cli_list_symbols_outputs_only_matched_symbols(monkeypatch) -> None:
@@ -67,7 +77,7 @@ def test_cli_list_symbols_outputs_only_matched_symbols(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListSymbolsWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListSymbolsWorkflow.run",
         fake_run,
     )
 
@@ -102,7 +112,7 @@ def test_cli_list_symbols_builds_um_filter_from_flags(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListSymbolsWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListSymbolsWorkflow.run",
         fake_run,
     )
 
@@ -139,7 +149,7 @@ def test_cli_list_symbols_ignores_inapplicable_flags(monkeypatch) -> None:
         return ListSymbolsResult(matched=[], unmatched=["BTCUSDT"], filtered_out=[])
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListSymbolsWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListSymbolsWorkflow.run",
         fake_run,
     )
 
@@ -183,7 +193,7 @@ def test_cli_list_symbols_builds_spot_filter(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListSymbolsWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListSymbolsWorkflow.run",
         fake_run,
     )
 
@@ -215,7 +225,7 @@ def test_cli_list_symbols_builds_cm_filter(monkeypatch) -> None:
         return ListSymbolsResult(matched=[], unmatched=[], filtered_out=[])
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListSymbolsWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListSymbolsWorkflow.run",
         fake_run,
     )
 
@@ -292,7 +302,7 @@ def test_cli_list_files_argument_symbols_override_stdin(monkeypatch) -> None:
         return ListFilesResult(per_symbol=[])
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
@@ -313,7 +323,7 @@ def test_cli_list_files_reads_symbols_from_stdin(monkeypatch) -> None:
         return ListFilesResult(per_symbol=[])
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
@@ -358,7 +368,7 @@ def test_cli_list_files_short_output(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
@@ -405,7 +415,7 @@ def test_cli_list_files_long_output_and_only_zip(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
@@ -445,7 +455,7 @@ def test_cli_list_files_logs_errors_and_exits_2(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
@@ -478,7 +488,7 @@ def test_cli_list_files_kline_relative_path_contains_interval(monkeypatch) -> No
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
@@ -522,7 +532,7 @@ def test_cli_list_files_only_checksum(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
@@ -552,7 +562,7 @@ def test_cli_list_files_warns_on_empty_remote_without_failures(monkeypatch) -> N
         return ListFilesResult(per_symbol=[SymbolListFilesResult(symbol="BTCUSDT", files=[])])
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
@@ -573,7 +583,7 @@ def test_cli_list_files_passes_progress_bar_flag(monkeypatch) -> None:
         return ListFilesResult(per_symbol=[])
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveListFilesWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveListFilesWorkflow.run",
         fake_run,
     )
 
@@ -618,7 +628,7 @@ def test_cli_download_dry_run_outputs_tsv(monkeypatch) -> None:
                         last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
                     ),
                     local_path=Path(
-                        "/tmp/bhds/aws_data/data/futures/um/monthly/fundingRate/BTCUSDT/"
+                        "/tmp/archive-home/data/futures/um/monthly/fundingRate/BTCUSDT/"
                         "BTCUSDT-fundingRate-2026-03.zip"
                     ),
                     reason="new",
@@ -630,15 +640,15 @@ def test_cli_download_dry_run_outputs_tsv(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveDownloadWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveDownloadWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "--bhds-home",
-            "/tmp/bhds",
+            "--archive-home",
+            "/tmp/archive-home",
             "archive",
             "download",
             "um",
@@ -655,11 +665,11 @@ def test_cli_download_dry_run_outputs_tsv(monkeypatch) -> None:
     assert result.stdout == "new\t1048\tBTCUSDT/BTCUSDT-fundingRate-2026-03.zip\n"
 
 
-def test_cli_download_passes_bhds_home_and_proxy_flag(monkeypatch) -> None:
-    """Global BHDS home and aria2 proxy flags should reach the workflow."""
+def test_cli_download_passes_archive_home_and_proxy_flag(monkeypatch) -> None:
+    """Global archive home and aria2 proxy flags should reach the workflow."""
 
     async def fake_run(self) -> DownloadResult:
-        assert self.bhds_home == Path("/tmp/bhds-home")
+        assert self.archive_home == Path("/tmp/archive-home")
         assert self.inherit_aria2_proxy is True
         return DownloadResult(
             total_remote=1,
@@ -670,15 +680,15 @@ def test_cli_download_passes_bhds_home_and_proxy_flag(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveDownloadWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveDownloadWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "--bhds-home",
-            "/tmp/bhds-home",
+            "--archive-home",
+            "/tmp/archive-home",
             "archive",
             "download",
             "um",
@@ -706,15 +716,15 @@ def test_cli_download_passes_progress_bar_flag(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveDownloadWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveDownloadWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "--bhds-home",
-            "/tmp/bhds-home",
+            "--archive-home",
+            "/tmp/archive-home",
             "archive",
             "download",
             "um",
@@ -740,15 +750,15 @@ def test_cli_download_logs_listing_errors_and_exits_2(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveDownloadWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveDownloadWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "--bhds-home",
-            "/tmp/bhds",
+            "--archive-home",
+            "/tmp/archive-home",
             "archive",
             "download",
             "um",
@@ -785,12 +795,12 @@ def test_cli_verify_validates_interval() -> None:
     assert "--interval" in extra_interval.stderr
 
 
-def test_cli_verify_passes_bhds_home_and_keep_failed(monkeypatch) -> None:
-    """Global BHDS home and keep-failed should reach the verify workflow."""
+def test_cli_verify_passes_archive_home_and_keep_failed(monkeypatch) -> None:
+    """Global archive home and keep-failed should reach the verify workflow."""
 
     def fake_run(self) -> VerifyResult:
         assert isinstance(self, ArchiveVerifyWorkflow)
-        assert self.bhds_home == Path("/tmp/bhds-home")
+        assert self.archive_home == Path("/tmp/archive-home")
         assert self.keep_failed is True
         return VerifyResult(
             skipped=0,
@@ -801,15 +811,15 @@ def test_cli_verify_passes_bhds_home_and_keep_failed(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveVerifyWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveVerifyWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "--bhds-home",
-            "/tmp/bhds-home",
+            "--archive-home",
+            "/tmp/archive-home",
             "archive",
             "verify",
             "um",
@@ -838,15 +848,15 @@ def test_cli_verify_passes_progress_bar_flag(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveVerifyWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveVerifyWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "--bhds-home",
-            "/tmp/bhds-home",
+            "--archive-home",
+            "/tmp/archive-home",
             "archive",
             "verify",
             "um",
@@ -867,29 +877,29 @@ def test_cli_verify_dry_run_outputs_paths_and_summary(monkeypatch) -> None:
         return VerifyDiffResult(
             to_verify=[
                 Path(
-                    "/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2020-01-01.zip"
+                    "/tmp/archive-home/data/spot/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2020-01-01.zip"
                 ),
                 Path(
-                    "/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2020-01-02.zip"
+                    "/tmp/archive-home/data/spot/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2020-01-02.zip"
                 ),
             ],
             skipped=120,
             orphan_zips=[],
             orphan_checksums=[
-                Path("/tmp/bhds/aws_data/data/spot/daily/klines/BTCUSDT/1m/missing.zip.CHECKSUM")
+                Path("/tmp/archive-home/data/spot/daily/klines/BTCUSDT/1m/missing.zip.CHECKSUM")
             ],
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveVerifyWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveVerifyWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "--bhds-home",
-            "/tmp/bhds",
+            "--archive-home",
+            "/tmp/archive-home",
             "archive",
             "verify",
             "spot",
@@ -916,19 +926,19 @@ def test_cli_verify_returns_zero_with_failures_or_orphans(monkeypatch) -> None:
             verified=120,
             orphan_zips=1,
             orphan_checksums=2,
-            failed_details={Path("/tmp/bhds/file.zip"): "checksum mismatch"},
+            failed_details={Path("/tmp/archive-home/file.zip"): "checksum mismatch"},
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveVerifyWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveVerifyWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "--bhds-home",
-            "/tmp/bhds",
+            "--archive-home",
+            "/tmp/archive-home",
             "archive",
             "verify",
             "um",
@@ -956,15 +966,15 @@ def test_cli_verify_warns_on_empty_local_scan(monkeypatch) -> None:
         )
 
     monkeypatch.setattr(
-        "binance_datatool.bhds.workflow.archive.ArchiveVerifyWorkflow.run",
+        "binance_datatool.workflow.archive.ArchiveVerifyWorkflow.run",
         fake_run,
     )
 
     result = runner.invoke(
         app,
         [
-            "--bhds-home",
-            "/tmp/bhds",
+            "--archive-home",
+            "/tmp/archive-home",
             "archive",
             "verify",
             "spot",

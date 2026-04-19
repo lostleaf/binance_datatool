@@ -10,7 +10,7 @@ from binance_datatool.common import S3_DOWNLOAD_PREFIX
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from binance_datatool.bhds.archive import ArchiveFile
+    from binance_datatool.archive import ArchiveFile
     from binance_datatool.common import SymbolInfo
 
 

@@ -10,7 +10,7 @@ from pathlib import Path
 import aiohttp
 import pytest
 
-from binance_datatool.bhds.archive import (
+from binance_datatool.archive import (
     ArchiveClient,
     ArchiveFile,
     Aria2DownloadResult,
@@ -18,9 +18,9 @@ from binance_datatool.bhds.archive import (
     SpotSymbolFilter,
     SymbolArchiveDir,
     UmSymbolFilter,
-    VerifyFileResult,
 )
-from binance_datatool.bhds.workflow.archive import (
+from binance_datatool.common import ContractType, DataFrequency, DataType, TradeType
+from binance_datatool.workflow.archive import (
     ArchiveDownloadWorkflow,
     ArchiveListFilesWorkflow,
     ArchiveListSymbolsWorkflow,
@@ -32,7 +32,6 @@ from binance_datatool.bhds.workflow.archive import (
     VerifyDiffResult,
     VerifyResult,
 )
-from binance_datatool.common import ContractType, DataFrequency, DataType, TradeType
 from conftest import FakeArchiveClient
 
 
@@ -53,7 +52,7 @@ def _write_verify_pair(
 
 def _symbol_verify_dir(tmp_path: Path, *, symbol: str = "BTCUSDT", interval: str = "1m") -> Path:
     """Return the default kline verify directory for a symbol."""
-    return tmp_path / "aws_data" / "data" / "spot" / "daily" / "klines" / symbol / interval
+    return tmp_path / "data" / "spot" / "daily" / "klines" / symbol / interval
 
 
 @pytest.mark.asyncio
@@ -254,12 +253,12 @@ async def test_archive_download_workflow_builds_new_updated_and_skipped_diff(tmp
         last_modified=datetime(2026, 4, 1, 8, 6, 34, tzinfo=UTC),
     )
 
-    updated_local = tmp_path / "aws_data" / Path(remote_updated.key)
+    updated_local = tmp_path / Path(remote_updated.key)
     updated_local.parent.mkdir(parents=True, exist_ok=True)
     updated_local.write_text("old checksum", encoding="utf-8")
     os.utime(updated_local, (remote_updated.last_modified.timestamp() - 100,) * 2)
 
-    skipped_local = tmp_path / "aws_data" / Path(remote_skipped.key)
+    skipped_local = tmp_path / Path(remote_skipped.key)
     skipped_local.parent.mkdir(parents=True, exist_ok=True)
     skipped_local.write_text("fresh zip", encoding="utf-8")
     os.utime(skipped_local, (remote_skipped.last_modified.timestamp() + 100,) * 2)
@@ -269,7 +268,7 @@ async def test_archive_download_workflow_builds_new_updated_and_skipped_diff(tmp
         data_freq=DataFrequency.monthly,
         data_type=DataType.funding_rate,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         dry_run=True,
         client=FakeArchiveClient(
             files_by_symbol={"BTCUSDT": [remote_new, remote_updated, remote_skipped]}
@@ -299,7 +298,7 @@ async def test_archive_download_workflow_invalidates_new_and_legacy_verified_mar
         size=10,
         last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),
     )
-    local_checksum = tmp_path / "aws_data" / Path(checksum_remote.key)
+    local_checksum = tmp_path / Path(checksum_remote.key)
     local_zip = local_checksum.with_name(local_checksum.name.removesuffix(".CHECKSUM"))
     local_checksum.parent.mkdir(parents=True, exist_ok=True)
     local_checksum.write_text("old checksum", encoding="utf-8")
@@ -323,7 +322,7 @@ async def test_archive_download_workflow_invalidates_new_and_legacy_verified_mar
         data_freq=DataFrequency.monthly,
         data_type=DataType.funding_rate,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         dry_run=False,
         client=FakeArchiveClient(files_by_symbol={"BTCUSDT": [checksum_remote]}),
         download_func=fake_download,
@@ -354,7 +353,7 @@ async def test_archive_download_workflow_deletes_updated_files_before_download(
     )
 
     # Create the stale local file for the "updated" entry.
-    local_updated = tmp_path / "aws_data" / Path(remote_updated.key)
+    local_updated = tmp_path / Path(remote_updated.key)
     local_updated.parent.mkdir(parents=True, exist_ok=True)
     local_updated.write_text("stale content", encoding="utf-8")
     os.utime(local_updated, (remote_updated.last_modified.timestamp() - 100,) * 2)
@@ -372,7 +371,7 @@ async def test_archive_download_workflow_deletes_updated_files_before_download(
         data_freq=DataFrequency.monthly,
         data_type=DataType.funding_rate,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         dry_run=False,
         client=FakeArchiveClient(files_by_symbol={"BTCUSDT": [remote_updated, remote_new]}),
         download_func=fake_download,
@@ -396,7 +395,7 @@ async def test_archive_download_workflow_dry_run_keeps_verified_markers(tmp_path
         size=10,
         last_modified=datetime(2026, 4, 3, 8, 6, 34, tzinfo=UTC),
     )
-    local_checksum = tmp_path / "aws_data" / Path(checksum_remote.key)
+    local_checksum = tmp_path / Path(checksum_remote.key)
     local_zip = local_checksum.with_name(local_checksum.name.removesuffix(".CHECKSUM"))
     local_checksum.parent.mkdir(parents=True, exist_ok=True)
     local_checksum.write_text("old checksum", encoding="utf-8")
@@ -413,7 +412,7 @@ async def test_archive_download_workflow_dry_run_keeps_verified_markers(tmp_path
         data_freq=DataFrequency.monthly,
         data_type=DataType.funding_rate,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         dry_run=True,
         client=FakeArchiveClient(files_by_symbol={"BTCUSDT": [checksum_remote]}),
     )
@@ -430,9 +429,7 @@ def test_archive_download_workflow_groups_marker_invalidation_by_directory(
     tmp_path: Path,
 ) -> None:
     """Updated files in one directory should clear markers through one grouped call."""
-    base_dir = (
-        tmp_path / "aws_data" / "data" / "futures" / "um" / "monthly" / "fundingRate" / "BTCUSDT"
-    )
+    base_dir = tmp_path / "data" / "futures" / "um" / "monthly" / "fundingRate" / "BTCUSDT"
     _write_verify_pair(base_dir, "first.zip")
     _write_verify_pair(base_dir, "second.zip")
     first_marker = base_dir / "first.zip.verified"
@@ -456,7 +453,7 @@ def test_archive_download_workflow_groups_marker_invalidation_by_directory(
         data_freq=DataFrequency.monthly,
         data_type=DataType.funding_rate,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         dry_run=True,
     )
     entries = [
@@ -517,7 +514,7 @@ async def test_archive_download_workflow_returns_listing_failures_and_download_c
         data_freq=DataFrequency.monthly,
         data_type=DataType.funding_rate,
         symbols=["BTCUSDT", "ETHUSDT"],
-        bhds_home=tmp_path / "missing-home",
+        archive_home=tmp_path / "missing-home",
         dry_run=False,
         client=FakeArchiveClient(
             files_by_symbol={"BTCUSDT": [remote_file]},
@@ -557,7 +554,7 @@ def test_verify_workflow_diff_classifies_files(tmp_path) -> None:
         data_freq=DataFrequency.daily,
         data_type=DataType.klines,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         interval="1m",
         dry_run=True,
     )
@@ -586,7 +583,7 @@ def test_verify_workflow_diff_detects_orphans(tmp_path) -> None:
         data_freq=DataFrequency.daily,
         data_type=DataType.klines,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         interval="1m",
         dry_run=True,
     )
@@ -614,7 +611,7 @@ def test_verify_workflow_dry_run_preserves_files(tmp_path) -> None:
         data_freq=DataFrequency.daily,
         data_type=DataType.klines,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         interval="1m",
         dry_run=True,
     )
@@ -655,7 +652,7 @@ def test_verify_workflow_processes_results_default(tmp_path) -> None:
         data_freq=DataFrequency.daily,
         data_type=DataType.klines,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         interval="1m",
         n_workers=1,
     )
@@ -702,7 +699,7 @@ def test_verify_workflow_keep_failed_preserves_files(tmp_path) -> None:
         data_freq=DataFrequency.daily,
         data_type=DataType.klines,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         interval="1m",
         keep_failed=True,
         n_workers=1,
@@ -756,7 +753,7 @@ def test_verify_workflow_groups_orphan_marker_cleanup_by_directory(
         data_freq=DataFrequency.daily,
         data_type=DataType.klines,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         interval="1m",
         n_workers=1,
     )
@@ -787,7 +784,7 @@ def test_verify_workflow_marker_timestamp_rounding(tmp_path) -> None:
         data_freq=DataFrequency.daily,
         data_type=DataType.klines,
         symbols=["BTCUSDT"],
-        bhds_home=tmp_path,
+        archive_home=tmp_path,
         interval="1m",
         dry_run=True,
     )

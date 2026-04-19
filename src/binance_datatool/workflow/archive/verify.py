@@ -10,12 +10,12 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 
-from binance_datatool.bhds.archive import (
+from binance_datatool.archive import (
     SymbolArchiveDir,
     create_symbol_archive_dir,
     verify_single_file,
 )
-from binance_datatool.bhds.archive.symbol_dir import collect_markers_by_zip
+from binance_datatool.archive.symbol_dir import collect_markers_by_zip
 from binance_datatool.common.progress import ProgressEvent, make_reporter
 
 from ._shared import validate_interval
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
 
-    from binance_datatool.bhds.archive import VerifyFileResult
+    from binance_datatool.archive import VerifyFileResult
     from binance_datatool.common import DataFrequency, DataType, TradeType
 
 _SCAN_WORKERS = 16
@@ -40,7 +40,7 @@ class ArchiveVerifyWorkflow:
         data_freq: DataFrequency,
         data_type: DataType,
         symbols: Sequence[str],
-        bhds_home: Path,
+        archive_home: Path,
         interval: str | None = None,
         keep_failed: bool = False,
         dry_run: bool = False,
@@ -54,7 +54,7 @@ class ArchiveVerifyWorkflow:
             data_freq: Partition frequency.
             data_type: Dataset type.
             symbols: Symbols to verify, preserving caller order.
-            bhds_home: Root directory for local BHDS data storage.
+            archive_home: Root directory for local archive data storage.
             interval: Interval directory for kline-class data types.
             keep_failed: When ``True``, retain failed zip and checksum files
                 instead of deleting them.
@@ -69,7 +69,7 @@ class ArchiveVerifyWorkflow:
         self.data_freq = data_freq
         self.data_type = data_type
         self.symbols = list(symbols)
-        self.bhds_home = bhds_home
+        self.archive_home = archive_home
         self.interval = interval
         self.keep_failed = keep_failed
         self.dry_run = dry_run
@@ -79,7 +79,7 @@ class ArchiveVerifyWorkflow:
     def _scan_symbol(self, symbol: str):
         """Scan one symbol directory and classify its files."""
         dir_obj = create_symbol_archive_dir(
-            self.bhds_home,
+            self.archive_home,
             self.trade_type,
             self.data_freq,
             self.data_type,

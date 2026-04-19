@@ -42,7 +42,7 @@ Repository = "https://github.com/lostleaf/binance_datatool"
 Issues = "https://github.com/lostleaf/binance_datatool/issues"
 
 [project.scripts]
-bhds = "binance_datatool.bhds.cli:app"
+binance-datatool = "binance_datatool.cli:app"
 
 [dependency-groups]
 dev = [
@@ -65,7 +65,7 @@ extend-select = ["W", "I", "UP", "B", "SIM", "TC"]
 future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
-"src/binance_datatool/bhds/cli/*.py" = ["TC001"]
+"src/binance_datatool/cli/*.py" = ["TC001"]
 
 [tool.pytest.ini_options]
 minversion = "9.0"

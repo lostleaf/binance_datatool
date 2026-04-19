@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from binance_datatool.bhds.archive import SymbolArchiveDir, create_symbol_archive_dir
-from binance_datatool.bhds.archive.symbol_dir import collect_markers_by_zip
+from binance_datatool.archive import SymbolArchiveDir, create_symbol_archive_dir
+from binance_datatool.archive.symbol_dir import collect_markers_by_zip
 from binance_datatool.common import DataFrequency, DataType, TradeType
 
 
@@ -30,7 +30,7 @@ def _write_verify_pair(base_dir: Path, name: str) -> Path:
             DataType.klines,
             "BTCUSDT",
             "1m",
-            Path("aws_data/data/spot/daily/klines/BTCUSDT/1m"),
+            Path("data/spot/daily/klines/BTCUSDT/1m"),
         ),
         (
             TradeType.um,
@@ -38,7 +38,7 @@ def _write_verify_pair(base_dir: Path, name: str) -> Path:
             DataType.funding_rate,
             "BTCUSDT",
             None,
-            Path("aws_data/data/futures/um/monthly/fundingRate/BTCUSDT"),
+            Path("data/futures/um/monthly/fundingRate/BTCUSDT"),
         ),
         (
             TradeType.cm,
@@ -46,7 +46,7 @@ def _write_verify_pair(base_dir: Path, name: str) -> Path:
             DataType.metrics,
             "BTCUSD_PERP",
             None,
-            Path("aws_data/data/futures/cm/daily/metrics/BTCUSD_PERP"),
+            Path("data/futures/cm/daily/metrics/BTCUSD_PERP"),
         ),
     ],
 )
@@ -59,7 +59,7 @@ def test_create_symbol_archive_dir_builds_expected_path(
     interval: str | None,
     expected: Path,
 ) -> None:
-    """The symbol directory helper should match the BHDS local storage layout."""
+    """The symbol directory helper should match the archive local storage layout."""
     dir_obj = create_symbol_archive_dir(
         tmp_path,
         trade_type,
@@ -164,7 +164,7 @@ def test_write_marker_creates_fresh_timestamped_marker(
     checksum_path = tmp_path / "sample.zip.CHECKSUM"
     os.utime(zip_path, (1000.1, 1000.1))
     os.utime(checksum_path, (1000.9, 1000.9))
-    monkeypatch.setattr("binance_datatool.bhds.archive.symbol_dir.time.time", lambda: 1000.0)
+    monkeypatch.setattr("binance_datatool.archive.symbol_dir.time.time", lambda: 1000.0)
 
     dir_obj.write_marker("sample.zip")
 

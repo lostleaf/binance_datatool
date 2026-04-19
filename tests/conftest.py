@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from binance_datatool.bhds.archive import ArchiveFile
+from binance_datatool.archive import ArchiveFile
 
 
 class FakeArchiveClient:
