@@ -12,9 +12,7 @@ from the ground up for AI agents and quantitative workflows.
 
 ## Why Agent-First?
 
-Most market-data tools are built for humans clicking through GUIs.
-**binance-datatool** is different — every command is designed to be
-called by AI agents just as easily as by a human:
+**binance-datatool** is designed to make every command equally easy to call for AI agents and humans.:
 
 - **Composable CLI** — stdin/stdout pipelines let agents chain
   commands without glue code
