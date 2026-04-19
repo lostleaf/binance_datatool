@@ -1,5 +1,6 @@
 # Binance DataTool - Built for Agents, Data Delivered.
 
+[![PyPI](https://img.shields.io/pypi/v/binance-datatool?logo=pypi&logoColor=white)](https://pypi.org/project/binance-datatool/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-green)](LICENSE)
 [![Ruff](https://img.shields.io/badge/code%20style-ruff-d4aa00?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
@@ -48,31 +49,33 @@ called by AI agents just as easily as by a human:
 ### Install
 
 ```bash
-pip install binance-datatool
-export BINANCE_DATATOOL_ARCHIVE_HOME=$HOME/crypto_data/binance_archive
-```
+# install the CLI
+pipx install binance-datatool
+# run `pipx ensurepath` if the command isn't found immediately
 
-For development:
+# system dependency for download command
+# macOS
+brew install aria2
+# Ubuntu/Debian
+sudo apt install aria2
 
-```bash
-git clone https://github.com/lostleaf/binance-datatool.git
-cd binance-datatool
-uv sync
-export BINANCE_DATATOOL_ARCHIVE_HOME=$HOME/crypto_data/binance_archive
+export BINANCE_DATATOOL_ARCHIVE_HOME="$HOME/crypto_data/binance_archive"
+
+binance-datatool --help
 ```
 
 ### Try it
 
 ```bash
 # List USDT-quoted spot symbols, excluding stablecoins
-uv run binance-datatool list-symbols spot --quote USDT --exclude-stables
+binance-datatool list-symbols spot --quote USDT --exclude-stables
 
 # Download daily 1m klines
-uv run binance-datatool list-symbols spot --quote USDT --exclude-stables \
-  | uv run binance-datatool download spot --type klines --interval 1m
+binance-datatool list-symbols spot --quote USDT --exclude-stables \
+  | binance-datatool download spot --type klines --interval 1m
 
 # Verify integrity
-uv run binance-datatool verify spot --type klines --interval 1m BTCUSDT
+binance-datatool verify spot --type klines --interval 1m BTCUSDT
 ```
 
 ## Supported Data Types
@@ -109,7 +112,7 @@ directly on the root app:
 >   | binance-datatool download um --type klines --interval 1m
 > ```
 
-Run `uv run binance-datatool --help` for the full option reference.
+Run `binance-datatool --help` for the full option reference.
 
 ## Architecture
 
