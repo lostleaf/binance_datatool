@@ -10,8 +10,6 @@ A non-official Python toolkit for managing historical market data from
 [data.binance.vision](https://data.binance.vision/) — designed
 from the ground up for AI agents and quantitative workflows.
 
-## Why Agent-First?
-
 **binance-datatool** is designed to make every command equally easy to call for AI agents and humans.:
 
 - **Composable CLI** — stdin/stdout pipelines let agents chain
