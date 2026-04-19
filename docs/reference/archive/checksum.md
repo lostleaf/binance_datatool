@@ -59,4 +59,4 @@ This function is the unit of work submitted to `ProcessPoolExecutor` by
 
 ---
 
-See also: [Archive package](README.md) | [Downloader helpers](downloader.md) | [Workflow](../workflow/archive.md)
+See also: [Archive package](README.md) | [Downloader helpers](downloader.md) | [Workflow](../workflow/)

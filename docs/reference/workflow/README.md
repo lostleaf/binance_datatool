@@ -1,4 +1,4 @@
-# binance_datatool.workflow.archive
+# binance_datatool.workflow
 
 Business logic orchestration layer between the CLI and the archive client.
 
@@ -9,7 +9,7 @@ optionally applies a typed symbol filter.
 
 ```python
 from binance_datatool.archive import SpotSymbolFilter
-from binance_datatool.workflow.archive import ArchiveListSymbolsWorkflow, ListSymbolsResult
+from binance_datatool.workflow import ArchiveListSymbolsWorkflow, ListSymbolsResult
 from binance_datatool.common import DataFrequency, DataType, TradeType
 
 workflow = ArchiveListSymbolsWorkflow(
@@ -66,7 +66,7 @@ input order and isolating per-symbol failures so that one bad symbol does not ab
 the entire batch.
 
 ```python
-from binance_datatool.workflow.archive import (
+from binance_datatool.workflow import (
     ArchiveListFilesWorkflow,
     ListFilesResult,
 )
@@ -143,7 +143,7 @@ Diffs remote archive listings against local files and optionally downloads new o
 updated files via aria2c.
 
 ```python
-from binance_datatool.workflow.archive import (
+from binance_datatool.workflow import (
     ArchiveDownloadWorkflow,
     DiffResult,
     DownloadResult,
@@ -244,7 +244,7 @@ Scans local archive directories, classifies zip files into verify / skip / orpha
 buckets, and optionally verifies SHA256 checksums in parallel using a process pool.
 
 ```python
-from binance_datatool.workflow.archive import (
+from binance_datatool.workflow import (
     ArchiveVerifyWorkflow,
     VerifyDiffResult,
     VerifyResult,
@@ -339,4 +339,4 @@ Returned by `ArchiveVerifyWorkflow.run()` after a real verify run.
 
 ---
 
-See also: [Archive package](archive/) | [Archive client module](archive/client.md) | [CLI commands](cli/archive.md) | [Architecture](../../architecture.md)
+See also: [Archive package](../archive/) | [Archive client module](../archive/client.md) | [CLI commands](../cli/archive.md) | [Architecture](../../architecture.md)

@@ -7,11 +7,10 @@ console script via `pyproject.toml`.
 
 ```
 binance-datatool [-v | -vv] [--archive-home PATH]   # Root Typer app with shared options
-└── archive                          # Sub-command group
-    ├── list-symbols                 # Command
-    ├── list-files                   # Command
-    ├── download                     # Command
-    └── verify                       # Command
+├── list-symbols                     # Command
+├── list-files                       # Command
+├── download                         # Command
+└── verify                           # Command
 ```
 
 ## Root Callback
@@ -29,11 +28,11 @@ The root `binance-datatool` app defines a callback that runs before any sub-comm
 to `stderr` via `configure_cli_logging()` from [`common.logging`](../../common/logging.md),
 so sub-command stdout remains safe to pipe.
 
-## Sub-command Groups
+## Root Commands
 
-| Group | Description | Reference |
-|-------|-------------|-----------|
-| `archive` | S3 archive listing commands | [archive commands](archive.md) |
+| Command Set | Description | Reference |
+|-------------|-------------|-----------|
+| Root data commands | S3 archive listing, download, and verify commands | [command reference](archive.md) |
 
 ---
 

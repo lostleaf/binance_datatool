@@ -36,7 +36,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "[1/3] Listing USD-M perpetual funding-rate symbols (quote=USDT, exclude stable pairs)..." >&2
-uv run binance-datatool -v archive list-symbols um \
+uv run binance-datatool -v list-symbols um \
   --freq monthly \
   --type fundingRate \
   --quote USDT \
@@ -48,7 +48,7 @@ symbol_count="$(wc -l < "$symbols_file" | tr -d '[:space:]')"
 echo "Selected ${symbol_count} symbols." >&2
 
 echo "[2/3] Downloading USD-M monthly funding rates..." >&2
-uv run binance-datatool -v archive download um \
+uv run binance-datatool -v download um \
   --freq monthly \
   --type fundingRate \
   "${download_args[@]}" \
@@ -62,7 +62,7 @@ fi
 
 # Verify only the symbols selected by the same remote snapshot.
 echo "[3/3] Verifying downloaded USD-M monthly funding rates..." >&2
-uv run binance-datatool -v archive verify um \
+uv run binance-datatool -v verify um \
   --freq monthly \
   --type fundingRate \
   < "$symbols_file"

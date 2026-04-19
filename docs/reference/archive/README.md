@@ -43,4 +43,4 @@ left out of the public reference surface.
 
 ---
 
-See also: [Workflow](../workflow/archive.md) | [CLI overview](../cli/) | [Architecture](../../../architecture.md)
+See also: [Workflow](../workflow/) | [CLI overview](../cli/) | [Architecture](../../../architecture.md)

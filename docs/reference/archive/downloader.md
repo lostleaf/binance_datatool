@@ -71,4 +71,4 @@ Custom `FileNotFoundError` subclass raised when `aria2c` is not available in
 
 ---
 
-See also: [Archive package](README.md) | [Workflow](../workflow/archive.md) | [S3 protocol](s3-protocol.md) | [Progress reporting](../../common/progress.md)
+See also: [Archive package](README.md) | [Workflow](../workflow/) | [S3 protocol](s3-protocol.md) | [Progress reporting](../../common/progress.md)

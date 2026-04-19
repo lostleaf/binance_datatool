@@ -44,9 +44,9 @@ from binance_datatool.common.path import ARCHIVE_HOME_ENV_VAR
 | [archive.checksum](archive/checksum.md) | SHA256 verification helpers and `VerifyFileResult`. |
 | [archive.symbol_dir](archive/symbol_dir.md) | Local symbol archive directory helpers and marker management. |
 | [archive.s3-protocol](archive/s3-protocol.md) | S3 XML listing protocol, pagination, retry, and proxy. |
-| [workflow.archive](workflow/archive.md) | Business logic orchestration for archive workflows. |
+| [workflow](workflow/README.md) | Business logic orchestration for archive workflows. |
 | [cli](cli/) | Typer CLI overview, verbosity, and sub-command index. |
-| [cli.archive](cli/archive.md) | Archive commands (`list-symbols`, `list-files`, `download`, `verify`). |
+| [cli commands](cli/archive.md) | Archive commands (`list-symbols`, `list-files`, `download`, `verify`). |
 
 ---
 

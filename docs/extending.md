@@ -48,7 +48,7 @@ See `list_symbols` and `list_symbol_files` in `archive/client.py` for real examp
 
 ### Step 2: Create a Workflow Class
 
-Create a workflow in `workflow/archive/` (or a new module if the scope warrants it).
+Create a workflow in `workflow/` (or a new module if the scope warrants it).
 Accept an optional `client` parameter for testability and return a typed result dataclass.
 
 ```python
@@ -61,15 +61,15 @@ class ArchiveListDatesWorkflow:
 ```
 
 See `ArchiveListSymbolsWorkflow`, `ArchiveListFilesWorkflow`, `ArchiveDownloadWorkflow`,
-and `ArchiveVerifyWorkflow` in `workflow/archive/` for real examples.
+and `ArchiveVerifyWorkflow` in `workflow/` for real examples.
 
 ### Step 3: Add a CLI Command
 
-Add a Typer command in `cli/archive.py`. The command parses arguments, constructs a
-workflow, and prints the result.
+Add a Typer root command in `cli/archive.py`. The command parses arguments,
+constructs a workflow, and prints the result.
 
 ```python
-@archive_app.command("list-dates")
+@app.command("list-dates")
 def list_dates_command(
     trade_type: Annotated[TradeType, typer.Argument(...)],
     ...
@@ -90,7 +90,8 @@ conventions, and shared fixtures.
 
 ## Adding a New Sub-command Group
 
-To add a command group alongside `archive` (for example, `binance-datatool holo ...`):
+To add a command group alongside the current root data commands
+(for example, `binance-datatool holo ...`):
 
 1. Define a new Typer app in `cli/__init__.py`:
 
@@ -103,7 +104,7 @@ To add a command group alongside `archive` (for example, `binance-datatool holo 
    `cli/__init__.py`:
 
    ```python
-   # Register sub-command modules (side-effect import).
+   # Register command modules (side-effect import).
    from binance_datatool.cli import archive as _archive  # noqa: F401,E402
    from binance_datatool.cli import holo as _holo  # noqa: F401,E402
    ```

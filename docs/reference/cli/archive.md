@@ -1,11 +1,11 @@
-# binance-datatool archive
+# binance-datatool commands
 
-Archive commands for querying and downloading data from data.binance.vision.
+Root CLI commands for querying and downloading data from data.binance.vision.
 
 ## `list-symbols`
 
 ```
-binance-datatool archive list-symbols <TRADE_TYPE>
+binance-datatool list-symbols <TRADE_TYPE>
     [--freq FREQ] [--type TYPE]
     [--quote QUOTE ...] [--exclude-leverage] [--exclude-stables]
     [--contract-type CONTRACT_TYPE]
@@ -31,16 +31,16 @@ filtered out are not printed, regardless of whether any filter flag was passed.
 **Examples:**
 
 ```
-binance-datatool archive list-symbols spot --quote USDT --exclude-leverage --exclude-stables
-binance-datatool archive list-symbols um --quote USDT --quote USDC --contract-type perpetual
-binance-datatool archive list-symbols cm --contract-type delivery
+binance-datatool list-symbols spot --quote USDT --exclude-leverage --exclude-stables
+binance-datatool list-symbols um --quote USDT --quote USDC --contract-type perpetual
+binance-datatool list-symbols cm --contract-type delivery
 ```
 
 ### Data flow
 
 ```
 User runs:
-  binance-datatool archive list-symbols spot --quote USDT
+  binance-datatool list-symbols spot --quote USDT
 
   ┌──────────────────────────────────────────────────────┐
   │ CLI layer  (cli/archive.py)                     │
@@ -50,7 +50,7 @@ User runs:
                          │ trade_type, data_freq, data_type,
                          │ symbol_filter
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (workflow/archive/)                  │
+  │ Workflow  (workflow/)                  │
   │  Fetches raw symbols, infers typed metadata per      │
   │  market, applies the filter, and returns a           │
   │  ListSymbolsResult.                                  │
@@ -67,7 +67,7 @@ User runs:
 ## `list-files`
 
 ```
-binance-datatool archive list-files <TRADE_TYPE> [SYMBOLS...]
+binance-datatool list-files <TRADE_TYPE> [SYMBOLS...]
     [--freq FREQ] [--type TYPE] [--interval INTERVAL]
     [-l | --long]
     [--only-zip | --only-checksum]
@@ -154,30 +154,30 @@ selected market, frequency, and data type rather than as a local runtime error.
 `list-files` is designed to be piped from `list-symbols`:
 
 ```
-binance-datatool archive list-symbols um --quote USDT --exclude-stables \
-  | binance-datatool archive list-files um --type klines --interval 1m
+binance-datatool list-symbols um --quote USDT --exclude-stables \
+  | binance-datatool list-files um --type klines --interval 1m
 ```
 
 ### Examples
 
 ```
 # Single-symbol funding-rate listing
-binance-datatool archive list-files um --freq monthly --type fundingRate BTCUSDT
+binance-datatool list-files um --freq monthly --type fundingRate BTCUSDT
 
 # Multi-symbol klines listing (long TSV, zip-only)
-binance-datatool archive list-files um --type klines --interval 1m -l --only-zip BTCUSDT ETHUSDT
+binance-datatool list-files um --type klines --interval 1m -l --only-zip BTCUSDT ETHUSDT
 
 # Pipe from list-symbols, verbose logging
-binance-datatool -v archive list-symbols um --quote USDT --exclude-stables \
-  | binance-datatool -v archive list-files um --type klines --interval 1m
+binance-datatool -v list-symbols um --quote USDT --exclude-stables \
+  | binance-datatool -v list-files um --type klines --interval 1m
 ```
 
 ### Data flow
 
 ```
 User runs:
-  binance-datatool archive list-symbols um --quote USDT --exclude-stables \
-    | binance-datatool archive list-files um --type klines --interval 1m
+  binance-datatool list-symbols um --quote USDT --exclude-stables \
+    | binance-datatool list-files um --type klines --interval 1m
 
   ┌──────────────────────────────────────────────────────┐
   │ CLI layer  (cli/archive.py)                     │
@@ -191,7 +191,7 @@ User runs:
                          │ trade_type, data_freq, data_type,
                          │ symbols, interval
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (workflow/archive/)                  │
+  │ Workflow  (workflow/)                  │
   │  Re-validates interval consistency at construction;  │
   │  delegates to ArchiveClient.list_symbol_files_batch  │
   │  which opens one shared aiohttp session and          │
@@ -213,12 +213,12 @@ User runs:
 The `interval` vs `data_type.has_interval_layer` consistency check is enforced at
 all three layers (CLI, Workflow, and Client) so every entry point fails loud on the
 same contract violation. See the [archive client reference](../archive/client.md)
-and [S3 protocol reference](../s3-protocol.md) for archive listing details.
+and [S3 protocol reference](../archive/s3-protocol.md) for archive listing details.
 
 ## `download`
 
 ```
-binance-datatool [--archive-home PATH] archive download <TRADE_TYPE> [SYMBOLS...]
+binance-datatool [--archive-home PATH] download <TRADE_TYPE> [SYMBOLS...]
     [--freq FREQ] [--type TYPE] [--interval INTERVAL]
     [-n | --dry-run]
     [--aria2-proxy]
@@ -302,21 +302,21 @@ In download mode, the following are printed to stderr:
 
 ```
 # Dry-run: preview what would be downloaded
-binance-datatool --archive-home ~/data archive download um --freq monthly --type fundingRate -n BTCUSDT
+binance-datatool --archive-home ~/data download um --freq monthly --type fundingRate -n BTCUSDT
 
 # Download with proxy passthrough
-binance-datatool archive download um --type klines --interval 1m --aria2-proxy BTCUSDT ETHUSDT
+binance-datatool download um --type klines --interval 1m --aria2-proxy BTCUSDT ETHUSDT
 
 # Pipe from list-symbols
-binance-datatool archive list-symbols um --quote USDT --exclude-stables \
-  | binance-datatool archive download um --type klines --interval 1m
+binance-datatool list-symbols um --quote USDT --exclude-stables \
+  | binance-datatool download um --type klines --interval 1m
 ```
 
 ### Data flow
 
 ```
 User runs:
-  binance-datatool --archive-home ~/data archive download um --type fundingRate BTCUSDT
+  binance-datatool --archive-home ~/data download um --type fundingRate BTCUSDT
 
   ┌──────────────────────────────────────────────────────┐
   │ CLI layer  (cli/archive.py)                     │
@@ -330,7 +330,7 @@ User runs:
                          │ symbols, archive_home, interval,
                          │ dry_run, inherit_aria2_proxy
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (workflow/archive/)                  │
+  │ Workflow  (workflow/)                  │
   │  Delegates to ArchiveListFilesWorkflow for remote    │
   │  listing; computes diff (new/updated/skipped) by     │
   │  comparing local timestamps; invalidates stale       │
@@ -353,7 +353,7 @@ User runs:
 ## `verify`
 
 ```
-binance-datatool [--archive-home PATH] archive verify <TRADE_TYPE> [SYMBOLS...]
+binance-datatool [--archive-home PATH] verify <TRADE_TYPE> [SYMBOLS...]
     [--freq FREQ] [--type TYPE] [--interval INTERVAL]
     [--keep-failed]
     [-n | --dry-run]
@@ -439,7 +439,7 @@ After a successful verification, the workflow writes a timestamped marker file
 marker timestamp is still fresh relative to the zip and checksum file mtimes.
 Legacy markers without a timestamp are treated as invalid.
 
-See the [workflow reference](../workflow.md#timestamped-marker-protocol) for
+See the [workflow reference](../workflow/#timestamped-marker-protocol) for
 protocol details.
 
 ### Exit codes
@@ -455,24 +455,24 @@ protocol details.
 
 ```
 # Dry-run: preview what would be verified
-binance-datatool --archive-home ~/data archive verify um --type klines --interval 1m -n BTCUSDT
+binance-datatool --archive-home ~/data verify um --type klines --interval 1m -n BTCUSDT
 
 # Verify and delete failed files (default)
-binance-datatool archive verify um --type klines --interval 1m BTCUSDT ETHUSDT
+binance-datatool verify um --type klines --interval 1m BTCUSDT ETHUSDT
 
 # Keep failed files for inspection
-binance-datatool archive verify um --freq monthly --type fundingRate --keep-failed BTCUSDT
+binance-datatool verify um --freq monthly --type fundingRate --keep-failed BTCUSDT
 
 # Pipe from list-symbols
-binance-datatool archive list-symbols um --quote USDT --exclude-stables \
-  | binance-datatool archive verify um --type klines --interval 1m
+binance-datatool list-symbols um --quote USDT --exclude-stables \
+  | binance-datatool verify um --type klines --interval 1m
 ```
 
 ### Data flow
 
 ```
 User runs:
-  binance-datatool --archive-home ~/data archive verify um --type klines --interval 1m BTCUSDT
+  binance-datatool --archive-home ~/data verify um --type klines --interval 1m BTCUSDT
 
   ┌──────────────────────────────────────────────────────┐
   │ CLI layer  (cli/archive.py)                     │
@@ -485,7 +485,7 @@ User runs:
                          │ symbols, archive_home, interval,
                          │ keep_failed, dry_run
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (workflow/archive/)                  │
+  │ Workflow  (workflow/)                  │
   │  Scans local symbol directories; classifies zips     │
   │  into verify/skip/orphan buckets; cleans orphans;    │
   │  verifies SHA256 checksums in parallel via           │
@@ -504,5 +504,5 @@ User runs:
 
 ---
 
-See also: [CLI overview](README.md) | [Workflow layer](../workflow.md) |
+See also: [CLI overview](README.md) | [Workflow layer](../workflow/) |
 [Archive package](../archive/) | [Archive client](../archive/client.md)

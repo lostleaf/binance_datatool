@@ -58,14 +58,14 @@ export BINANCE_DATATOOL_ARCHIVE_HOME=$HOME/crypto_data/binance-archive
 
 ```bash
 # List USDT-quoted spot symbols, excluding stablecoins
-uv run binance-datatool archive list-symbols spot --quote USDT --exclude-stables
+uv run binance-datatool list-symbols spot --quote USDT --exclude-stables
 
 # Download daily 1m klines
-uv run binance-datatool archive list-symbols spot --quote USDT --exclude-stables \
-  | uv run binance-datatool archive download spot --type klines --interval 1m
+uv run binance-datatool list-symbols spot --quote USDT --exclude-stables \
+  | uv run binance-datatool download spot --type klines --interval 1m
 
 # Verify integrity
-uv run binance-datatool archive verify spot --type klines --interval 1m BTCUSDT
+uv run binance-datatool verify spot --type klines --interval 1m BTCUSDT
 ```
 
 ## Supported Data Types
@@ -83,8 +83,8 @@ support all standard intervals (`1m` `3m` `5m` `15m` `30m` `1h` `2h` `4h`
 
 ## CLI Overview
 
-The entry point is `binance-datatool`. All data commands live under
-`binance-datatool archive`:
+The entry point is `binance-datatool`. All data commands are available
+directly on the root app:
 
 | Command | Description |
 |---------|-------------|
@@ -98,8 +98,8 @@ The entry point is `binance-datatool`. All data commands live under
 > making it trivial to compose pipelines:
 >
 > ```bash
-> binance-datatool archive list-symbols um --quote USDT \
->   | binance-datatool archive download um --type klines --interval 1m
+> binance-datatool list-symbols um --quote USDT \
+>   | binance-datatool download um --type klines --interval 1m
 > ```
 
 Run `uv run binance-datatool --help` for the full option reference.

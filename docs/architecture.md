@@ -29,19 +29,17 @@ src/binance_datatool/
 │   └── symbol_dir.py        # SymbolArchiveDir, local marker management, directory scanning
 │
 ├── workflow/                # Business logic orchestration
-│   ├── __init__.py
-│   └── archive/             # Archive workflows (modular package)
-│       ├── __init__.py      # Re-exports all workflow classes and result types
-│       ├── _shared.py       # Shared helpers (infer_symbol_info, validate_interval)
-│       ├── download.py      # ArchiveDownloadWorkflow
-│       ├── list_files.py    # ArchiveListFilesWorkflow
-│       ├── list_symbols.py  # ArchiveListSymbolsWorkflow
-│       ├── results.py       # Result dataclasses (ListSymbolsResult, DiffResult, VerifyResult, etc.)
-│       └── verify.py        # ArchiveVerifyWorkflow
+│   ├── __init__.py          # Re-exports all workflow classes and result types
+│   ├── _shared.py           # Shared helpers (infer_symbol_info, validate_interval)
+│   ├── download.py          # ArchiveDownloadWorkflow
+│   ├── list_files.py        # ArchiveListFilesWorkflow
+│   ├── list_symbols.py      # ArchiveListSymbolsWorkflow
+│   ├── results.py           # Result dataclasses (ListSymbolsResult, DiffResult, VerifyResult, etc.)
+│   └── verify.py            # ArchiveVerifyWorkflow
 │
 └── cli/                     # Typer CLI layer
-    ├── __init__.py          # Root callback with -v/-vv verbosity, --archive-home; sub-command registration
-    └── archive.py           # list-symbols, list-files, download, and verify commands
+    ├── __init__.py          # Root callback with -v/-vv verbosity and --archive-home
+    └── archive.py           # Root list-symbols, list-files, download, and verify commands
 ```
 
 ## Layered Design
@@ -60,7 +58,7 @@ CLI  (cli/)
 |-------|---------|----------------|
 | **Common** | `binance_datatool.common` | Shared enums, constants, and types used across the project. |
 | **Archive Client** | `binance_datatool.archive` | S3 HTTP communication with data.binance.vision. |
-| **Workflow** | `binance_datatool.workflow.archive` | Business logic orchestration; decouples CLI from the client. |
+| **Workflow** | `binance_datatool.workflow` | Business logic orchestration; decouples CLI from the client. |
 | **CLI** | `binance_datatool.cli` | Typer command definitions, argument parsing, output formatting. |
 
 For detailed API docs see the [module reference](reference/).
