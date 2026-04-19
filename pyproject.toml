@@ -37,7 +37,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/lostleaf/binance_datatool"
+Repository = "https://github.com/lostleaf/binance-datatool"
 
 [project.scripts]
 binance-datatool = "binance_datatool.cli:app"

@@ -55,8 +55,8 @@ export BINANCE_DATATOOL_ARCHIVE_HOME=$HOME/crypto_data/binance_archive
 For development:
 
 ```bash
-git clone https://github.com/lostleaf/binance_datatool.git
-cd binance_datatool
+git clone https://github.com/lostleaf/binance-datatool.git
+cd binance-datatool
 uv sync
 export BINANCE_DATATOOL_ARCHIVE_HOME=$HOME/crypto_data/binance_archive
 ```
