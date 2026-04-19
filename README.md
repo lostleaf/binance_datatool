@@ -5,8 +5,8 @@
 [![Ruff](https://img.shields.io/badge/code%20style-ruff-d4aa00?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![uv](https://img.shields.io/badge/package%20manager-uv-de5fe9?logo=uv&logoColor=white)](https://docs.astral.sh/uv/)
 
-A modern Python toolkit for downloading, verifying, and managing
-[Binance historical market data](https://data.binance.vision/) — designed
+A non-official Python toolkit for managing historical market data from
+[data.binance.vision](https://data.binance.vision/) — designed
 from the ground up for AI agents and quantitative workflows.
 
 ## Why Agent-First?
