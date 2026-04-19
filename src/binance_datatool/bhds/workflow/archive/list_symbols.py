@@ -16,7 +16,9 @@ if TYPE_CHECKING:
     from binance_datatool.common import DataFrequency, DataType, TradeType
 
 
-def _format_filter_values(symbol_filter: SymbolFilter | None) -> tuple[str | None, bool, bool, str | None]:
+def _format_filter_values(
+    symbol_filter: SymbolFilter | None,
+) -> tuple[str | None, bool, bool, str | None]:
     """Return stable logging fields for the active symbol filter."""
     if symbol_filter is None:
         return None, False, False, None

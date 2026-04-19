@@ -149,6 +149,12 @@ class TqdmReporter(_ReporterState):
         self._redirect_sink_id: int | None = None
 
     def __enter__(self) -> TqdmReporter:
+        """Set up the tqdm bar and redirect stderr-bound loguru sinks.
+
+        Raises:
+            RuntimeError: If another ``TqdmReporter`` is already active in
+                the same process.
+        """
         with self._active_lock:
             if type(self)._active:
                 msg = "TqdmReporter does not support nested reporters in the same process."
@@ -177,6 +183,7 @@ class TqdmReporter(_ReporterState):
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> None:
+        """Close the tqdm bar and restore the original stderr loguru sinks."""
         del exc, tb
         status = "complete" if exc_type is None else "aborted"
         try:
@@ -251,7 +258,18 @@ def make_reporter(
     total: int,
     description: str,
 ) -> ProgressReporter:
-    """Create the configured reporter implementation."""
+    """Create the configured reporter implementation.
+
+    Args:
+        progress_bar: When ``True``, return a :class:`TqdmReporter` with an
+            interactive progress bar; otherwise return a :class:`LogReporter`
+            that emits sampled log lines.
+        total: Total number of expected progress units.
+        description: Human-readable label shown in progress output.
+
+    Returns:
+        A :class:`ProgressReporter` ready for use as a context manager.
+    """
     if progress_bar:
         return TqdmReporter(total=total, description=description)
     return LogReporter(total=total, description=description)
