@@ -1,11 +1,11 @@
-# binance_datatool.bhds.archive
+# binance_datatool.archive
 
 Archive access package for data.binance.vision.
 
 Most user-facing imports can prefer the package-level re-export surface:
 
 ```python
-from binance_datatool.bhds.archive import (
+from binance_datatool.archive import (
     ArchiveClient,
     DownloadRequest,
     SpotSymbolFilter,
@@ -26,7 +26,7 @@ details.
 | [downloader](downloader.md) | Aria2-backed batch download helpers and result types. |
 | [checksum](checksum.md) | SHA256 checksum helpers and `VerifyFileResult`. |
 | [symbol_dir](symbol_dir.md) | Local symbol archive directory helpers and marker management. |
-| [S3 protocol](../s3-protocol.md) | XML listing request format, pagination, retry, and proxy behavior. |
+| [S3 protocol](s3-protocol.md) | XML listing request format, pagination, retry, and proxy behavior. |
 
 ## Package Re-exports
 
@@ -43,4 +43,4 @@ left out of the public reference surface.
 
 ---
 
-See also: [Workflow](../workflow.md) | [CLI overview](../cli/) | [Architecture](../../../architecture.md)
+See also: [Workflow](../workflow/archive.md) | [CLI overview](../cli/) | [Architecture](../../../architecture.md)

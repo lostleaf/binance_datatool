@@ -1,11 +1,11 @@
-# bhds archive
+# binance-datatool archive
 
 Archive commands for querying and downloading data from data.binance.vision.
 
 ## `list-symbols`
 
 ```
-bhds archive list-symbols <TRADE_TYPE>
+binance-datatool archive list-symbols <TRADE_TYPE>
     [--freq FREQ] [--type TYPE]
     [--quote QUOTE ...] [--exclude-leverage] [--exclude-stables]
     [--contract-type CONTRACT_TYPE]
@@ -31,33 +31,33 @@ filtered out are not printed, regardless of whether any filter flag was passed.
 **Examples:**
 
 ```
-bhds archive list-symbols spot --quote USDT --exclude-leverage --exclude-stables
-bhds archive list-symbols um --quote USDT --quote USDC --contract-type perpetual
-bhds archive list-symbols cm --contract-type delivery
+binance-datatool archive list-symbols spot --quote USDT --exclude-leverage --exclude-stables
+binance-datatool archive list-symbols um --quote USDT --quote USDC --contract-type perpetual
+binance-datatool archive list-symbols cm --contract-type delivery
 ```
 
 ### Data flow
 
 ```
 User runs:
-  bhds archive list-symbols spot --quote USDT
+  binance-datatool archive list-symbols spot --quote USDT
 
   ┌──────────────────────────────────────────────────────┐
-  │ CLI layer  (bhds/cli/archive.py)                     │
+  │ CLI layer  (cli/archive.py)                     │
   │  Parses arguments, builds a typed symbol filter,     │
   │  runs the workflow, and prints matched symbols.      │
   └──────────────────────┬───────────────────────────────┘
                          │ trade_type, data_freq, data_type,
                          │ symbol_filter
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (bhds/workflow/archive/)                  │
+  │ Workflow  (workflow/archive/)                  │
   │  Fetches raw symbols, infers typed metadata per      │
   │  market, applies the filter, and returns a           │
   │  ListSymbolsResult.                                  │
   └──────────────────────┬───────────────────────────────┘
                          │ trade_type, data_freq, data_type
   ┌──────────────────────▼───────────────────────────────┐
-  │ Archive Client  (bhds/archive/client.py)             │
+  │ Archive Client  (archive/client.py)             │
   │  Issues paginated S3 XML listings against            │
   │  data.binance.vision and returns sorted symbol       │
   │  names.                                              │
@@ -67,7 +67,7 @@ User runs:
 ## `list-files`
 
 ```
-bhds archive list-files <TRADE_TYPE> [SYMBOLS...]
+binance-datatool archive list-files <TRADE_TYPE> [SYMBOLS...]
     [--freq FREQ] [--type TYPE] [--interval INTERVAL]
     [-l | --long]
     [--only-zip | --only-checksum]
@@ -154,33 +154,33 @@ selected market, frequency, and data type rather than as a local runtime error.
 `list-files` is designed to be piped from `list-symbols`:
 
 ```
-bhds archive list-symbols um --quote USDT --exclude-stables \
-  | bhds archive list-files um --type klines --interval 1m
+binance-datatool archive list-symbols um --quote USDT --exclude-stables \
+  | binance-datatool archive list-files um --type klines --interval 1m
 ```
 
 ### Examples
 
 ```
 # Single-symbol funding-rate listing
-bhds archive list-files um --freq monthly --type fundingRate BTCUSDT
+binance-datatool archive list-files um --freq monthly --type fundingRate BTCUSDT
 
 # Multi-symbol klines listing (long TSV, zip-only)
-bhds archive list-files um --type klines --interval 1m -l --only-zip BTCUSDT ETHUSDT
+binance-datatool archive list-files um --type klines --interval 1m -l --only-zip BTCUSDT ETHUSDT
 
 # Pipe from list-symbols, verbose logging
-bhds -v archive list-symbols um --quote USDT --exclude-stables \
-  | bhds -v archive list-files um --type klines --interval 1m
+binance-datatool -v archive list-symbols um --quote USDT --exclude-stables \
+  | binance-datatool -v archive list-files um --type klines --interval 1m
 ```
 
 ### Data flow
 
 ```
 User runs:
-  bhds archive list-symbols um --quote USDT --exclude-stables \
-    | bhds archive list-files um --type klines --interval 1m
+  binance-datatool archive list-symbols um --quote USDT --exclude-stables \
+    | binance-datatool archive list-files um --type klines --interval 1m
 
   ┌──────────────────────────────────────────────────────┐
-  │ CLI layer  (bhds/cli/archive.py)                     │
+  │ CLI layer  (cli/archive.py)                     │
   │  Validates --only-zip / --only-checksum exclusivity  │
   │  and --interval vs data_type consistency; resolves   │
   │  symbols from positional args (winning) or piped     │
@@ -191,7 +191,7 @@ User runs:
                          │ trade_type, data_freq, data_type,
                          │ symbols, interval
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (bhds/workflow/archive/)                  │
+  │ Workflow  (workflow/archive/)                  │
   │  Re-validates interval consistency at construction;  │
   │  delegates to ArchiveClient.list_symbol_files_batch  │
   │  which opens one shared aiohttp session and          │
@@ -202,7 +202,7 @@ User runs:
                          │ trade_type, data_freq, data_type,
                          │ symbol, interval, session
   ┌──────────────────────▼───────────────────────────────┐
-  │ Archive Client  (bhds/archive/client.py)             │
+  │ Archive Client  (archive/client.py)             │
   │  list_symbol_files builds the prefix and calls       │
   │  list_files_in_dir, which paginates S3 Contents      │
   │  entries into ArchiveFile dataclasses (key, size,    │
@@ -218,14 +218,14 @@ and [S3 protocol reference](../s3-protocol.md) for archive listing details.
 ## `download`
 
 ```
-bhds [--bhds-home PATH] archive download <TRADE_TYPE> [SYMBOLS...]
+binance-datatool [--archive-home PATH] archive download <TRADE_TYPE> [SYMBOLS...]
     [--freq FREQ] [--type TYPE] [--interval INTERVAL]
     [-n | --dry-run]
     [--aria2-proxy]
     [--progress-bar]
 ```
 
-Downloads new or updated archive files into the local BHDS data directory.
+Downloads new or updated archive files into the local archive data directory.
 Requires `aria2c` to be available in `PATH`.
 
 | Argument / Option | Type | Default | Description |
@@ -239,14 +239,14 @@ Requires `aria2c` to be available in `PATH`.
 | `--aria2-proxy` | `bool` | `False` | Allow aria2c to inherit system proxy environment variables. By default, proxy env vars (`HTTP_PROXY`, `HTTPS_PROXY`, etc.) are stripped from the aria2c subprocess. |
 | `--progress-bar` | `bool` | `False` | Show interactive tqdm progress bar on stderr. By default no interactive progress is shown; sampled log lines at INFO level are emitted instead. See [`common.progress`](../../common/progress.md). |
 
-### BHDS home resolution
+### archive-home resolution
 
 The download command requires a local data directory. Resolution priority:
 
 | Priority | Source |
 |----------|--------|
-| 1 | `--bhds-home` (root-level option) |
-| 2 | `$BHDS_HOME` environment variable |
+| 1 | `--archive-home` (root-level option) |
+| 2 | `$BINANCE_DATATOOL_ARCHIVE_HOME` environment variable |
 | 3 | Exit 2 with a descriptive error |
 
 See [`common.path`](../../common/path.md) for implementation details.
@@ -254,7 +254,7 @@ See [`common.path`](../../common/path.md) for implementation details.
 ### Diff semantics
 
 For each remote file, the workflow checks the local path at
-`bhds_home/aws_data/{archive_key}`:
+`archive_home / Path(remote.key)`:
 
 | Local state | Action | Reason |
 |-------------|--------|--------|
@@ -295,42 +295,42 @@ In download mode, the following are printed to stderr:
 | All files downloaded successfully | `0` |
 | Any symbol listing failed | `2` |
 | Any download failed | `2` |
-| BHDS_HOME not configured | `2` |
+| BINANCE_DATATOOL_ARCHIVE_HOME not configured | `2` |
 | Argument validation error | `2` |
 
 ### Composition with other commands
 
 ```
 # Dry-run: preview what would be downloaded
-bhds --bhds-home ~/data archive download um --freq monthly --type fundingRate -n BTCUSDT
+binance-datatool --archive-home ~/data archive download um --freq monthly --type fundingRate -n BTCUSDT
 
 # Download with proxy passthrough
-bhds archive download um --type klines --interval 1m --aria2-proxy BTCUSDT ETHUSDT
+binance-datatool archive download um --type klines --interval 1m --aria2-proxy BTCUSDT ETHUSDT
 
 # Pipe from list-symbols
-bhds archive list-symbols um --quote USDT --exclude-stables \
-  | bhds archive download um --type klines --interval 1m
+binance-datatool archive list-symbols um --quote USDT --exclude-stables \
+  | binance-datatool archive download um --type klines --interval 1m
 ```
 
 ### Data flow
 
 ```
 User runs:
-  bhds --bhds-home ~/data archive download um --type fundingRate BTCUSDT
+  binance-datatool --archive-home ~/data archive download um --type fundingRate BTCUSDT
 
   ┌──────────────────────────────────────────────────────┐
-  │ CLI layer  (bhds/cli/archive.py)                     │
+  │ CLI layer  (cli/archive.py)                     │
   │  Validates interval vs data_type; resolves symbols   │
-  │  from args or stdin; resolves BHDS home from         │
-  │  --bhds-home or $BHDS_HOME; constructs the download  │
+  │  from args or stdin; resolves archive home from      │
+  │  --archive-home or $BINANCE_DATATOOL_ARCHIVE_HOME; constructs the download  │
   │  workflow; prints dry-run TSV or download summary;   │
   │  logs listing errors to stderr and exits 2 on fail.  │
   └──────────────────────┬───────────────────────────────┘
                          │ trade_type, data_freq, data_type,
-                         │ symbols, bhds_home, interval,
+                         │ symbols, archive_home, interval,
                          │ dry_run, inherit_aria2_proxy
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (bhds/workflow/archive/)                  │
+  │ Workflow  (workflow/archive/)                  │
   │  Delegates to ArchiveListFilesWorkflow for remote    │
   │  listing; computes diff (new/updated/skipped) by     │
   │  comparing local timestamps; invalidates stale       │
@@ -342,7 +342,7 @@ User runs:
           │                             │
   ┌───────▼────────────────┐   ┌────────▼──────────────────┐
   │ Archive Client         │   │ Downloader                │
-  │  (bhds/archive/        │   │  (bhds/archive/           │
+  │  (archive/        │   │  (archive/           │
   │   client.py)           │   │   downloader.py)          │
   │  Concurrent S3 file    │   │  aria2c batch download    │
   │  listings              │   │  with retry and proxy     │
@@ -353,7 +353,7 @@ User runs:
 ## `verify`
 
 ```
-bhds [--bhds-home PATH] archive verify <TRADE_TYPE> [SYMBOLS...]
+binance-datatool [--archive-home PATH] archive verify <TRADE_TYPE> [SYMBOLS...]
     [--freq FREQ] [--type TYPE] [--interval INTERVAL]
     [--keep-failed]
     [-n | --dry-run]
@@ -361,7 +361,7 @@ bhds [--bhds-home PATH] archive verify <TRADE_TYPE> [SYMBOLS...]
 ```
 
 Verifies local archive zip files against their sibling `.CHECKSUM` files using
-SHA256. Requires `BHDS_HOME` to be configured (same resolution as `download`).
+SHA256. Requires `BINANCE_DATATOOL_ARCHIVE_HOME` to be configured (same resolution as `download`).
 
 | Argument / Option | Type | Default | Description |
 |-------------------|------|---------|-------------|
@@ -396,7 +396,7 @@ A summary line is printed to stderr:
 ```
 
 If no local zip files match the requested selection, the command still exits `0`
-and prints a warning to stderr asking you to re-check `--bhds-home`, the path
+and prints a warning to stderr asking you to re-check `--archive-home`, the path
 selection flags, and the symbol list.
 
 ### Normal output
@@ -448,44 +448,44 @@ protocol details.
 |-----------|-----------|
 | All files verified successfully (including mismatches and orphan cleanup) | `0` |
 | Runtime error (e.g. process pool failure) | `2` |
-| BHDS_HOME not configured | `2` |
+| BINANCE_DATATOOL_ARCHIVE_HOME not configured | `2` |
 | Argument validation error | `2` |
 
 ### Composition with other commands
 
 ```
 # Dry-run: preview what would be verified
-bhds --bhds-home ~/data archive verify um --type klines --interval 1m -n BTCUSDT
+binance-datatool --archive-home ~/data archive verify um --type klines --interval 1m -n BTCUSDT
 
 # Verify and delete failed files (default)
-bhds archive verify um --type klines --interval 1m BTCUSDT ETHUSDT
+binance-datatool archive verify um --type klines --interval 1m BTCUSDT ETHUSDT
 
 # Keep failed files for inspection
-bhds archive verify um --freq monthly --type fundingRate --keep-failed BTCUSDT
+binance-datatool archive verify um --freq monthly --type fundingRate --keep-failed BTCUSDT
 
 # Pipe from list-symbols
-bhds archive list-symbols um --quote USDT --exclude-stables \
-  | bhds archive verify um --type klines --interval 1m
+binance-datatool archive list-symbols um --quote USDT --exclude-stables \
+  | binance-datatool archive verify um --type klines --interval 1m
 ```
 
 ### Data flow
 
 ```
 User runs:
-  bhds --bhds-home ~/data archive verify um --type klines --interval 1m BTCUSDT
+  binance-datatool --archive-home ~/data archive verify um --type klines --interval 1m BTCUSDT
 
   ┌──────────────────────────────────────────────────────┐
-  │ CLI layer  (bhds/cli/archive.py)                     │
+  │ CLI layer  (cli/archive.py)                     │
   │  Validates interval vs data_type; resolves symbols   │
-  │  from args or stdin; resolves BHDS home; constructs  │
+  │  from args or stdin; resolves archive home; constructs  │
   │  the verify workflow; prints dry-run paths or verify │
   │  summary; logs per-file failures to stderr.          │
   └──────────────────────┬───────────────────────────────┘
                          │ trade_type, data_freq, data_type,
-                         │ symbols, bhds_home, interval,
+                         │ symbols, archive_home, interval,
                          │ keep_failed, dry_run
   ┌──────────────────────▼───────────────────────────────┐
-  │ Workflow  (bhds/workflow/archive/)                  │
+  │ Workflow  (workflow/archive/)                  │
   │  Scans local symbol directories; classifies zips     │
   │  into verify/skip/orphan buckets; cleans orphans;    │
   │  verifies SHA256 checksums in parallel via           │
@@ -495,7 +495,7 @@ User runs:
   └──────────────────────┬───────────────────────────────┘
                          │ zip_path
   ┌──────────────────────▼───────────────────────────────┐
-  │ Checksum  (bhds/archive/checksum.py)                 │
+  │ Checksum  (archive/checksum.py)                 │
   │  verify_single_file reads the .CHECKSUM sibling,     │
   │  computes SHA256 via hashlib.file_digest, and        │
   │  returns VerifyFileResult (passed/failed + detail).  │

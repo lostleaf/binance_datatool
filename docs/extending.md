@@ -34,7 +34,7 @@ Follow the three-layer pattern: **CLI → Workflow → Client**.
 ### Step 1: Add a Client Method
 
 If the command needs new data access, add an `async` method to `ArchiveClient` in
-`bhds/archive/client.py`. Keep the method focused on S3 communication and return plain data
+`archive/client.py`. Keep the method focused on S3 communication and return plain data
 structures.
 
 ```python
@@ -44,11 +44,11 @@ async def list_dates(self, trade_type: TradeType, ...) -> list[str]:
     ...
 ```
 
-See `list_symbols` and `list_symbol_files` in `bhds/archive/client.py` for real examples.
+See `list_symbols` and `list_symbol_files` in `archive/client.py` for real examples.
 
 ### Step 2: Create a Workflow Class
 
-Create a workflow in `bhds/workflow/archive/` (or a new module if the scope warrants it).
+Create a workflow in `workflow/archive/` (or a new module if the scope warrants it).
 Accept an optional `client` parameter for testability and return a typed result dataclass.
 
 ```python
@@ -61,11 +61,11 @@ class ArchiveListDatesWorkflow:
 ```
 
 See `ArchiveListSymbolsWorkflow`, `ArchiveListFilesWorkflow`, `ArchiveDownloadWorkflow`,
-and `ArchiveVerifyWorkflow` in `bhds/workflow/archive/` for real examples.
+and `ArchiveVerifyWorkflow` in `workflow/archive/` for real examples.
 
 ### Step 3: Add a CLI Command
 
-Add a Typer command in `bhds/cli/archive.py`. The command parses arguments, constructs a
+Add a Typer command in `cli/archive.py`. The command parses arguments, constructs a
 workflow, and prints the result.
 
 ```python
@@ -81,7 +81,7 @@ def list_dates_command(
 ```
 
 See `list_symbols_command`, `list_files_command`, `download_command`, and
-`verify_command` in `bhds/cli/archive.py` for real examples.
+`verify_command` in `cli/archive.py` for real examples.
 
 ### Step 4: Add Tests
 
@@ -90,22 +90,22 @@ conventions, and shared fixtures.
 
 ## Adding a New Sub-command Group
 
-To add a command group alongside `archive` (for example, `bhds holo ...`):
+To add a command group alongside `archive` (for example, `binance-datatool holo ...`):
 
-1. Define a new Typer app in `bhds/cli/__init__.py`:
+1. Define a new Typer app in `cli/__init__.py`:
 
    ```python
    holo_app = typer.Typer(name="holo", help="Holographic kline generation.")
    app.add_typer(holo_app)
    ```
 
-2. Create the command module `bhds/cli/holo.py` and register it with a side-effect import in
-   `bhds/cli/__init__.py`:
+2. Create the command module `cli/holo.py` and register it with a side-effect import in
+   `cli/__init__.py`:
 
    ```python
    # Register sub-command modules (side-effect import).
-   from binance_datatool.bhds.cli import archive as _archive  # noqa: F401,E402
-   from binance_datatool.bhds.cli import holo as _holo  # noqa: F401,E402
+   from binance_datatool.cli import archive as _archive  # noqa: F401,E402
+   from binance_datatool.cli import holo as _holo  # noqa: F401,E402
    ```
 
 3. Follow the same CLI → Workflow → Client layering for the new commands.

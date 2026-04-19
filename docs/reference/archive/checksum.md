@@ -1,12 +1,12 @@
-# binance_datatool.bhds.archive.checksum
+# binance_datatool.archive.checksum
 
 SHA256 verification helpers for local archive files.
 
-The package-level `binance_datatool.bhds.archive` re-exports every public
+The package-level `binance_datatool.archive` re-exports every public
 checksum helper, so most imports can use:
 
 ```python
-from binance_datatool.bhds.archive import calc_sha256, verify_single_file
+from binance_datatool.archive import calc_sha256, verify_single_file
 ```
 
 ## `VerifyFileResult`
@@ -23,7 +23,7 @@ single zip file.
 ## `calc_sha256()`
 
 ```python
-from binance_datatool.bhds.archive import calc_sha256
+from binance_datatool.archive import calc_sha256
 
 hex_digest = calc_sha256(file_path)
 ```
@@ -33,7 +33,7 @@ Computes the SHA256 hex digest of a file using `hashlib.file_digest()`.
 ## `read_expected_checksum()`
 
 ```python
-from binance_datatool.bhds.archive import read_expected_checksum
+from binance_datatool.archive import read_expected_checksum
 
 expected = read_expected_checksum(zip_path)
 ```
@@ -45,7 +45,7 @@ not exist and `ValueError` when the file is empty or has no parseable token.
 ## `verify_single_file()`
 
 ```python
-from binance_datatool.bhds.archive import verify_single_file
+from binance_datatool.archive import verify_single_file
 
 result = verify_single_file(zip_path)
 ```
@@ -59,4 +59,4 @@ This function is the unit of work submitted to `ProcessPoolExecutor` by
 
 ---
 
-See also: [Archive package](README.md) | [Downloader helpers](downloader.md) | [Workflow](../workflow.md)
+See also: [Archive package](README.md) | [Downloader helpers](downloader.md) | [Workflow](../workflow/archive.md)

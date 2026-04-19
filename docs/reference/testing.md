@@ -11,7 +11,7 @@ tests/
 ├── test_downloader.py          # aria2 downloader unit tests (proxy, batching, retry)
 ├── test_enums.py               # common.enums property tests
 ├── test_filter.py              # Symbol filter unit tests
-├── test_path.py                # BHDS home resolution (override, env var, missing)
+├── test_path.py                # Archive-home resolution (override, env var, missing)
 ├── test_progress.py            # Progress-reporting framework (LogReporter, TqdmReporter)
 ├── test_symbol_dir.py          # SymbolArchiveDir, create_symbol_archive_dir, marker protocol
 └── test_symbols.py             # Symbol inference unit and integration tests

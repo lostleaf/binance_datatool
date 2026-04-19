@@ -1,39 +1,43 @@
 # binance_datatool.common.path
 
-Local path helpers for BHDS-managed data.
+Local path helpers for archive-managed data.
 
-## `resolve_bhds_home()`
+## `resolve_archive_home()`
 
 ```python
-from binance_datatool.common import resolve_bhds_home
+from binance_datatool.common import resolve_archive_home
 
-home = resolve_bhds_home()                    # from $BHDS_HOME
-home = resolve_bhds_home("/custom/path")      # explicit override
+home = resolve_archive_home()                     # from $BINANCE_DATATOOL_ARCHIVE_HOME
+home = resolve_archive_home("/custom/path")      # explicit override
 ```
 
-Resolves the BHDS home directory using the following priority:
+Resolves the archive home directory using the following priority:
 
 | Priority | Source | Description |
 |----------|--------|-------------|
-| 1 | `override` argument | CLI-provided `--bhds-home` value. |
-| 2 | `$BHDS_HOME` env var | Environment variable fallback. |
-| 3 | *(none)* | Raises `BhdsHomeNotConfiguredError`. |
+| 1 | `override` argument | CLI-provided `--archive-home` value. |
+| 2 | `$BINANCE_DATATOOL_ARCHIVE_HOME` env var | Environment variable fallback. |
+| 3 | *(none)* | Raises `ArchiveHomeNotConfiguredError`. |
 
 Both the override and the env-var value are expanded via `Path.expanduser()`.
 
-## `BhdsHomeNotConfiguredError`
+`archive_home` is the local Binance archive root itself, so local paths resolve
+directly under `archive_home / "data" / ...`.
 
-Custom `ValueError` subclass raised when neither a CLI override nor the `BHDS_HOME`
-environment variable is set. The error message includes remediation advice pointing
-to `--bhds-home` and the environment variable.
+## `ArchiveHomeNotConfiguredError`
 
-## `BHDS_HOME_ENV_VAR`
+Custom `ValueError` subclass raised when neither a CLI override nor the
+`BINANCE_DATATOOL_ARCHIVE_HOME` environment variable is set. The error message
+includes remediation advice pointing to `--archive-home` and the environment
+variable.
 
-String constant `"BHDS_HOME"` — the environment variable name used by
-`resolve_bhds_home()`.
+## `ARCHIVE_HOME_ENV_VAR`
+
+String constant `"BINANCE_DATATOOL_ARCHIVE_HOME"` — the environment variable
+name used by `resolve_archive_home()`.
 
 ```python
-from binance_datatool.common.path import BHDS_HOME_ENV_VAR
+from binance_datatool.common.path import ARCHIVE_HOME_ENV_VAR
 ```
 
 This constant is documented here but is not re-exported from
@@ -41,4 +45,4 @@ This constant is documented here but is not re-exported from
 
 ---
 
-See also: [constants](constants.md) | [CLI overview](../bhds/cli/) | [Architecture](../../architecture.md)
+See also: [constants](constants.md) | [CLI overview](../cli/) | [Architecture](../../architecture.md)

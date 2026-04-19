@@ -9,18 +9,18 @@ Most user-facing imports should prefer the package-level
 `binance_datatool.common` re-export surface when it exposes the name you need:
 
 ```python
-from binance_datatool.common import DataFrequency, DataType, TradeType, resolve_bhds_home
+from binance_datatool.common import DataFrequency, DataType, TradeType, resolve_archive_home
 ```
 
 That package currently re-exports the shared enums, symbol-info dataclasses,
-symbol inference helpers, CLI logging helper, BHDS home resolver, and the main
+symbol inference helpers, CLI logging helper, archive-home resolver, and the main
 S3 / leverage / stablecoin constants. Names that are documented but not
 re-exported from `binance_datatool.common` should be imported from their
 defining module, for example:
 
 ```python
 from binance_datatool.common.constants import QUOTE_BASE_EXCLUDES
-from binance_datatool.common.path import BHDS_HOME_ENV_VAR
+from binance_datatool.common.path import ARCHIVE_HOME_ENV_VAR
 ```
 
 | Module | Description |
@@ -29,24 +29,24 @@ from binance_datatool.common.path import BHDS_HOME_ENV_VAR
 | [common.enums](common/enums.md) | TradeType, DataFrequency, DataType, ContractType. |
 | [common.types](common/types.md) | SymbolInfoBase and per-market symbol info dataclasses. |
 | [common.logging](common/logging.md) | `configure_cli_logging` helper for CLI entry points. |
-| [common.path](common/path.md) | BHDS home directory resolution. |
+| [common.path](common/path.md) | Archive-home directory resolution. |
 | [common.symbols](common/symbols.md) | Symbol inference functions and quote parsing rules. |
 | [common.progress](common/progress.md) | Progress-reporting framework (`ProgressEvent`, `ProgressReporter`, `make_reporter`). |
 
-## BHDS
+## Archive
 
 | Module | Description |
 |--------|-------------|
-| [bhds.archive](bhds/archive/) | Package index and re-export surface for archive access helpers. |
-| [bhds.archive.client](bhds/archive/client.md) | S3 listing client, `ArchiveFile`, and `list_symbols()`. |
-| [bhds.archive.filter](bhds/archive/filter.md) | Typed symbol filters and `build_symbol_filter()`. |
-| [bhds.archive.downloader](bhds/archive/downloader.md) | Aria2-backed batch download helpers and result types. |
-| [bhds.archive.checksum](bhds/archive/checksum.md) | SHA256 verification helpers and `VerifyFileResult`. |
-| [bhds.archive.symbol_dir](bhds/archive/symbol_dir.md) | Local symbol archive directory helpers and marker management. |
-| [bhds.archive (S3 protocol)](bhds/s3-protocol.md) | S3 XML listing protocol, pagination, retry, and proxy. |
-| [bhds.workflow](bhds/workflow.md) | Business logic orchestration. |
-| [bhds.cli](bhds/cli/) | Typer CLI overview, verbosity, and sub-command index. |
-| [bhds.cli.archive](bhds/cli/archive.md) | Archive commands (`list-symbols`, `list-files`, `download`, `verify`). |
+| [archive](archive/) | Package index and re-export surface for archive access helpers. |
+| [archive.client](archive/client.md) | S3 listing client, `ArchiveFile`, and `list_symbols()`. |
+| [archive.filter](archive/filter.md) | Typed symbol filters and `build_symbol_filter()`. |
+| [archive.downloader](archive/downloader.md) | Aria2-backed batch download helpers and result types. |
+| [archive.checksum](archive/checksum.md) | SHA256 verification helpers and `VerifyFileResult`. |
+| [archive.symbol_dir](archive/symbol_dir.md) | Local symbol archive directory helpers and marker management. |
+| [archive.s3-protocol](archive/s3-protocol.md) | S3 XML listing protocol, pagination, retry, and proxy. |
+| [workflow.archive](workflow/archive.md) | Business logic orchestration for archive workflows. |
+| [cli](cli/) | Typer CLI overview, verbosity, and sub-command index. |
+| [cli.archive](cli/archive.md) | Archive commands (`list-symbols`, `list-files`, `download`, `verify`). |
 
 ---
 

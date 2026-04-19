@@ -1,12 +1,12 @@
-# binance_datatool.bhds.cli
+# binance_datatool.cli
 
-Typer CLI application. The entry point is `binance_datatool.bhds.cli:app`, exposed as the `bhds`
+Typer CLI application. The entry point is `binance_datatool.cli:app`, exposed as the `binance-datatool`
 console script via `pyproject.toml`.
 
 ## App Structure
 
 ```
-bhds [-v | -vv] [--bhds-home PATH]   # Root Typer app with shared options
+binance-datatool [-v | -vv] [--archive-home PATH]   # Root Typer app with shared options
 └── archive                          # Sub-command group
     ├── list-symbols                 # Command
     ├── list-files                   # Command
@@ -16,14 +16,14 @@ bhds [-v | -vv] [--bhds-home PATH]   # Root Typer app with shared options
 
 ## Root Callback
 
-The root `bhds` app defines a callback that runs before any sub-command:
+The root `binance-datatool` app defines a callback that runs before any sub-command:
 
 | Flag | Effect |
 |------|--------|
 | *(default)* | `loguru` level `WARNING`, unified `date \| level \| module - message` format |
 | `-v` | `loguru` level `INFO`, same unified format |
 | `-vv` | `loguru` level `DEBUG`, same unified format |
-| `--bhds-home` | Override the BHDS data directory. Stored in `ctx.obj["bhds_home_override"]` and consumed by commands that need local archive storage (`download`, `verify`). See [`common.path`](../../common/path.md) for resolution priority. |
+| `--archive-home` | Override the archive data directory. Stored in `ctx.obj["archive_home_override"]` and consumed by commands that need local archive storage (`download`, `verify`). See [`common.path`](../../common/path.md) for resolution priority. |
 
 `-v` is `count`-based — pass `-v -v` or `-vv` for DEBUG. All CLI logging is written
 to `stderr` via `configure_cli_logging()` from [`common.logging`](../../common/logging.md),

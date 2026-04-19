@@ -51,21 +51,21 @@ called by AI agents just as easily as by a human:
 git clone https://github.com/lostleaf/binance_datatool.git
 cd binance_datatool
 uv sync
-export BHDS_HOME=$HOME/crypto_data/bhds   # where downloaded data is stored
+export BINANCE_DATATOOL_ARCHIVE_HOME=$HOME/crypto_data/binance-archive
 ```
 
 ### Try it
 
 ```bash
 # List USDT-quoted spot symbols, excluding stablecoins
-uv run bhds archive list-symbols spot --quote USDT --exclude-stables
+uv run binance-datatool archive list-symbols spot --quote USDT --exclude-stables
 
 # Download daily 1m klines
-uv run bhds archive list-symbols spot --quote USDT --exclude-stables \
-  | uv run bhds archive download spot --type klines --interval 1m
+uv run binance-datatool archive list-symbols spot --quote USDT --exclude-stables \
+  | uv run binance-datatool archive download spot --type klines --interval 1m
 
 # Verify integrity
-uv run bhds archive verify spot --type klines --interval 1m BTCUSDT
+uv run binance-datatool archive verify spot --type klines --interval 1m BTCUSDT
 ```
 
 ## Supported Data Types
@@ -83,7 +83,8 @@ support all standard intervals (`1m` `3m` `5m` `15m` `30m` `1h` `2h` `4h`
 
 ## CLI Overview
 
-The entry point is `bhds`. All data commands live under `bhds archive`:
+The entry point is `binance-datatool`. All data commands live under
+`binance-datatool archive`:
 
 | Command | Description |
 |---------|-------------|
@@ -97,11 +98,11 @@ The entry point is `bhds`. All data commands live under `bhds archive`:
 > making it trivial to compose pipelines:
 >
 > ```bash
-> bhds archive list-symbols um --quote USDT \
->   | bhds archive download um --type klines --interval 1m
+> binance-datatool archive list-symbols um --quote USDT \
+>   | binance-datatool archive download um --type klines --interval 1m
 > ```
 
-Run `uv run bhds --help` for the full option reference.
+Run `uv run binance-datatool --help` for the full option reference.
 
 ## Architecture
 

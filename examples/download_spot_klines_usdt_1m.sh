@@ -36,7 +36,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "[1/3] Listing spot symbols (quote=USDT, exclude stable pairs, exclude leverage)..." >&2
-uv run bhds -v archive list-symbols spot \
+uv run binance-datatool -v archive list-symbols spot \
   --quote USDT \
   --exclude-stables \
   --exclude-leverage \
@@ -46,7 +46,7 @@ symbol_count="$(wc -l < "$symbols_file" | tr -d '[:space:]')"
 echo "Selected ${symbol_count} symbols." >&2
 
 echo "[2/3] Downloading spot daily 1m klines..." >&2
-uv run bhds -v archive download spot \
+uv run binance-datatool -v archive download spot \
   --freq daily \
   --type klines \
   --interval 1m \
@@ -61,7 +61,7 @@ fi
 
 # Verify only the symbols selected by the same remote snapshot.
 echo "[3/3] Verifying downloaded spot daily 1m klines..." >&2
-uv run bhds -v archive verify spot \
+uv run binance-datatool -v archive verify spot \
   --freq daily \
   --type klines \
   --interval 1m \

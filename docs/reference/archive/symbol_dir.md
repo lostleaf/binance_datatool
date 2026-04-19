@@ -1,14 +1,14 @@
-# binance_datatool.bhds.archive.symbol_dir
+# binance_datatool.archive.symbol_dir
 
 Local symbol archive directory helpers. Used internally by the download and
 verify workflows to manage on-disk layout, verification markers, and orphan
 cleanup.
 
-The package-level `binance_datatool.bhds.archive` re-exports
+The package-level `binance_datatool.archive` re-exports
 `SymbolArchiveDir` and `create_symbol_archive_dir`:
 
 ```python
-from binance_datatool.bhds.archive import SymbolArchiveDir, create_symbol_archive_dir
+from binance_datatool.archive import SymbolArchiveDir, create_symbol_archive_dir
 ```
 
 ## `SymbolArchiveDir`
@@ -17,11 +17,11 @@ Represents one local symbol archive directory and provides methods for
 marker management, scanning, and cleanup.
 
 ```python
-from binance_datatool.bhds.archive import create_symbol_archive_dir
+from binance_datatool.archive import create_symbol_archive_dir
 from binance_datatool.common import DataFrequency, DataType, TradeType
 
 symbol_dir = create_symbol_archive_dir(
-    bhds_home=Path("/data/bhds"),
+    archive_home=Path("/data/binance-archive"),
     trade_type=TradeType.um,
     data_freq=DataFrequency.daily,
     data_type=DataType.klines,
@@ -73,7 +73,7 @@ returns a `SymbolArchiveDir` wrapping it.
 
 ```python
 create_symbol_archive_dir(
-    bhds_home: Path,
+    archive_home: Path,
     trade_type: TradeType,
     data_freq: DataFrequency,
     data_type: DataType,
@@ -85,12 +85,12 @@ create_symbol_archive_dir(
 The resolved path follows the pattern:
 
 ```
-bhds_home/aws_data/data/{trade_type.s3_path}/{data_freq}/{data_type}/{symbol}[/{interval}]
+archive_home/data/{trade_type.s3_path}/{data_freq}/{data_type}/{symbol}[/{interval}]
 ```
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `bhds_home` | *(required)* | Root directory for local BHDS data storage. |
+| `archive_home` | *(required)* | Root directory for local archive data storage. |
 | `trade_type` | *(required)* | Market segment. |
 | `data_freq` | *(required)* | Partition frequency. |
 | `data_type` | *(required)* | Dataset type. |
@@ -104,7 +104,7 @@ of zip paths, grouped by their parent zip. Used by the verify workflow to
 pre-collect markers and avoid per-file glob calls when applying verify results.
 
 ```python
-from binance_datatool.bhds.archive.symbol_dir import collect_markers_by_zip
+from binance_datatool.archive.symbol_dir import collect_markers_by_zip
 
 markers_by_zip = collect_markers_by_zip(zip_paths)
 # {Path(".../BTCUSDT-1m-2024-01-01.zip"): [Path(".../BTCUSDT-1m-2024-01-01.zip.1234.verified")]}
@@ -112,4 +112,4 @@ markers_by_zip = collect_markers_by_zip(zip_paths)
 
 ---
 
-See also: [Workflow](../workflow.md) | [Archive package](README.md) | [Architecture](../../../architecture.md)
+See also: [Workflow](../workflow/archive.md) | [Archive package](README.md) | [Architecture](../../../architecture.md)

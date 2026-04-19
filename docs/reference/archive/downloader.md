@@ -1,12 +1,12 @@
-# binance_datatool.bhds.archive.downloader
+# binance_datatool.archive.downloader
 
 Aria2-backed archive download helpers.
 
-The package-level `binance_datatool.bhds.archive` re-exports every public
+The package-level `binance_datatool.archive` re-exports every public
 downloader type and function, so most imports can use:
 
 ```python
-from binance_datatool.bhds.archive import DownloadRequest, download_archive_files
+from binance_datatool.archive import DownloadRequest, download_archive_files
 ```
 
 ## `DownloadRequest`
@@ -22,7 +22,7 @@ direct-download task.
 ## `download_archive_files()`
 
 ```python
-from binance_datatool.bhds.archive import DownloadRequest, download_archive_files
+from binance_datatool.archive import DownloadRequest, download_archive_files
 
 result = download_archive_files(
     requests,
@@ -71,4 +71,4 @@ Custom `FileNotFoundError` subclass raised when `aria2c` is not available in
 
 ---
 
-See also: [Archive package](README.md) | [Workflow](../workflow.md) | [S3 protocol](../s3-protocol.md) | [Progress reporting](../../common/progress.md)
+See also: [Archive package](README.md) | [Workflow](../workflow/archive.md) | [S3 protocol](s3-protocol.md) | [Progress reporting](../../common/progress.md)

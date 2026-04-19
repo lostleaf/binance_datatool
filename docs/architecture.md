@@ -15,36 +15,33 @@ src/binance_datatool/
 │   ├── constants.py         # S3 settings, quote assets, stablecoins, leverage rules
 │   ├── enums.py             # TradeType, DataFrequency, DataType, ContractType
 │   ├── logging.py           # configure_cli_logging for CLI entry points
-│   ├── path.py              # BHDS_HOME resolution and BhdsHomeNotConfiguredError
+│   ├── path.py              # Archive-home resolution and ArchiveHomeNotConfiguredError
 │   ├── progress.py          # ProgressEvent, ProgressReporter protocol, make_reporter()
 │   ├── types.py             # SymbolInfoBase, SpotSymbolInfo, UmSymbolInfo, CmSymbolInfo
 │   └── symbols.py           # infer_spot_info, infer_um_info, infer_cm_info
 │
-└── bhds/                    # Binance Historical Data Service
-    ├── __init__.py
-    │
-    ├── archive/             # S3 data access, typed filters, checksum, and download helpers
-    │   ├── __init__.py      # Re-exports client, filter, checksum, downloader, and symbol_dir symbols
-    │   ├── checksum.py      # SHA256 verification helpers (calc, read, verify_single_file)
-    │   ├── client.py        # HTTP client, XML parsing, ArchiveFile metadata
-    │   ├── downloader.py    # aria2c batch downloader with per-file retry and proxy control
-    │   ├── filter.py        # Spot/Um/Cm symbol filters and build_symbol_filter()
-    │   └── symbol_dir.py    # SymbolArchiveDir, local marker management, directory scanning
-    │
-    ├── workflow/            # Business logic orchestration
-    │   ├── __init__.py
-    │   └── archive/         # Archive workflows (modular package)
-    │       ├── __init__.py  # Re-exports all workflow classes and result types
-    │       ├── _shared.py   # Shared helpers (infer_symbol_info, validate_interval)
-    │       ├── download.py  # ArchiveDownloadWorkflow
-    │       ├── list_files.py    # ArchiveListFilesWorkflow
-    │       ├── list_symbols.py  # ArchiveListSymbolsWorkflow
-    │       ├── results.py   # Result dataclasses (ListSymbolsResult, DiffResult, VerifyResult, etc.)
-    │       └── verify.py    # ArchiveVerifyWorkflow
-    │
-    └── cli/                 # Typer CLI layer
-        ├── __init__.py      # Root callback with -v/-vv verbosity, --bhds-home; sub-command registration
-        └── archive.py       # list-symbols, list-files, download, and verify commands
+├── archive/                 # S3 data access, typed filters, checksum, and download helpers
+│   ├── __init__.py          # Re-exports client, filter, checksum, downloader, and symbol_dir symbols
+│   ├── checksum.py          # SHA256 verification helpers (calc, read, verify_single_file)
+│   ├── client.py            # HTTP client, XML parsing, ArchiveFile metadata
+│   ├── downloader.py        # aria2c batch downloader with per-file retry and proxy control
+│   ├── filter.py            # Spot/Um/Cm symbol filters and build_symbol_filter()
+│   └── symbol_dir.py        # SymbolArchiveDir, local marker management, directory scanning
+│
+├── workflow/                # Business logic orchestration
+│   ├── __init__.py
+│   └── archive/             # Archive workflows (modular package)
+│       ├── __init__.py      # Re-exports all workflow classes and result types
+│       ├── _shared.py       # Shared helpers (infer_symbol_info, validate_interval)
+│       ├── download.py      # ArchiveDownloadWorkflow
+│       ├── list_files.py    # ArchiveListFilesWorkflow
+│       ├── list_symbols.py  # ArchiveListSymbolsWorkflow
+│       ├── results.py       # Result dataclasses (ListSymbolsResult, DiffResult, VerifyResult, etc.)
+│       └── verify.py        # ArchiveVerifyWorkflow
+│
+└── cli/                     # Typer CLI layer
+    ├── __init__.py          # Root callback with -v/-vv verbosity, --archive-home; sub-command registration
+    └── archive.py           # list-symbols, list-files, download, and verify commands
 ```
 
 ## Layered Design
@@ -53,18 +50,18 @@ The package follows a strict three-layer architecture. Each layer depends only o
 below it — outer layers import inner layers, never the reverse.
 
 ```
-CLI  (bhds/cli/)
- └─▶ Workflow  (bhds/workflow/)
-       └─▶ Archive Client  (bhds/archive/)
+CLI  (cli/)
+ └─▶ Workflow  (workflow/)
+       └─▶ Archive Client  (archive/)
              └─▶ Common  (common/)
 ```
 
 | Layer | Package | Responsibility |
 |-------|---------|----------------|
 | **Common** | `binance_datatool.common` | Shared enums, constants, and types used across the project. |
-| **Archive Client** | `binance_datatool.bhds.archive` | S3 HTTP communication with data.binance.vision. |
-| **Workflow** | `binance_datatool.bhds.workflow` | Business logic orchestration; decouples CLI from the client. |
-| **CLI** | `binance_datatool.bhds.cli` | Typer command definitions, argument parsing, output formatting. |
+| **Archive Client** | `binance_datatool.archive` | S3 HTTP communication with data.binance.vision. |
+| **Workflow** | `binance_datatool.workflow.archive` | Business logic orchestration; decouples CLI from the client. |
+| **CLI** | `binance_datatool.cli` | Typer command definitions, argument parsing, output formatting. |
 
 For detailed API docs see the [module reference](reference/).
 
@@ -79,10 +76,10 @@ For detailed API docs see the [module reference](reference/).
 
 All CLI logging flows through `stderr`; stdout is reserved exclusively for command
 results so that sub-commands remain safe to pipe. See the
-[CLI overview](reference/bhds/cli/) for verbosity flag details.
+[CLI overview](reference/cli/) for verbosity flag details.
 
 Every CLI command follows the same three-layer call path: the CLI function parses
 arguments, constructs a workflow, and presents the result. The workflow orchestrates
 business logic and delegates S3 communication to the archive client. Per-command data
 flow diagrams are documented alongside each command in the
-[CLI reference](reference/bhds/cli/archive.md).
+[CLI reference](reference/cli/archive.md).

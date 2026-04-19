@@ -1,12 +1,12 @@
-# binance_datatool.bhds.archive.client
+# binance_datatool.archive.client
 
 S3 listing client for data.binance.vision.
 
-The package-level `binance_datatool.bhds.archive` re-exports `ArchiveClient`,
+The package-level `binance_datatool.archive` re-exports `ArchiveClient`,
 `ArchiveFile`, `SymbolListingResult`, and `list_symbols`, so most imports can use the package surface:
 
 ```python
-from binance_datatool.bhds.archive import ArchiveClient, SymbolListingResult, list_symbols
+from binance_datatool.archive import ArchiveClient, SymbolListingResult, list_symbols
 ```
 
 ## `ArchiveClient`
@@ -14,7 +14,7 @@ from binance_datatool.bhds.archive import ArchiveClient, SymbolListingResult, li
 The main class for communicating with the Binance public data archive.
 
 ```python
-from binance_datatool.bhds.archive import ArchiveClient
+from binance_datatool.archive import ArchiveClient
 
 client = ArchiveClient(timeout_seconds=15, trust_env=True)
 ```
@@ -44,7 +44,7 @@ Returned by `ArchiveClient.list_files_in_dir()` and
 `ArchiveClient.list_symbol_files()`.
 
 ```python
-from binance_datatool.bhds.archive import ArchiveFile
+from binance_datatool.archive import ArchiveFile
 ```
 
 | Field | Type | Description |
@@ -59,7 +59,7 @@ immutable.
 ## `list_symbols()` (module-level convenience function)
 
 ```python
-from binance_datatool.bhds.archive import list_symbols
+from binance_datatool.archive import list_symbols
 
 symbols = await list_symbols(TradeType.spot, DataFrequency.daily, DataType.klines)
 ```
@@ -82,4 +82,4 @@ behavior, see [S3 Listing Protocol](../s3-protocol.md).
 
 ---
 
-See also: [Archive package](README.md) | [Workflow](../workflow.md) | [Architecture](../../../architecture.md)
+See also: [Archive package](README.md) | [Workflow](../workflow/archive.md) | [Architecture](../../../architecture.md)

@@ -24,8 +24,9 @@
 
 ## Working Model
 - Build the project as a modern Python package named `binance_datatool`.
-- Use the intended package layout: shared code under `binance_datatool.common` and historical
-  data functionality under `binance_datatool.bhds`.
+- Use the intended package layout: shared code under `binance_datatool.common`, archive access
+  under `binance_datatool.archive`, CLI entrypoints under `binance_datatool.cli`, and business
+  workflows under `binance_datatool.workflow.archive`.
 - Prefer clear, composable workflows and thin CLI entrypoints.
 - Keep the root package minimal. Export only version metadata from `binance_datatool.__init__`.
 
@@ -43,7 +44,7 @@
 - Format: `uv run ruff format .`
 - Tests: `uv run pytest`
 - Targeted tests: `uv run pytest tests/path_to_test.py`
-- CLI entrypoint target: `uv run bhds --help`
+- CLI entrypoint target: `uv run binance-datatool --help`
 
 ## Code Standards
 - Use written English for code comments, docstrings, logs, CLI text, and developer-facing messages.

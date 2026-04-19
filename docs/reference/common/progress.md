@@ -91,4 +91,4 @@ Returns a `ProgressReporter`-compatible context manager.
 
 ---
 
-See also: [Downloader](../bhds/archive/downloader.md) | [Archive client](../bhds/archive/client.md) | [Architecture](../../architecture.md)
+See also: [Downloader](../archive/downloader.md) | [Archive client](../archive/client.md) | [Architecture](../../architecture.md)

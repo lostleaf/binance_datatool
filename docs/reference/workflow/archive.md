@@ -1,4 +1,4 @@
-# binance_datatool.bhds.workflow
+# binance_datatool.workflow.archive
 
 Business logic orchestration layer between the CLI and the archive client.
 
@@ -8,8 +8,8 @@ Fetches raw symbols via `ArchiveClient`, infers typed metadata per market segmen
 optionally applies a typed symbol filter.
 
 ```python
-from binance_datatool.bhds.archive import SpotSymbolFilter
-from binance_datatool.bhds.workflow.archive import ArchiveListSymbolsWorkflow, ListSymbolsResult
+from binance_datatool.archive import SpotSymbolFilter
+from binance_datatool.workflow.archive import ArchiveListSymbolsWorkflow, ListSymbolsResult
 from binance_datatool.common import DataFrequency, DataType, TradeType
 
 workflow = ArchiveListSymbolsWorkflow(
@@ -66,7 +66,7 @@ input order and isolating per-symbol failures so that one bad symbol does not ab
 the entire batch.
 
 ```python
-from binance_datatool.bhds.workflow.archive import (
+from binance_datatool.workflow.archive import (
     ArchiveListFilesWorkflow,
     ListFilesResult,
 )
@@ -143,7 +143,7 @@ Diffs remote archive listings against local files and optionally downloads new o
 updated files via aria2c.
 
 ```python
-from binance_datatool.bhds.workflow.archive import (
+from binance_datatool.workflow.archive import (
     ArchiveDownloadWorkflow,
     DiffResult,
     DownloadResult,
@@ -155,7 +155,7 @@ workflow = ArchiveDownloadWorkflow(
     data_freq=DataFrequency.monthly,
     data_type=DataType.funding_rate,
     symbols=["BTCUSDT"],
-    bhds_home=Path("/data/bhds"),
+    archive_home=Path("/data/binance-archive"),
 )
 result = await workflow.run()
 ```
@@ -166,7 +166,7 @@ result = await workflow.run()
 | `data_freq` | *(required)* | Partition frequency. |
 | `data_type` | *(required)* | Dataset type. |
 | `symbols` | *(required)* | Symbols to download, preserving caller order. |
-| `bhds_home` | *(required)* | Root directory for local BHDS data storage. |
+| `archive_home` | *(required)* | Root directory for local archive data storage. |
 | `interval` | `None` | Kline interval directory. Required for kline-class data types. |
 | `dry_run` | `False` | When `True`, compute the diff without downloading. |
 | `inherit_aria2_proxy` | `False` | Whether aria2c should inherit proxy env vars. |
@@ -182,8 +182,8 @@ async def run(self) -> DiffResult | DownloadResult
 
 1. Delegates to `ArchiveListFilesWorkflow` to fetch remote file metadata for all
    requested symbols concurrently.
-2. Computes a diff by comparing each remote file against the local path under
-   `bhds_home/aws_data/`. A file is skipped when its local copy exists and
+2. Computes a diff by comparing each remote file against
+   `archive_home / Path(remote.key)`. A file is skipped when its local copy exists and
    `local_mtime >= remote_last_modified`; otherwise it is classified as `"new"`
    or `"updated"`.
 3. In dry-run mode, returns a `DiffResult` immediately.
@@ -200,7 +200,7 @@ One file selected for download.
 | Field / Property | Type | Description |
 |------------------|------|-------------|
 | `remote` | `ArchiveFile` | Remote file metadata. |
-| `local_path` | `Path` | Target local path under `bhds_home/aws_data/`. |
+| `local_path` | `Path` | Target local path at `archive_home / Path(remote.key)`. |
 | `reason` | `Literal["new", "updated"]` | Why this file was selected. |
 | `url` | `str` *(property)* | Full download URL built from `S3_DOWNLOAD_PREFIX` + key. |
 
@@ -244,7 +244,7 @@ Scans local archive directories, classifies zip files into verify / skip / orpha
 buckets, and optionally verifies SHA256 checksums in parallel using a process pool.
 
 ```python
-from binance_datatool.bhds.workflow.archive import (
+from binance_datatool.workflow.archive import (
     ArchiveVerifyWorkflow,
     VerifyDiffResult,
     VerifyResult,
@@ -256,7 +256,7 @@ workflow = ArchiveVerifyWorkflow(
     data_freq=DataFrequency.daily,
     data_type=DataType.klines,
     symbols=["BTCUSDT"],
-    bhds_home=Path("/data/bhds"),
+    archive_home=Path("/data/binance-archive"),
     interval="1m",
 )
 result = workflow.run()
@@ -268,7 +268,7 @@ result = workflow.run()
 | `data_freq` | *(required)* | Partition frequency. |
 | `data_type` | *(required)* | Dataset type. |
 | `symbols` | *(required)* | Symbols to verify, preserving caller order. |
-| `bhds_home` | *(required)* | Root directory for local BHDS data storage. |
+| `archive_home` | *(required)* | Root directory for local archive data storage. |
 | `interval` | `None` | Kline interval directory. Required for kline-class data types. |
 | `keep_failed` | `False` | When `True`, retain failed zip and checksum files instead of deleting them. |
 | `dry_run` | `False` | When `True`, scan and classify files without verifying or mutating the filesystem. |
@@ -285,7 +285,7 @@ This is a **synchronous** method (no `async`) because the verify workflow is pur
 local I/O and CPU work — no network access is needed.
 
 1. **Scan** — walks each symbol's local directory under
-   `bhds_home/aws_data/data/{s3_path}/{freq}/{type}/{symbol}[/{interval}]` using a
+   `archive_home/data/{s3_path}/{freq}/{type}/{symbol}[/{interval}]` using a
    `ThreadPoolExecutor` (up to 16 workers), classifying each `.zip` file as pending
    verification, already verified (valid timestamped marker), orphan zip (missing
    `.CHECKSUM` sibling), or orphan checksum (missing `.zip` sibling). Reports
